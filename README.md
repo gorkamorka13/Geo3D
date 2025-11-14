@@ -1,96 +1,143 @@
-# Visualiseur de Géométrie 3D
-## ✨ Fonctionnalités Actuelles
+Bien sûr, voici une proposition pour un fichier README.md complet et bien structuré pour votre projet sur GitHub, basé sur le code index.html que vous avez fourni.
 
-Ce visualiseur est construit comme une application *single-page* et ne nécessite aucune installation. Il offre les fonctionnalités suivantes :
+Éditeur de Géométrie 3D Interactif
 
-*   **Gestion de Points**
-    *   Créez des points en spécifiant leur nom et leurs coordonnées (X, Y, Z).
-    *   Visualisez la liste de tous les points existants.
-    *   Masquez, affichez ou supprimez n'importe quel point individuellement.
+![alt text](https://img.shields.io/badge/JavaScript-ES6-yellow)
+![alt text](https://img.shields.io/badge/Three.js-r128-blue)
+![alt text](https://img.shields.io/badge/HTML5-E34F26?logo=html5&logoColor=white)
+![alt text](https://img.shields.io/badge/CSS3-1572B6?logo=css3&logoColor=white)
 
-*   **Création d'Objets Géométriques**
-    *   **Segments** : Tracez un segment de droite entre deux points existants.
-    *   **Plans** : Générez un plan infini à partir de trois points non colinéaires.
-    *   **Droites** : Créez des droites infinies via plusieurs méthodes :
-        *   À partir de deux points.
-        *   À partir d'un point de passage et d'un vecteur directeur.
-        *   À partir de leur équation paramétrique.
+Une application web interactive conçue pour visualiser, créer et analyser des objets géométriques en trois dimensions. C'est un outil pédagogique parfait pour les étudiants et les enseignants en mathématiques, en particulier pour la géométrie dans l'espace.
 
-*   **Analyse Géométrique**
-    *   **Équation de Plan** : Sélectionnez un plan pour afficher son équation cartésienne (`ax + by + cz + d = 0`).
-    *   **Équation de Droite** : Sélectionnez une droite pour afficher sa représentation paramétrique.
+L'application est entièrement contenue dans un seul fichier index.html, ne nécessitant aucune installation de serveur ou de dépendances complexes.
 
-*   **Scène 3D Interactive**
-    *   **Contrôles Orbitaux** : Tournez, zoomez et déplacez-vous librement dans la scène avec la souris.
-    *   **Aides Visuelles** : Des axes (X, Y, Z) et une grille au sol sont présents pour faciliter le repérage dans l'espace.
+(Il est fortement recommandé d'ajouter une capture d'écran ou un GIF de l'application ici pour une meilleure présentation)
+![Aperçu de l'éditeur 3D](URL_DE_VOTRE_SCREENSHOT.png)
 
----
+✨ Fonctionnalités
 
-## 🚀 Démarrage Rapide
+Cet éditeur offre une large gamme d'outils pour la géométrie 3D :
 
-Ce projet est conçu pour être extrêmement simple à lancer.
+1. Création d'Objets Géométriques
 
-1.  **Téléchargement** :
-    *   Téléchargez le fichier `index.html`.
-    *   (Ou clonez ce dépôt : `git clone https://votre-url-de-depot.git`)
+Points :
 
-2.  **Lancement** :
-    *   Ouvrez le fichier `index.html` directement dans un navigateur web moderne (Chrome, Firefox, Edge, Safari).
+Ajouter des points en spécifiant leur nom et leurs coordonnées (X, Y, Z).
 
-Et c'est tout ! Aucune installation de serveur ou de dépendances n'est requise.
+Modifier et supprimer des points existants.
 
----
+Charger un ensemble de points de test (A, B, C) pour un démarrage rapide.
 
-## 🛠️ Comment l'utiliser
+Droites :
 
-L'interface est divisée en deux parties : le **panneau de contrôle** à gauche et la **scène 3D** à droite.
+Tracer une droite en sélectionnant deux points existants.
 
-1.  **Créez des Points** : Commencez par utiliser la section "📍 Points" pour ajouter quelques points de base à votre scène.
-2.  **Construisez des Objets** : Utilisez les points que vous venez de créer dans les sections "📏 Segments", "📐 Plans" ou "➡️ Droites" pour construire des objets plus complexes.
-3.  **Explorez** : Naviguez dans la scène 3D en utilisant votre souris :
-    *   **Clic gauche + Glisser** : Rotation de la caméra.
-    *   **Clic droit + Glisser** : Déplacement de la caméra (pan).
-    *   **Molette** : Zoom avant / arrière.
-4.  **Analysez** : Rendez-vous dans la section "🧮 Équations géométriques" pour inspecter les équations des droites et des plans que vous avez créés.
+Définir une droite à partir de son équation paramétrique.
 
----
+Plans :
 
-## ⚙️ Technologies Utilisées
+Créer un plan en sélectionnant trois points non-colinéaires.
 
-Ce projet repose entièrement sur des technologies web front-end standards.
+Définir un plan à partir de son équation cartésienne (ax + by + cz + d = 0).
 
-*   **HTML5** : Pour la structure de la page.
-*   **CSS3** : Pour le style et la mise en page du panneau de contrôle (intégré dans la balise `<style>`).
-*   **JavaScript (ES6+)** : Pour toute la logique de l'application, les calculs géométriques et la manipulation de la scène.
-*   **Three.js (r128)** : La bibliothèque WebGL qui sert de moteur pour tout le rendu 3D.
+Vecteurs :
 
----
+Tracer un vecteur entre un point de départ et un point d'arrivée.
 
-## 🔮 Évolutions Futures
+Définir un vecteur par ses composantes (Vx, Vy, Vz) et un point d'origine.
 
-Ce projet est en cours de développement. De nombreuses améliorations sont prévues pour en faire un outil encore plus puissant. Parmi elles :
+Modifier les vecteurs créés par coordonnées.
 
-*   **Interactivité 3D** : Sélection et modification des objets directement dans la scène.
-*   **Calculs d'intersections** (droite-plan, plan-plan, etc.).
-*   **Outils de mesure** (distances, angles).
-*   **Refactoring du code** vers une structure Orientée Objet pour une meilleure maintenabilité.
+2. Calculs et Analyses
 
-Pour une liste complète et détaillée des améliorations prévues, consultez le fichier [Evolution.md](Evolution.md).
+Opérations sur les Vecteurs :
 
----
+Calculer et visualiser la somme de deux vecteurs.
 
-## 🤝 Contribution
+Calculer le produit scalaire de deux vecteurs.
 
-Les contributions sont les bienvenues ! Si vous souhaitez améliorer cet outil, n'hésitez pas à :
-1.  Forker le projet.
-2.  Créer une nouvelle branche (`git checkout -b feature/NouvelleFonctionnalite`).
-3.  Faire vos modifications.
-4.  Soumettre une *Pull Request*.
+Calculer et visualiser le produit vectoriel de deux vecteurs.
 
-Vous pouvez également ouvrir une *issue* pour signaler un bug ou suggérer une nouvelle fonctionnalité.
+Mesures de Distances :
 
----
+Distance entre deux points.
 
-## 📝 Licence
+Distance d'un point à une droite.
 
-Ce projet est distribué sous la licence MIT. Voir le fichier `LICENSE` pour plus de détails.
+Distance d'un point à un plan (avec visualisation du projeté orthogonal).
+
+Mesures d'Angles :
+
+Angle entre deux droites.
+
+Angle entre deux plans.
+
+Angle entre une droite et un plan.
+
+Calculs d'Intersections :
+
+Trouver le point d'intersection entre une droite et un plan.
+
+Déterminer la droite d'intersection entre deux plans.
+
+Analyser la position relative de deux droites (sécantes, parallèles, non-coplanaires) et trouver leur point d'intersection si elles sont sécantes.
+
+3. Interface et Visualisation
+
+Scène 3D Interactive :
+
+Rotation de la caméra en cliquant-glissant (bouton gauche).
+
+Déplacement (pan) de la caméra en cliquant-glissant (bouton droit ou deux doigts sur mobile).
+
+Zoom avec la molette de la souris ou le pincement sur mobile.
+
+Vues Prédéfinies :
+
+Basculez rapidement entre les vues de dessus (XY), de face (XZ), de côté (YZ) et une vue isométrique par défaut.
+
+Panneau de Contrôle Intuitif :
+
+Un panneau latéral rétractable regroupe toutes les fonctionnalités.
+
+Les sections sont pliables pour une meilleure organisation.
+
+Les listes déroulantes se mettent à jour dynamiquement à mesure que vous ajoutez des objets.
+
+Feedback Visuel :
+
+Affichage des équations cartésiennes des plans et des équations paramétriques des droites.
+
+Les résultats des calculs sont affichés directement dans l'interface.
+
+Possibilité de masquer/afficher les objets (plans, vecteurs) et les vecteurs normaux des plans.
+
+Design responsive pour une utilisation sur ordinateur et appareils mobiles.
+
+🚀 Comment l'utiliser
+
+Aucune installation n'est requise !
+
+Clonez ce dépôt ou téléchargez simplement le fichier index.html.
+
+Ouvrez le fichier index.html dans un navigateur web moderne (Chrome, Firefox, Edge, Safari).
+
+Et c'est tout ! Vous pouvez commencer à explorer la géométrie en 3D.
+
+🛠️ Technologies utilisées
+
+Three.js (r128) : Bibliothèque principale pour le rendu 3D WebGL.
+
+JavaScript (ES6) : Pour toute la logique de l'application, les calculs géométriques et la manipulation du DOM.
+
+HTML5 : Pour la structure de la page et des contrôles.
+
+CSS3 : Pour la mise en forme du panneau de contrôle et le design responsive.
+
+✒️ Auteur
+
+Michel ESPARSA - Développement et conception
+
+📄 Licence
+
+Ce projet n'a pas de licence spécifiée. Vous pouvez en ajouter une si vous le souhaitez. Une licence MIT est un bon choix pour ce type de projet.
