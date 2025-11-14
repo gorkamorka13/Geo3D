@@ -75,7 +75,7 @@ Ce projet est en cours de développement. De nombreuses améliorations sont pré
 *   **Outils de mesure** (distances, angles).
 *   **Refactoring du code** vers une structure Orientée Objet pour une meilleure maintenabilité.
 
-Pour une liste complète et détaillée des améliorations prévues, consultez le fichier [Evolutions.md](Evolutions.md).
+Pour une liste complète et détaillée des améliorations prévues, consultez le fichier [Evolution.md](Evolution.md).
 
 ---
 
