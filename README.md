@@ -1,5 +1,3 @@
-Bien sûr, voici une proposition pour un fichier README.md complet et bien structuré pour votre projet sur GitHub, basé sur le code index.html que vous avez fourni.
-
 Éditeur de Géométrie 3D Interactif
 
 ![alt text](https://img.shields.io/badge/JavaScript-ES6-yellow)
