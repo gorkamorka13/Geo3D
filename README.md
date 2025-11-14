@@ -1,12 +1,4 @@
 # Visualiseur de Géométrie 3D
-
-Un outil web interactif et éducatif pour visualiser et manipuler des objets géométriques dans un espace tridimensionnel. Conçu pour les étudiants, les enseignants et les passionnés de mathématiques, cet outil a pour but de rendre la géométrie dans l'espace plus tangible et intuitive.
-
-[![Aperçu du Visualiseur 3D](https://i.imgur.com/gI2aX2j.png)](https://votre-lien-vers-la-demo-live.com)
-> _(N'oubliez pas de remplacer l'URL de l'image par une capture d'écran de votre application et d'ajouter un lien vers une démo si vous en déployez une)_
-
----
-
 ## ✨ Fonctionnalités Actuelles
 
 Ce visualiseur est construit comme une application *single-page* et ne nécessite aucune installation. Il offre les fonctionnalités suivantes :
