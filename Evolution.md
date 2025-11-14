@@ -1,10 +1,3 @@
-Bien sûr. Voici le fichier amendements.md qui formalise toutes les propositions d'amélioration. Vous pouvez le sauvegarder et l'utiliser comme une feuille de route pour les développements futurs.
-
-code
-Markdown
-download
-content_copy
-expand_less
 # Proposition d'Améliorations pour le Visualiseur 3D
 
 Ce document présente une série d'amendements et de nouvelles fonctionnalités pour faire évoluer le visualiseur 3D. Les améliorations sont regroupées en quatre catégories principales :
@@ -141,4 +134,5 @@ Il est conseillé d'implémenter ces changements par étapes :
 
 4.  **Phase 4 (Peaufinage)** :
     *   Intégrer les améliorations visuelles (Catégorie 4).
+
     *   Ajouter les fonctionnalités restantes (vecteurs, transformations, etc.).
