@@ -5,7 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Éditeur de Points 3D</title>
+    <!-- IMPORTANT: La bibliothèque Three.js et OrbitControls seront chargées ici par votre JavaScript -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Ajout de Font Awesome pour les icônes -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         body {
             margin: 0;
@@ -16,6 +19,9 @@
         #container {
             width: 100vw;
             height: 100vh;
+            /* Le container principal du viewer 3D */
+            position: relative;
+            /* Nécessaire pour positionner les boutons de caméra à l'intérieur */
         }
 
         #panel {
@@ -41,7 +47,6 @@
             position: absolute;
             top: 15px;
             left: 15px;
-            /* <-- MODIFICATION APPLIQUÉE ICI */
             background: transparent;
             color: #333;
             padding: 5px;
@@ -359,6 +364,96 @@
         }
 
         /* --- FIN STYLES COLLAPSIBLES --- */
+
+        /* --- NOUVEAUX STYLES POUR LES CONTRÔLES DE CAMÉRA DANS LA SCÈNE --- */
+        #cameraControls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            /* RESTE TOUJOURS À DROITE */
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 990;
+            /* IMPORTANT : Doit être inférieur au z-index du panneau */
+        }
+
+        .camera-btn {
+            width: 40px;
+            /* Largeur et hauteur égales pour des boutons carrés */
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #f0f0f0;
+            /* Couleur de fond par défaut pour les boutons inactifs */
+            border: 1px solid #ccc;
+            /* Bordure légère */
+            border-radius: 5px;
+            /* Bords légèrement arrondis */
+            cursor: pointer;
+            transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+            /* Transition douce pour le survol et l'activation */
+            color: #333;
+            /* Couleur de l'icône par défaut */
+            font-size: 18px;
+            /* Taille de l'icône */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            /* Ombre légère */
+        }
+
+        .camera-btn:hover {
+            background-color: #e0e0e0;
+            /* Couleur de fond au survol pour les inactifs */
+        }
+
+        /* Style pour le bouton actif (celui qui est sélectionné) */
+        .camera-btn.active {
+            background-color: #007bff;
+            /* Bleu vif pour le bouton actif */
+            color: white;
+            /* Texte/icône blanc pour le contraste */
+            border-color: #007bff;
+            /* Bordure bleue */
+        }
+
+        /* Icones pour les vues */
+        .fa-cube {
+            transform: rotateX(20deg) rotateY(-20deg);
+            /* Pour donner une légère perspective au cube */
+        }
+
+        @media (max-width: 768px) {
+
+            /* Le panneau prend toute la largeur et hauteur de l'écran */
+            #panel {
+                width: 100%;
+                height: 100%;
+                top: 0;
+                left: 0;
+                max-height: 100vh;
+                border-radius: 0;
+                box-sizing: border-box;
+                /* Assure que le padding est inclus dans la largeur */
+            }
+
+            /* Ajuste la position du panneau une fois caché */
+            #panel.hidden {
+                transform: translateX(-100%);
+            }
+
+            /* On s'assure que le bouton "Ouvrir" est bien visible */
+            #openBtn {
+                top: 15px;
+                left: 15px;
+            }
+
+            .camera-btn svg {
+                width: 20px;
+                height: 20px;
+                pointer-events: none;
+            }
+        }
     </style>
 </head>
 
@@ -368,7 +463,43 @@
         <span class="burger-line"></span>
         <span class="burger-line"></span>
     </button>
-    <div id="container"></div>
+    <div id="container">
+        <!-- NOUVEAU : Contrôles de caméra dans la scène, positionnés en haut à droite de #container -->
+        <div id="cameraControls">
+            <div class="camera-btn" id="btnTop" onclick="setCameraView('top', this)" title="Vue de dessus (XY)">
+                <!-- Cube 1 -->
+                <svg width="26" height="26" viewBox="0 0 60 70" xmlns="http://www.w3.org/2000/svg">
+                    <polygon points="10,25 30,15 50,25 30,35" fill="#cacaca" />
+                    <polygon points="50,25 50,45 30,55 30,35" fill="#e6e6e6" />
+                    <polygon points="10,25 10,45 30,55 30,35" fill="#222222" />
+                </svg>
+            </div>
+
+            <div class="camera-btn" id="btnFront" onclick="setCameraView('front', this)" title="Vue de face (XZ)">
+                <!-- Cube 2 -->
+                <svg width="26" height="26" viewBox="55 0 60 70" xmlns="http://www.w3.org/2000/svg">
+                    <polygon points="55,25 75,15 95,25 75,35" fill="#222222" />
+                    <polygon points="95,25 95,45 75,55 75,35" fill="#e6e6e6" />
+                    <polygon points="55,25 55,45 75,55 75,35" fill="#cacaca" />
+                </svg>
+            </div>
+
+            <div class="camera-btn" id="btnSide" onclick="setCameraView('side', this)" title="Vue de côté (YZ)">
+                <!-- Cube 3 -->
+                <svg width="26" height="26" viewBox="100 0 60 70" xmlns="http://www.w3.org/2000/svg">
+                    <polygon points="100,25 120,15 140,25 120,35" fill="#cacaca" />
+                    <polygon points="140,25 140,45 120,55 120,35" fill="#222222" />
+                    <polygon points="100,25 100,45 120,55 120,35" fill="#e6e6e6" />
+                </svg>
+            </div>
+
+            <div class="camera-btn" id="btnReset" onclick="resetCamera(this)"
+                title="Réinitialiser la vue (Isométrique)">
+                <i class="fas fa-sync-alt"></i>
+            </div>
+        </div>
+        <!-- FIN NOUVEAU -->
+    </div>
     <div id="panel">
         <button id="toggleBtn" onclick="togglePanel()">
             <span class="burger-line"></span>
@@ -378,7 +509,7 @@
 
         <div class="section collapsible collapsed">
             <div class="section-header">
-                <h3>📍 Tracer des points</h3>
+                <h3 style="font-size: 16px;">📍 Tracer des points</h3>
             </div>
             <div class="section-content">
                 <label>Nom du point :</label>
@@ -395,19 +526,15 @@
 
                 <!-- Boutons de modification de point, cachés par défaut -->
                 <input type="hidden" id="editPointIndex">
-                <button id="updatePointBtn" class="btn-secondary" style="display:none;" onclick="updatePoint()">💾 Mettre à jour le point</button>
-                <button id="cancelEditBtn" class="btn-warning" style="display:none;" onclick="cancelEdit()">❌ Annuler la modification</button>
+                <button id="updatePointBtn" class="btn-secondary" style="display:none;" onclick="updatePoint()">💾
+                    Mettre à jour le point</button>
+                <button id="cancelEditBtn" class="btn-warning" style="display:none;" onclick="cancelEdit()">❌ Annuler la
+                    modification</button>
             </div>
-            <!-- <div class="section-content">
-                <h3 style="font-size: 16px;">📌 Points tracés</h3>
-            </div> -->
             <div class="section-content">
                 <div id="pointList" class="point-list"></div>
                 <button class="btn-danger" onclick="clearAllPoints()">🗑️ Effacer tous les points</button>
             </div>
-            <!-- <div class="section-content">
-                <h3 style="font-size: 16px;">🧪 Options de test</h3>
-            </div> -->
             <div class="section-content">
                 <div class="checkbox-group">
                     <input type="checkbox" id="autoLoadTestPointsCheckbox" onchange="toggleAutoLoadTestPoints()">
@@ -420,7 +547,6 @@
                 </p>
             </div>
         </div>
-
 
         <div class="section collapsible collapsed">
             <div class="section-header">
@@ -492,7 +618,8 @@
                 <label style="margin-top: 10px;">Point d'arrivée :</label>
                 <select id="vectorEndPoint"></select>
 
-                <button class="btn-secondary" onclick="addVectorFromPoints()">➕ Tracer le vecteur</button>
+                <button id="addVectorFromPointsBtn" class="btn-secondary" onclick="addVectorFromPoints()">➕ Tracer le
+                    vecteur</button>
 
                 <h4 class="sub-section-title">Vecteur par coordonnées :</h4>
                 <label>Nom du vecteur :</label>
@@ -507,9 +634,13 @@
 
                 <label style="margin-top: 10px;">Origine du vecteur :</label>
                 <select id="vectorOriginPoint"></select>
-
-                <button class="btn-secondary" onclick="addVectorFromCoords()">➕ Tracer le vecteur</button>
-
+                <button id="addVectorFromCoordsBtn" class="btn-secondary" onclick="addVectorFromCoords()">➕ Tracer le
+                    vecteur</button>
+                <input type="hidden" id="editVectorId">
+                <button id="updateVectorBtn" class="btn-secondary" style="display:none;" onclick="updateVector()">💾
+                    Mettre à jour le vecteur</button>
+                <button id="cancelVectorEditBtn" class="btn-warning" style="display:none;"
+                    onclick="cancelVectorEdit()">❌ Annuler la modification</button>
                 <h4 class="sub-section-title">Vecteurs existants :</h4>
                 <div id="vectorList" class="geometry-list"></div>
                 <button class="btn-danger" onclick="clearAllVectors()">🗑️ Effacer tous les vecteurs</button>
@@ -536,49 +667,151 @@
 
         <div class="section collapsible collapsed">
             <div class="section-header">
-                <h3 style="font-size: 16px;">📐 Calculs et Intersections</h3>
+                <h3 style="font-size: 16px;">📐 Calculs</h3>
             </div>
             <div class="section-content">
-                <h4 class="sub-section-title">Distance d'un point à un plan :</h4>
-                <label>Sélectionner le point :</label>
-                <select id="calcPointSelect"></select>
-                <label style="margin-top: 10px;">Sélectionner le plan :</label>
-                <select id="calcPlaneSelect1"></select>
-                <button class="btn-warning" onclick="calculatePointPlaneDistance()">🖩 Calculer la distance</button>
-                <div id="calcResultDisplay1" class="equation-display" style="margin-top: 10px; min-height: 50px;"></div>
+                <!-- Outils de Mesure -->
+                <h4 class="sub-section-title" style="margin-top: 20px;">Opérations sur les Vecteurs</h4>
 
-                <h4 class="sub-section-title" style="margin-top: 20px;">Intersection d'une droite et d'un plan :</h4>
-                <label>Sélectionner la droite :</label>
-                <select id="calcLineSelect"></select>
-                <label style="margin-top: 10px;">Sélectionner le plan :</label>
-                <select id="calcPlaneSelect2"></select>
+                <!-- Somme de vecteurs -->
+                <label>Somme de deux vecteurs (U + V) :</label>
+                <div class="coord-inputs" style="grid-template-columns: 1fr 1fr; margin-bottom: 8px;">
+                    <select id="sumVectorSelect1"></select>
+                    <select id="sumVectorSelect2"></select>
+                </div>
+                <label>Origine du vecteur somme :</label>
+                <select id="sumVectorOrigin" style="margin-bottom: 8px;"></select>
+                <button class="btn-warning" onclick="calculateVectorSum()">🖩 Créer le vecteur somme</button>
+                <div id="vectorSumResult" class="equation-display"></div>
+
+                <!-- Produit Scalaire -->
+                <label style="margin-top: 15px;">Produit scalaire de deux vecteurs (U · V) :</label>
+                <div class="coord-inputs" style="grid-template-columns: 1fr 1fr; margin-bottom: 8px;">
+                    <select id="dotVectorSelect1"></select>
+                    <select id="dotVectorSelect2"></select>
+                </div>
+                <button class="btn-warning" onclick="calculateScalarProduct()">🖩 Calculer</button>
+                <div id="scalarProductResult" class="equation-display"></div>
+
+                <!-- Produit Vectoriel -->
+                <label style="margin-top: 15px;">Produit vectoriel de deux vecteurs (U ∧ V) :</label>
+                <div class="coord-inputs" style="grid-template-columns: 1fr 1fr; margin-bottom: 8px;">
+                    <select id="crossVectorSelect1"></select>
+                    <select id="crossVectorSelect2"></select>
+                </div>
+                <label>Origine du vecteur produit :</label>
+                <select id="crossVectorOrigin" style="margin-bottom: 8px;"></select>
+                <button class="btn-warning" onclick="calculateVectorProduct()">🖩 Créer le vecteur produit</button>
+                <div id="vectorProductResult" class="equation-display"></div>
+            </div>
+        </div>
+
+
+        <div class="section collapsible collapsed">
+            <div class="section-header">
+                <h3 style="font-size: 16px;">📐 Mesures et Intersections</h3>
+            </div>
+            <div class="section-content">
+                <!-- Outils de Mesure -->
+                <h4 class="sub-section-title">Mesure de Distances</h4>
+
+                <!-- Distance Point-Point -->
+                <label>Distance entre deux points :</label>
+                <div class="coord-inputs" style="grid-template-columns: 1fr 1fr; margin-bottom: 8px;">
+                    <select id="distPointSelect1"></select>
+                    <select id="distPointSelect2"></select>
+                </div>
+                <button class="btn-warning" onclick="calculatePointPointDistance()">🖩 Mesurer</button>
+                <div id="distResult1" class="equation-display"></div>
+
+                <!-- Distance Point-Droite -->
+                <label style="margin-top: 15px;">Distance d'un point à une droite :</label>
+                <div class="coord-inputs" style="grid-template-columns: 1fr 1fr; margin-bottom: 8px;">
+                    <select id="distPointSelect3"></select>
+                    <select id="distLineSelect1"></select>
+                </div>
+                <button class="btn-warning" onclick="calculatePointLineDistance()">🖩 Mesurer</button>
+                <div id="distResult2" class="equation-display"></div>
+
+                <!-- Distance Point-Plan -->
+                <label style="margin-top: 15px;">Distance d'un point à un plan :</label>
+                <div class="coord-inputs" style="grid-template-columns: 1fr 1fr; margin-bottom: 8px;">
+                    <select id="calcPointSelect"></select>
+                    <select id="calcPlaneSelect1"></select>
+                </div>
+                <button class="btn-warning" onclick="calculatePointPlaneDistance()">🖩 Mesurer et projeter</button>
+                <div id="calcResultDisplay1" class="equation-display" style="min-height: 50px;"></div>
+
+                <!-- Outils d'Angle -->
+                <h4 class="sub-section-title" style="margin-top: 20px;">Mesure d'Angles</h4>
+
+                <!-- Angle Droite-Droite -->
+                <label>Angle entre deux droites :</label>
+                <div class="coord-inputs" style="grid-template-columns: 1fr 1fr; margin-bottom: 8px;">
+                    <select id="angleLineSelect1"></select>
+                    <select id="angleLineSelect2"></select>
+                </div>
+                <button class="btn-warning" onclick="calculateLineLineAngle()">🖩 Mesurer</button>
+                <div id="angleResult1" class="equation-display"></div>
+
+                <!-- Angle Plan-Plan -->
+                <label style="margin-top: 15px;">Angle entre deux plans :</label>
+                <div class="coord-inputs" style="grid-template-columns: 1fr 1fr; margin-bottom: 8px;">
+                    <select id="anglePlaneSelect1"></select>
+                    <select id="anglePlaneSelect2"></select>
+                </div>
+                <button class="btn-warning" onclick="calculatePlanePlaneAngle()">🖩 Mesurer</button>
+                <div id="angleResult2" class="equation-display"></div>
+
+                <!-- Angle Droite-Plan -->
+                <label style="margin-top: 15px;">Angle entre une droite et un plan :</label>
+                <div class="coord-inputs" style="grid-template-columns: 1fr 1fr; margin-bottom: 8px;">
+                    <select id="angleLineSelect3"></select>
+                    <select id="anglePlaneSelect3"></select>
+                </div>
+                <button class="btn-warning" onclick="calculateLinePlaneAngle()">🖩 Mesurer</button>
+                <div id="angleResult3" class="equation-display"></div>
+
+
+                <!-- Intersections -->
+                <h4 class="sub-section-title" style="margin-top: 20px;">Calcul d'Intersections</h4>
+
+                <!-- Intersection Droite-Plan -->
+                <label>Intersection d'une droite et d'un plan :</label>
+                <div class="coord-inputs" style="grid-template-columns: 1fr 1fr; margin-bottom: 8px;">
+                    <select id="calcLineSelect"></select>
+                    <select id="calcPlaneSelect2"></select>
+                </div>
                 <button class="btn-warning" onclick="calculateLinePlaneIntersection()">🖩 Calculer
                     l'intersection</button>
-                <div id="calcResultDisplay2" class="equation-display" style="margin-top: 10px;"></div>
+                <div id="calcResultDisplay2" class="equation-display"></div>
 
-                <h4 class="sub-section-title" style="margin-top: 20px;">Intersection de deux plans :</h4>
-                <label>Sélectionner le premier plan :</label>
-                <select id="calcPlaneSelect3"></select>
-                <label style="margin-top: 10px;">Sélectionner le second plan :</label>
-                <select id="calcPlaneSelect4"></select>
+                <!-- Intersection Plan-Plan -->
+                <label style="margin-top: 15px;">Intersection de deux plans :</label>
+                <div class="coord-inputs" style="grid-template-columns: 1fr 1fr; margin-bottom: 8px;">
+                    <select id="calcPlaneSelect3"></select>
+                    <select id="calcPlaneSelect4"></select>
+                </div>
                 <button class="btn-warning" onclick="calculatePlanePlaneIntersection()">🖩 Calculer
                     l'intersection</button>
-                <div id="calcResultDisplay3" class="equation-display" style="margin-top: 10px; min-height: 60px;"></div>
-            </div>
-        </div>
+                <div id="calcResultDisplay3" class="equation-display" style="min-height: 60px;"></div>
 
-        <div class="section" style="border-bottom: none;">
-            <button onclick="resetCamera()">🔄 Réinitialiser la caméra</button>
-            <div class="controls-hint">
-                <p><strong>Rotation:</strong> Clic gauche / 1 doigt + glisser</p>
-                <p><strong>Zoom:</strong> Molette / Pincer à 2 doigts</p>
-                <p><strong>Pan:</strong> Clic droit / 2 doigts + glisser</p>
-            </div>
-        </div>
 
-        <div
-            style="text-align: center; font-size: 10px; color: #888; margin-top: 20px; border-top: 1px solid #ddd; padding-top: 5px;">
-            copyright Michel ESPARSA 13/11/0205
+                <!-- Intersection Droite-Droite -->
+                <h4 class="sub-section-title" style="margin-top: 20px;">Intersection de deux droites :</h4>
+                <label>Sélectionner les deux droites :</label>
+                <div class="coord-inputs" style="grid-template-columns: 1fr 1fr; margin-bottom: 8px;">
+                    <select id="calcLineSelect1"></select>
+                    <select id="calcLineSelect2"></select>
+                </div>
+                <button class="btn-warning" onclick="calculateLineLineIntersection()">🖩 Analyser
+                    l'intersection</button>
+                <div id="calcResultDisplay4" class="equation-display" style="margin-top: 10px; min-height: 50px;">
+                </div>
+            </div>
+            <div style="text-align: center; font-size: 10px; color: #888; margin-top: 20px;  padding-top: 5px;">
+                Copyright Michel ESPARSA 15/11/2025
+            </div>
         </div>
     </div>
 
@@ -593,8 +826,6 @@
 
         let points = [];
         let pointMeshes = [];
-        let lines = [];
-
         let pointLabels = [];
         let axisLabels = [];
 
@@ -612,13 +843,10 @@
         let vectors = [];
         let nextVectorId = 0;
 
-        let linesData = [];
-        let nextLineId = 0;
-
         let auxiliaryObjects = [];
 
         // Variable d'état pour le mode édition de point
-        let isEditingPoint = false;
+        // let isEditingPoint = false;
 
 
         // --- NOUVELLES FONCTIONS UTILITAIRES ---
@@ -761,6 +989,7 @@
             document.getElementById('planeEquationInput').value = "2x - y + 3z - 4 = 0";
 
             animate();
+            updateSelects();       // Pour remplir les listes de points, plans, droites...
         }
 
         function createAxes() {
@@ -895,70 +1124,254 @@
             updatePointList();
             updateSelects();
         }
+
         function updateSelects() {
-            const creationSelects = [
-                'lineStart', 'lineEnd',
-                'planeSelectP1', 'planeSelectP2', 'planeSelectP3',
-                'vectorStartPoint', 'vectorEndPoint', 'vectorOriginPoint',
-                'calcPointSelect'
+            // Un tableau de toutes les listes déroulantes connues de l'application.
+            const allSelectIds = [
+                'lineStart', 'lineEnd', 'planeSelectP1', 'planeSelectP2', 'planeSelectP3',
+                'vectorStartPoint', 'vectorEndPoint', 'calcPointSelect', 'distPointSelect1',
+                'distPointSelect2', 'distPointSelect3', 'vectorOriginPoint', 'sumVectorOrigin',
+                'crossVectorOrigin', 'equationPlaneSelect', 'calcPlaneSelect1', 'calcPlaneSelect2',
+                'calcPlaneSelect3', 'calcPlaneSelect4', 'anglePlaneSelect1', 'anglePlaneSelect2',
+                'anglePlaneSelect3', 'equationLineSelect', 'calcLineSelect', 'calcLineSelect1',
+                'calcLineSelect2', 'distLineSelect1', 'angleLineSelect1', 'angleLineSelect2',
+                'angleLineSelect3', 'sumVectorSelect1', 'sumVectorSelect2', 'dotVectorSelect1',
+                'dotVectorSelect2', 'crossVectorSelect1', 'crossVectorSelect2'
             ];
 
-            creationSelects.forEach(id => {
+            allSelectIds.forEach(id => {
                 const select = document.getElementById(id);
                 if (!select) return;
-                const currentValue = select.value;
-                select.innerHTML = (id === 'vectorOriginPoint' || id === 'calcPointSelect')
-                    ? '<option value="">-- Choisir --</option>'
-                    : '<option value="">-- Choisir --</option>';
 
-                if (id === 'vectorOriginPoint') {
-                    const originOption = document.createElement('option');
-                    originOption.value = 'origin';
-                    originOption.textContent = 'Origine (0,0,0)';
-                    select.appendChild(originOption);
+                const currentValue = select.value;
+                select.innerHTML = ''; // Vider la liste
+
+                // Déterminer le type de contenu à ajouter
+                if (['vectorOriginPoint', 'sumVectorOrigin', 'crossVectorOrigin'].includes(id)) {
+                    // CAS SPÉCIAL : Listes d'origine de vecteur
+                    select.add(new Option('Origine (0,0,0)', 'origin'));
+                    points.forEach((p, i) => select.add(new Option(`Point ${p.name}`, `p_${i}`)));
+                } else if (id.includes('Vector')) {
+                    // CAS : Listes de vecteurs
+                    select.add(new Option('-- Vecteur --', ''));
+                    vectors.forEach(v => select.add(new Option(v.name, v.id)));
+                } else if (id.includes('Line')) {
+                    // CAS : Listes de droites
+                    select.add(new Option('-- Droite --', ''));
+                    straightLinesData.forEach(l => select.add(new Option(l.name, l.id)));
+                } else if (id.includes('Plane')) {
+                    // CAS : Listes de plans
+                    select.add(new Option('-- Plan --', ''));
+                    planes.forEach(p => select.add(new Option(p.name, p.id)));
+                } else {
+                    // CAS PAR DÉFAUT : Listes de points
+                    select.add(new Option('-- Point --', ''));
+                    points.forEach((p, i) => select.add(new Option(p.name, i)));
                 }
-                points.forEach((p, i) => {
-                    const option = document.createElement('option');
-                    option.value = i;
-                    option.textContent = p.name;
-                    select.appendChild(option);
-                });
-                if (currentValue) select.value = currentValue;
-            });
 
-            const planeSelects = ['equationPlaneSelect', 'calcPlaneSelect1', 'calcPlaneSelect2', 'calcPlaneSelect3', 'calcPlaneSelect4'];
-            planeSelects.forEach(id => {
-                const select = document.getElementById(id);
-                if (!select) return;
-                const currentValue = select.value;
-                select.innerHTML = '<option value="">-- Choisir un plan --</option>';
-                planes.forEach(p => {
-                    const option = document.createElement('option');
-                    option.value = p.id;
-                    option.textContent = p.name;
-                    select.appendChild(option);
-                });
-                if (currentValue && planes.some(p => p.id == currentValue)) select.value = currentValue;
-            });
-
-            const lineSelects = ['equationLineSelect', 'calcLineSelect'];
-            lineSelects.forEach(id => {
-                const select = document.getElementById(id);
-                if (!select) return;
-                const currentValue = select.value;
-                select.innerHTML = '<option value="">-- Choisir une droite --</option>';
-                straightLinesData.forEach(l => {
-                    const option = document.createElement('option');
-                    option.value = l.id;
-                    option.textContent = l.name;
-                    select.appendChild(option);
-                });
-                if (currentValue && straightLinesData.some(l => l.id == currentValue)) select.value = currentValue;
+                // Tenter de restaurer la valeur précédente
+                select.value = currentValue;
             });
 
             displayPlaneEquation();
             displayLineEquation();
         }
+
+        function addVectorFromCoords() {
+            const name = document.getElementById('vectorNameCoords').value.trim();
+            const vx = parseFloat(document.getElementById('vectorCoordX').value);
+            const vy = parseFloat(document.getElementById('vectorCoordY').value);
+            const vz = parseFloat(document.getElementById('vectorCoordZ').value);
+            const originSelection = document.getElementById('vectorOriginPoint').value;
+
+            if (!name || isNaN(vx) || isNaN(vy) || isNaN(vz) || !originSelection) {
+                alert("Veuillez remplir tous les champs du vecteur.");
+                return;
+            }
+
+            let startPoint;
+            let originDesc = "";
+            if (originSelection === 'origin') {
+                startPoint = new THREE.Vector3(0, 0, 0);
+                originDesc = "Origine (0,0,0)";
+            } else { // La valeur est 'p_i'
+                const pointIndex = parseInt(originSelection.substring(2));
+                const p = points[pointIndex];
+                if (!p) { alert("Erreur : Point d'origine introuvable."); return; }
+                startPoint = new THREE.Vector3(p.x, p.y, p.z);
+                originDesc = `Point ${p.name}`;
+            }
+
+            const originalVector = new THREE.Vector3(vx, vy, vz);
+            _createVector(name, startPoint, originalVector, `Coordonnées, origine: ${originDesc}`);
+
+            // Nettoyage des champs
+            document.getElementById('vectorNameCoords').value = '';
+            document.getElementById('vectorCoordX').value = '';
+            document.getElementById('vectorCoordY').value = '';
+            document.getElementById('vectorCoordZ').value = '';
+            document.getElementById('vectorOriginPoint').value = 'origin';
+        }
+
+        function editVector(vectorId) {
+            const vectorToEdit = vectors.find(v => v.id === vectorId);
+            if (!vectorToEdit) return;
+
+            document.getElementById('vectorNameCoords').value = vectorToEdit.name;
+            document.getElementById('vectorCoordX').value = vectorToEdit.originalVector.x;
+            document.getElementById('vectorCoordY').value = vectorToEdit.originalVector.y;
+            document.getElementById('vectorCoordZ').value = vectorToEdit.originalVector.z;
+            document.getElementById('editVectorId').value = vectorId;
+
+            const originSelect = document.getElementById('vectorOriginPoint');
+            const origin = vectorToEdit.origin;
+            let originValueToSet = 'origin'; // Par défaut, on suppose que c'est l'origine
+
+            // On cherche si l'origine correspond à un point existant
+            for (let i = 0; i < points.length; i++) {
+                const p = points[i];
+                if (Math.abs(p.x - origin.x) < 1e-6 && Math.abs(p.y - origin.y) < 1e-6 && Math.abs(p.z - origin.z) < 1e-6) {
+                    originValueToSet = `p_${i}`; // On a trouvé le point !
+                    break;
+                }
+            }
+            originSelect.value = originValueToSet;
+
+            // Gestion de l'interface
+            document.getElementById('addVectorFromPointsBtn').style.display = 'none';
+            document.getElementById('addVectorFromCoordsBtn').style.display = 'none';
+            document.getElementById('updateVectorBtn').style.display = 'block';
+            document.getElementById('cancelVectorEditBtn').style.display = 'block';
+
+            const vectorSection = document.getElementById('vectorList').closest('.section.collapsible');
+            if (vectorSection.classList.contains('collapsed')) {
+                vectorSection.classList.remove('collapsed');
+            }
+            document.getElementById('vectorNameCoords').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        function calculatePointPointDistance() {
+            const pointIdx1 = document.getElementById('distPointSelect1').value;
+            const pointIdx2 = document.getElementById('distPointSelect2').value;
+            const displayDiv = document.getElementById('distResult1');
+
+            if (pointIdx1 === '' || pointIdx2 === '') {
+                displayDiv.textContent = 'Veuillez sélectionner deux points.';
+                return;
+            }
+
+            const p1 = points[pointIdx1];
+            const p2 = points[pointIdx2];
+
+            const v1 = new THREE.Vector3(p1.x, p1.y, p1.z);
+            const v2 = new THREE.Vector3(p2.x, p2.y, p2.z);
+
+            const distance = v1.distanceTo(v2);
+            displayDiv.textContent = `Distance(${p1.name}, ${p2.name}) = ${distance.toFixed(3)}`;
+        }
+
+        function calculatePointLineDistance() {
+            const pointIdx = document.getElementById('distPointSelect3').value;
+            const lineId = document.getElementById('distLineSelect1').value;
+            const displayDiv = document.getElementById('distResult2');
+
+            if (pointIdx === '' || lineId === '') {
+                displayDiv.textContent = 'Veuillez sélectionner un point et une droite.';
+                return;
+            }
+
+            const point = points[pointIdx];
+            const line = straightLinesData.find(l => l.id == lineId);
+
+            const P = new THREE.Vector3(point.x, point.y, point.z);
+            const A = line.startPoint.clone();
+            const u = line.directorVector.clone();
+
+            const AP = new THREE.Vector3().subVectors(P, A);
+            const crossProduct = new THREE.Vector3().crossVectors(AP, u);
+
+            const distance = crossProduct.length() / u.length();
+            displayDiv.textContent = `Distance(${point.name}, ${line.name}) = ${distance.toFixed(3)}`;
+        }
+
+        function calculateLineLineAngle() {
+            const lineId1 = document.getElementById('angleLineSelect1').value;
+            const lineId2 = document.getElementById('angleLineSelect2').value;
+            const displayDiv = document.getElementById('angleResult1');
+
+            if (lineId1 === '' || lineId2 === '') {
+                displayDiv.textContent = 'Veuillez sélectionner deux droites.';
+                return;
+            }
+
+            const line1 = straightLinesData.find(l => l.id == lineId1);
+            const line2 = straightLinesData.find(l => l.id == lineId2);
+
+            const u1 = line1.directorVector.clone().normalize();
+            const u2 = line2.directorVector.clone().normalize();
+
+            const cosTheta = Math.abs(u1.dot(u2));
+            const angleRad = Math.acos(Math.min(1.0, cosTheta)); // Clamp pour éviter les erreurs de calcul flottant
+            const angleDeg = angleRad * (180 / Math.PI);
+
+            displayDiv.textContent = `Angle = ${angleDeg.toFixed(2)}°`;
+        }
+
+        function calculatePlanePlaneAngle() {
+            const planeId1 = document.getElementById('anglePlaneSelect1').value;
+            const planeId2 = document.getElementById('anglePlaneSelect2').value;
+            const displayDiv = document.getElementById('angleResult2');
+
+            if (planeId1 === '' || planeId2 === '') {
+                displayDiv.textContent = 'Veuillez sélectionner deux plans.';
+                return;
+            }
+            if (planeId1 === planeId2) {
+                displayDiv.textContent = 'Les plans sont identiques (Angle = 0°).';
+                return;
+            }
+
+            const plane1 = planes.find(p => p.id == planeId1);
+            const plane2 = planes.find(p => p.id == planeId2);
+
+            const n1 = plane1.normal.clone();
+            const n2 = plane2.normal.clone();
+
+            const cosTheta = Math.abs(n1.dot(n2)) / (n1.length() * n2.length());
+            const angleRad = Math.acos(Math.min(1.0, cosTheta));
+            const angleDeg = angleRad * (180 / Math.PI);
+
+            displayDiv.textContent = `Angle = ${angleDeg.toFixed(2)}°`;
+        }
+
+        function calculateLinePlaneAngle() {
+            const lineId = document.getElementById('angleLineSelect3').value;
+            const planeId = document.getElementById('anglePlaneSelect3').value;
+            const displayDiv = document.getElementById('angleResult3');
+
+            if (lineId === '' || planeId === '') {
+                displayDiv.textContent = 'Veuillez sélectionner une droite et un plan.';
+                return;
+            }
+
+            const line = straightLinesData.find(l => l.id == lineId);
+            const plane = planes.find(p => p.id == planeId);
+
+            const u = line.directorVector.clone();
+            const n = plane.normal.clone();
+
+            if (u.lengthSq() === 0) {
+                displayDiv.textContent = 'Le vecteur directeur de la droite est nul.';
+                return;
+            }
+
+            const sinAlpha = Math.abs(u.dot(n)) / (u.length() * n.length());
+            const angleRad = Math.asin(Math.min(1.0, sinAlpha));
+            const angleDeg = angleRad * (180 / Math.PI);
+
+            displayDiv.textContent = `Angle = ${angleDeg.toFixed(2)}°`;
+        }
+
         function addStraightLine() {
             const idx1 = document.getElementById('lineStart').value;
             const idx2 = document.getElementById('lineEnd').value;
@@ -984,12 +1397,6 @@
             document.getElementById('lineEnd').value = '';
         }
 
-        function addLineFromEquation() {
-            // ... (logique pour parser l'équation et obtenir name, startPoint, directorVector)
-            _createStraightLine(name, startPoint, directorVector);
-
-            document.getElementById('lineNameFromEquation').value = '';
-        }
         function clearStraightLines() {
             straightLinesData.forEach(line => scene.remove(line.mesh));
             straightLinesData = [];
@@ -1122,7 +1529,7 @@
             if (Math.abs(C) > 1e-6) {
                 pointOnPlane.set(0, 0, -D / C);
             } else if (Math.abs(B) > 1e-6) {
-                pointOnOnPlane.set(0, -D / B, 0);
+                pointOnPlane.set(0, -D / B, 0);
             } else {
                 pointOnPlane.set(-D / A, 0, 0);
             }
@@ -1245,29 +1652,6 @@
             });
         }
 
-
-        function updateLineEquationSelect() {
-            const select = document.getElementById('equationLineSelect');
-            if (!select) return;
-            const currentValue = select.value;
-            select.innerHTML = '<option value="">-- Choisir une droite --</option>';
-
-            straightLinesData.forEach(line => {
-                const option = document.createElement('option');
-                option.value = line.id;
-                option.textContent = line.name;
-                select.appendChild(option);
-            });
-
-            if (currentValue && straightLinesData.some(l => l.id == currentValue)) {
-                select.value = currentValue;
-            } else {
-                select.value = '';
-            }
-
-            displayLineEquation();
-        }
-
         function togglePlaneNormal(planeId) {
             const plane = planes.find(p => p.id === planeId);
             if (plane) {
@@ -1288,93 +1672,203 @@
             }
         }
 
-
         function addVectorFromPoints() {
             const startIdx = document.getElementById('vectorStartPoint').value;
             const endIdx = document.getElementById('vectorEndPoint').value;
             if (startIdx === '' || endIdx === '') { alert('Veuillez sélectionner les deux points.'); return; }
+            if (startIdx === endIdx) { alert("Les points de départ et d'arrivée doivent être différents."); return; }
+
             const pStart = points[startIdx];
             const pEnd = points[endIdx];
 
             const startVec = new THREE.Vector3(pStart.x, pStart.y, pStart.z);
             const endVec = new THREE.Vector3(pEnd.x, pEnd.y, pEnd.z);
-            const direction = new THREE.Vector3().subVectors(endVec, startVec);
-            const length = direction.length();
 
-            if (length === 0) { alert('Les points de départ et d\'arrivée sont identiques.'); return; }
+            const name = `Vecteur(${pStart.name}${pEnd.name})`;
+            const originalVector = new THREE.Vector3().subVectors(endVec, startVec);
 
-            const arrowHelper = new THREE.ArrowHelper(direction.normalize(), startVec, length, 0xffa500, 0.5, 0.2);
-            scene.add(arrowHelper);
-
-            const newVector = {
-                id: nextVectorId++,
-                name: `Vecteur ${pStart.name}-${pEnd.name}`,
-                startPoint: startVec,
-                endPoint: endVec,
-                direction: direction.normalize(),
-                originalVector: new THREE.Vector3().subVectors(endVec, startVec),
-                length: length,
-                arrowHelper: arrowHelper,
-                isVisible: true,
-                isFromPoints: true
-            };
-            vectors.push(newVector);
-            updateVectorList();
-            updateSelects();
+            _createVector(name, startVec, originalVector, `De ${pStart.name} à ${pEnd.name}`);
 
             document.getElementById('vectorStartPoint').value = '';
             document.getElementById('vectorEndPoint').value = '';
         }
 
-        function addVectorFromCoords() {
-            const name = document.getElementById('vectorNameCoords').value.trim();
-            const vx = parseFloat(document.getElementById('vectorCoordX').value);
-            const vy = parseFloat(document.getElementById('vectorCoordY').value);
-            const vz = parseFloat(document.getElementById('vectorCoordZ').value);
-            const originIdx = document.getElementById('vectorOriginPoint').value;
+        function toggleVectorVisibility(vectorId) {
+            const vector = vectors.find(v => v.id === vectorId);
+            if (vector) {
+                vector.isVisible = !vector.isVisible;
+                vector.arrowHelper.visible = vector.isVisible;
+                updateVectorList();
+            }
+        }
 
-            if (!name) { alert('Veuillez entrer un nom pour le vecteur.'); return; }
-            if (isNaN(vx) || isNaN(vy) || isNaN(vz)) { alert('Veuillez entrer des coordonnées valides pour le vecteur.'); return; }
-            if (originIdx === '') { alert('Veuillez sélectionner un point d\'origine.'); return; }
+        function removeVector(vectorId) {
+            const index = vectors.findIndex(v => v.id === vectorId);
+            if (index !== -1) {
+                if (!confirm('Voulez-vous vraiment supprimer ce vecteur ?')) return;
+                const vector = vectors[index];
+                scene.remove(vector.arrowHelper);
+                vectors.splice(index, 1);
+                updateVectorList();
+                updateSelects();
+            }
+        }
 
-            let startPoint;
-            if (originIdx === 'origin') {
-                startPoint = new THREE.Vector3(0, 0, 0);
-            } else {
-                const p = points[originIdx];
-                startPoint = new THREE.Vector3(p.x, p.y, p.z);
+        function clearAllVectors() {
+            if (!confirm('Voulez-vous vraiment effacer tous les vecteurs ?')) return;
+            vectors.forEach(vector => scene.remove(vector.arrowHelper));
+            vectors = [];
+            nextVectorId = 0;
+            updateVectorList();
+            updateSelects();
+        }
+
+        function updateVectorList() {
+            const list = document.getElementById('vectorList');
+            list.innerHTML = '';
+            if (vectors.length === 0) {
+                list.innerHTML = '<div class="point-item">Aucun vecteur tracé.</div>';
+                return;
+            }
+            vectors.forEach(vector => {
+                const item = document.createElement('div');
+                item.className = 'geometry-item';
+                const v = vector.originalVector;
+                const coordsText = `(${v.x.toFixed(2)}, ${v.y.toFixed(2)}, ${v.z.toFixed(2)})`;
+
+                item.innerHTML = `
+                    <div class="geometry-name">${vector.name}</div>
+                    <div class="geometry-details">
+                        ${vector.description} <br>
+                        Composantes: ${coordsText}
+                    </div>
+                    <div class="geometry-actions">
+                        <!-- BOUTON MODIFIER AJOUTÉ ICI -->
+                        <button class="btn-secondary" onclick="editVector(${vector.id})">✏️ Modifier</button>
+                        <button class="btn-secondary" onclick="toggleVectorVisibility(${vector.id})">
+                            ${vector.isVisible ? '👁️ Masquer' : '🙈 Afficher'}
+                        </button>
+                        <button class="btn-danger" onclick="removeVector(${vector.id})">🗑️ Supprimer</button>
+                    </div>
+                `;
+                list.appendChild(item);
+            });
+        }
+        // --- AJOUTER CE BLOC DE NOUVELLES FONCTIONS ---
+
+        // Fonction utilitaire pour créer l'objet vecteur et sa représentation 3D
+        function _createVector(name, origin, vector, description, color = 0xffa500) {
+            const length = vector.length();
+            if (length < 1e-6) {
+                // alert('Le vecteur a une longueur nulle et ne peut pas être tracé.'); 
+                return null;
             }
 
-            const direction = new THREE.Vector3(vx, vy, vz);
-            const length = direction.length();
-
-            if (length === 0) { alert('Le vecteur a une longueur nulle.'); return; }
-
-            const arrowHelper = new THREE.ArrowHelper(direction.clone().normalize(), startPoint, length, 0x9933ff, 0.5, 0.2);
+            const arrowHelper = new THREE.ArrowHelper(vector.clone().normalize(), origin, length, color, 0.4, 0.2);
             scene.add(arrowHelper);
 
             const newVector = {
                 id: nextVectorId++,
                 name: name,
-                startPoint: startPoint,
-                endPoint: new THREE.Vector3().addVectors(startPoint, new THREE.Vector3(vx, vy, vz)),
-                direction: direction.clone().normalize(),
-                originalVector: new THREE.Vector3(vx, vy, vz),
-                length: length,
+                origin: origin,
+                originalVector: vector,
+                description: description,
                 arrowHelper: arrowHelper,
-                isVisible: true,
-                isFromPoints: false
+                isVisible: true
             };
             vectors.push(newVector);
             updateVectorList();
             updateSelects();
-
-            document.getElementById('vectorNameCoords').value = '';
-            document.getElementById('vectorCoordX').value = '';
-            document.getElementById('vectorCoordY').value = '';
-            document.getElementById('vectorCoordZ').value = '';
-            document.getElementById('vectorOriginPoint').value = '';
+            return newVector;
         }
+
+        // Fonctions pour les opérations sur les vecteurs
+        function calculateVectorSum() {
+            const vectorId1 = document.getElementById('sumVectorSelect1').value;
+            const vectorId2 = document.getElementById('sumVectorSelect2').value;
+            const originSelection = document.getElementById('sumVectorOrigin').value;
+            const displayDiv = document.getElementById('vectorSumResult');
+
+            if (vectorId1 === '' || vectorId2 === '') {
+                displayDiv.textContent = 'Veuillez sélectionner deux vecteurs.';
+                return;
+            }
+
+            const v1 = vectors.find(v => v.id == vectorId1);
+            const v2 = vectors.find(v => v.id == vectorId2);
+            const sumVector = new THREE.Vector3().addVectors(v1.originalVector, v2.originalVector);
+
+            let originPoint;
+            if (originSelection === 'origin') {
+                originPoint = new THREE.Vector3(0, 0, 0);
+            } else {
+                const pointIndex = parseInt(originSelection.substring(2));
+                const p = points[pointIndex];
+                originPoint = new THREE.Vector3(p.x, p.y, p.z);
+            }
+
+            const name = `Somme(${v1.name}, ${v2.name})`;
+            const createdVector = _createVector(name, originPoint, sumVector, `Somme de ${v1.name} et ${v2.name}`, 0x4CAF50);
+
+            if (createdVector) {
+                const v = createdVector.originalVector;
+                displayDiv.textContent = `Vecteur somme créé (${v.x.toFixed(2)}, ${v.y.toFixed(2)}, ${v.z.toFixed(2)})`;
+            } else {
+                displayDiv.textContent = `La somme des vecteurs est un vecteur nul.`;
+            }
+        }
+
+        function calculateScalarProduct() {
+            const vectorId1 = document.getElementById('dotVectorSelect1').value;
+            const vectorId2 = document.getElementById('dotVectorSelect2').value;
+            const displayDiv = document.getElementById('scalarProductResult');
+
+            if (vectorId1 === '' || vectorId2 === '') {
+                displayDiv.textContent = 'Veuillez sélectionner deux vecteurs.';
+                return;
+            }
+
+            const v1 = vectors.find(v => v.id == vectorId1);
+            const v2 = vectors.find(v => v.id == vectorId2);
+            const dotProduct = v1.originalVector.dot(v2.originalVector);
+            displayDiv.textContent = `${v1.name} · ${v2.name} = ${dotProduct.toFixed(3)}`;
+        }
+
+        function calculateVectorProduct() {
+            const vectorId1 = document.getElementById('crossVectorSelect1').value;
+            const vectorId2 = document.getElementById('crossVectorSelect2').value;
+            const originSelection = document.getElementById('crossVectorOrigin').value;
+            const displayDiv = document.getElementById('vectorProductResult');
+
+            if (vectorId1 === '' || vectorId2 === '') {
+                displayDiv.textContent = 'Veuillez sélectionner deux vecteurs.';
+                return;
+            }
+
+            const v1 = vectors.find(v => v.id == vectorId1);
+            const v2 = vectors.find(v => v.id == vectorId2);
+            const crossVector = new THREE.Vector3().crossVectors(v1.originalVector, v2.originalVector);
+
+            let originPoint;
+            if (originSelection === 'origin') {
+                originPoint = new THREE.Vector3(0, 0, 0);
+            } else {
+                const pointIndex = parseInt(originSelection.substring(2));
+                const p = points[pointIndex];
+                originPoint = new THREE.Vector3(p.x, p.y, p.z);
+            }
+
+            const name = `ProdVect(${v1.name}, ${v2.name})`;
+            const createdVector = _createVector(name, originPoint, crossVector, `Produit vectoriel de ${v1.name} et ${v2.name}`, 0x2196F3);
+
+            if (createdVector) {
+                const v = createdVector.originalVector;
+                displayDiv.textContent = `Vecteur produit créé (${v.x.toFixed(2)}, ${v.y.toFixed(2)}, ${v.z.toFixed(2)})`;
+            } else {
+                displayDiv.textContent = `Le produit vectoriel est nul (vecteurs colinéaires).`;
+            }
+        }
+
 
         function addLineFromEquation() {
             const nameInput = document.getElementById('lineNameFromEquation');
@@ -1432,93 +1926,6 @@
 
             nameInput.value = '';
         }
-        function toggleVectorVisibility(vectorId) {
-            const vector = vectors.find(v => v.id === vectorId);
-            if (vector) {
-                if (vector.isVisible) {
-                    scene.remove(vector.arrowHelper);
-                } else {
-                    scene.add(vector.arrowHelper);
-                }
-                vector.isVisible = !vector.isVisible;
-                updateVectorList();
-            }
-        }
-
-        function removeVector(vectorId) {
-            if (!confirm('Voulez-vous vraiment supprimer ce vecteur ?')) return;
-            const index = vectors.findIndex(v => v.id === vectorId);
-            if (index !== -1) {
-                const vector = vectors[index];
-                scene.remove(vector.arrowHelper);
-                vectors.splice(index, 1);
-                updateVectorList();
-                updateSelects();
-                displayLineEquation();
-            }
-        }
-        function clearAllVectors() {
-            if (!confirm('Voulez-vous vraiment effacer tous les vecteurs ?')) return;
-            vectors.forEach(vector => scene.remove(vector.arrowHelper));
-            vectors = [];
-            nextVectorId = 0;
-            updateVectorList();
-            updateSelects();
-            displayLineEquation();
-        }
-
-        function updateVectorList() {
-            const list = document.getElementById('vectorList');
-            list.innerHTML = '';
-            if (vectors.length === 0) {
-                list.innerHTML = '<div class="point-item">Aucun vecteur créé.</div>';
-                return;
-            }
-            vectors.forEach(vector => {
-                const item = document.createElement('div');
-                item.className = 'geometry-item';
-
-                const vec = vector.originalVector;
-                const norm = vector.length.toFixed(2);
-
-                const details = `
-                    <div class="geometry-details">
-                        Vecteur directeur: (${vec.x.toFixed(2)}, ${vec.y.toFixed(2)}, ${vec.z.toFixed(2)})
-                    </div>
-                    <div class="geometry-details" style="margin-top: 4px;">
-                        Norme: ||V|| = ${norm}
-                    </div>
-                `;
-
-                item.innerHTML = `
-                    <div class="geometry-name">${vector.name}</div>
-                    ${details}
-                    <div class="geometry-actions">
-                        <button class="btn-secondary" onclick="toggleVectorVisibility(${vector.id})">
-                            ${vector.isVisible ? '👁️ Masquer' : '🙈 Afficher'}
-                        </button>
-                        <button class="btn-danger" onclick="removeVector(${vector.id})">🗑️ Supprimer</button>
-                    </div>
-                `;
-                list.appendChild(item);
-            });
-        }
-
-        function updatePlaneEquationSelect() {
-            const select = document.getElementById('equationPlaneSelect');
-            if (!select) return;
-            const currentValue = select.value;
-            select.innerHTML = '<option value="">-- Choisir un plan --</option>';
-            planes.forEach(p => {
-                const option = document.createElement('option');
-                option.value = p.id;
-                option.textContent = p.name;
-                select.appendChild(option);
-            });
-            if (currentValue && planes.some(p => p.id == currentValue)) select.value = currentValue;
-            else select.value = '';
-            displayPlaneEquation();
-        }
 
         function displayPlaneEquation() {
             const select = document.getElementById('equationPlaneSelect');
@@ -1567,22 +1974,6 @@
 
             equation = equation.replace(/^\s*\+\s*/, '');
             displayDiv.textContent = equation.trim() + ' = 0';
-        }
-
-        function updateVectorEquationSelect() {
-            const select = document.getElementById('equationVectorSelect');
-            if (!select) return;
-            const currentValue = select.value;
-            select.innerHTML = '<option value="">-- Choisir un vecteur --</option>';
-            vectors.forEach(v => {
-                const option = document.createElement('option');
-                option.value = v.id;
-                option.textContent = v.name;
-                select.appendChild(option);
-            });
-            if (currentValue && vectors.some(v => v.id == currentValue)) select.value = currentValue;
-            else select.value = '';
-            displayLineEquation();
         }
 
         function displayLineEquation() {
@@ -1884,6 +2275,70 @@
             displayDiv.innerHTML = `${eqX}<br>${eqY}<br>${eqZ}`;
         }
 
+        function calculateLineLineIntersection() {
+            const lineId1 = document.getElementById('calcLineSelect1').value;
+            const lineId2 = document.getElementById('calcLineSelect2').value;
+            const displayDiv = document.getElementById('calcResultDisplay4');
+
+            if (lineId1 === '' || lineId2 === '') {
+                displayDiv.textContent = 'Veuillez sélectionner deux droites.';
+                return;
+            }
+            if (lineId1 === lineId2) {
+                displayDiv.textContent = 'Veuillez sélectionner deux droites différentes.';
+                return;
+            }
+
+            const line1 = straightLinesData.find(l => l.id == lineId1);
+            const line2 = straightLinesData.find(l => l.id == lineId2);
+
+            const p1 = line1.startPoint;
+            const v1 = line1.directorVector;
+            const p2 = line2.startPoint;
+            const v2 = line2.directorVector;
+
+            const v1_x_v2 = new THREE.Vector3().crossVectors(v1, v2);
+            const p1p2 = new THREE.Vector3().subVectors(p2, p1);
+
+            // Cas 1 : Droites parallèles ou confondues
+            if (v1_x_v2.lengthSq() < 1e-8) {
+                const p1p2_x_v1 = new THREE.Vector3().crossVectors(p1p2, v1);
+                if (p1p2_x_v1.lengthSq() < 1e-8) {
+                    displayDiv.textContent = 'Les droites sont confondues.';
+                } else {
+                    displayDiv.textContent = 'Les droites sont parallèles et distinctes.';
+                }
+                return;
+            }
+
+            // Cas 2 : Droites non coplanaires (gauches)
+            const tripleProduct = p1p2.dot(v1_x_v2);
+            if (Math.abs(tripleProduct) > 1e-6) {
+                displayDiv.textContent = 'Les droites sont non coplanaires (gauches).';
+                return;
+            }
+
+            // Cas 3 : Droites sécantes (coplanaires et non parallèles)
+            // On résout p1 + t*v1 = p2 + s*v2 => t*v1 - s*v2 = p2 - p1
+            const p2p1 = new THREE.Vector3().subVectors(p1, p2);
+            const t = (new THREE.Vector3().crossVectors(p2p1, v2)).length() / v1_x_v2.length();
+
+            // On doit vérifier le signe de t
+            const testVec = new THREE.Vector3().crossVectors(v2, v1_x_v2);
+            if (p2p1.dot(testVec) < 0) {
+                // t est négatif
+                var intersectionPoint = p1.clone().add(v1.clone().multiplyScalar(-t));
+            } else {
+                // t est positif
+                var intersectionPoint = p1.clone().add(v1.clone().multiplyScalar(t));
+            }
+
+            const I = intersectionPoint;
+            displayDiv.textContent = `Sécantes au point I: (${I.x.toFixed(2)}, ${I.y.toFixed(2)}, ${I.z.toFixed(2)})`;
+            const pointName = `I_${line1.name}_${line2.name}`;
+            _createPoint(pointName, I.x, I.y, I.z, 0xf44336);
+        }
+
         function removeDependents(parentType, parentId) {
             for (let i = points.length - 1; i >= 0; i--) {
                 const p = points[i];
@@ -1950,11 +2405,68 @@
             updateCameraPosition();
         }
 
-        function resetCamera() {
-            cameraRotation = { x: 0.5, y: 0.5 };
-            cameraDistance = 15;
+        /**
+                 * Réinitialise la caméra à sa position par défaut et met à jour l'état des boutons.
+                 * @param {HTMLElement} [buttonElement=null] - L'élément bouton qui a déclenché l'action (optionnel).
+                 */
+        function resetCamera(buttonElement = null) {
+            // Appelle simplement setCameraView avec la vue 'isometric'.
+            setCameraView('isometric', buttonElement);
+        }
+
+        /**
+         * Définit la vue de la caméra sur une perspective prédéfinie et met à jour l'état des boutons.
+         * @param {string} view - Le type de vue ('top', 'front', 'side', 'isometric').
+         * @param {HTMLElement} [buttonElement=null] - L'élément bouton qui a déclenché l'action (optionnel).
+         */
+        function setCameraView(view, buttonElement = null) {
             cameraTarget.set(0, 0, 0);
+            cameraDistance = 15;
+
+            switch (view) {
+                case 'top':
+                    cameraRotation.x = Math.PI / 2 - 0.001; // Presque PI/2 pour éviter le blocage du gimbal
+                    cameraRotation.y = 0;
+                    break;
+                case 'front':
+                    cameraRotation.x = 0;
+                    cameraRotation.y = 0;
+                    break;
+                case 'side':
+                    cameraRotation.x = 0;
+                    cameraRotation.y = Math.PI / 2;
+                    break;
+                case 'isometric': // La logique de réinitialisation est maintenant centralisée ici
+                    cameraRotation.x = 0.5;
+                    cameraRotation.y = 0.5;
+                    break;
+                default:
+                    // Si la vue n'est pas reconnue, on applique la vue isométrique par défaut.
+                    console.warn(`Vue "${view}" non reconnue, retour à la vue isométrique.`);
+                    cameraRotation.x = 0.5;
+                    cameraRotation.y = 0.5;
+                    break;
+            }
             updateCameraPosition();
+            toggleButtonState(buttonElement, view);
+        }
+        /**
+         * Gère l'état actif/inactif des boutons de vue de caméra.
+         * Désactive tous les boutons de vue (top, front, side, reset/isometric) et active le bouton passé en argument.
+         * @param {HTMLElement} [activeButton=null] - Le bouton à marquer comme "actif".
+         * @param {string} [viewType=null] - Le type de vue correspondant au bouton actif (ex: 'top', 'isometric').
+         */
+        function toggleButtonState(activeButton = null, viewType = null) {
+            // Sélectionne tous les boutons de caméra, y compris le bouton de réinitialisation.
+            const viewButtons = document.querySelectorAll('#cameraControls .camera-btn');
+            viewButtons.forEach(btn => {
+                btn.classList.remove('active'); // Retire la classe 'active' de TOUS les boutons
+            });
+
+            // Si un bouton est spécifié, lui ajouter la classe 'active'
+            if (activeButton) {
+                activeButton.classList.add('active');
+            }
         }
 
         function onWindowResize() {
@@ -2177,7 +2689,91 @@
 
         // --- FIN NOUVELLES FONCTIONS POUR L'ÉDITION DE POINT ---
 
+        function updateVector() {
+            const vectorId = parseInt(document.getElementById('editVectorId').value);
+            const vector = vectors.find(v => v.id === vectorId);
+            if (!vector) {
+                alert("Erreur : Vecteur à modifier introuvable.");
+                cancelVectorEdit();
+                return;
+            }
+
+            // 1. Lire les nouvelles valeurs depuis l'interface d'édition
+            const newName = document.getElementById('vectorNameCoords').value.trim();
+            const newVx = parseFloat(document.getElementById('vectorCoordX').value);
+            const newVy = parseFloat(document.getElementById('vectorCoordY').value);
+            const newVz = parseFloat(document.getElementById('vectorCoordZ').value);
+            const newOriginSelection = document.getElementById('vectorOriginPoint').value;
+
+            if (!newName || isNaN(newVx) || isNaN(newVy) || isNaN(newVz) || !newOriginSelection) {
+                alert("Veuillez remplir tous les champs correctement.");
+                return;
+            }
+
+            // 2. Déterminer la nouvelle origine et la nouvelle description
+            // C'est ici que le vecteur est "converti" en un vecteur par coordonnées.
+            let newOriginPoint;
+            let newDescription = "";
+            if (newOriginSelection === 'origin') {
+                newOriginPoint = new THREE.Vector3(0, 0, 0);
+                newDescription = "Coordonnées, origine: Origine (0,0,0)";
+            } else { // La valeur est 'p_i'
+                const pointIndex = parseInt(newOriginSelection.substring(2));
+                const p = points[pointIndex];
+                if (!p) { alert("Erreur : Point d'origine introuvable."); return; }
+                newOriginPoint = new THREE.Vector3(p.x, p.y, p.z);
+                newDescription = `Coordonnées, origine: Point ${p.name}`;
+            }
+
+            // 3. Mettre à jour les propriétés de l'objet vecteur
+            vector.name = newName;
+            vector.origin.copy(newOriginPoint);
+            vector.originalVector.set(newVx, newVy, newVz);
+            vector.description = newDescription; // On met à jour la description pour refléter la conversion !
+
+            // 4. Mettre à jour l'objet 3D (ArrowHelper)
+            // Le plus simple et le plus sûr est de le supprimer et de le recréer.
+            if (vector.arrowHelper) {
+                scene.remove(vector.arrowHelper);
+            }
+
+            const length = vector.originalVector.length();
+            if (length > 1e-6) { // Éviter de créer un vecteur de longueur nulle
+                const newDirection = vector.originalVector.clone().normalize();
+                vector.arrowHelper = new THREE.ArrowHelper(newDirection, vector.origin, length, 0xffa500, 0.4, 0.2);
+                vector.arrowHelper.visible = vector.isVisible;
+                scene.add(vector.arrowHelper);
+            } else {
+                vector.arrowHelper = null; // Le vecteur est nul, pas d'objet 3D
+            }
+
+            // 5. Réinitialiser l'interface et mettre à jour les listes
+            cancelVectorEdit(); // Nettoie l'interface d'édition
+            updateVectorList(); // Met à jour la liste des vecteurs existants
+            updateSelects();    // S'assure que toutes les listes sont à jour
+        }
+
+        function cancelVectorEdit() {
+            // 1. Nettoyer les champs de saisie
+            document.getElementById('vectorNameCoords').value = '';
+            document.getElementById('vectorCoordX').value = '';
+            document.getElementById('vectorCoordY').value = '';
+            document.getElementById('vectorCoordZ').value = '';
+            document.getElementById('vectorOriginPoint').value = '';
+            document.getElementById('editVectorId').value = '';
+
+            // 2. Rétablir la visibilité par défaut des boutons
+            document.getElementById('addVectorFromPointsBtn').style.display = 'block';
+            document.getElementById('addVectorFromCoordsBtn').style.display = 'block';
+            document.getElementById('updateVectorBtn').style.display = 'none';
+            document.getElementById('cancelVectorEditBtn').style.display = 'none';
+        }
+
         init();
+        // Une fois la caméra initialisée, activez le bouton de réinitialisation qui représente l'isométrique par défaut.
+        document.addEventListener('DOMContentLoaded', () => {
+            resetCamera(document.getElementById('btnReset')); // On passe l'élément bouton de réinitialisation
+        });
     </script>
 </body>
 
