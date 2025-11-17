@@ -68,7 +68,7 @@ Cet éditeur offre une suite complète d'outils pour la géométrie dans l'espac
 
 C'est incroyablement simple :
 
-1.  Téléchargez le fichier `POO5.html`.
+1.  Téléchargez le fichier `index.html`.
 2.  Ouvrez ce fichier dans n'importe quel navigateur web moderne (Chrome, Firefox, Edge, Safari).
 
 Et c'est tout ! L'application est prête à être utilisée. Il n'y a aucune installation ni configuration requise.
