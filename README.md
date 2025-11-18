@@ -1,5 +1,3 @@
-Voici une proposition de **README.md** beaucoup plus complet, professionnel et structuré, adapté pour un dépôt GitHub public. Il met en valeur la richesse fonctionnelle de l'application et guide les futurs contributeurs.
-
 ***
 
 # 📐 Éditeur de Géométrie Vectorielle 3D
