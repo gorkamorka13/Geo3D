@@ -29,7 +29,8 @@
         top: 20px;
         left: 20px;
         background: rgba(255, 255, 255, 0.95);
-        padding: 50px 20px 20px 20px;
+        /* AUGMENTER LE PADDING HAUT POUR FAIRE DE LA PLACE AU BOUTON */
+        padding: 65px 20px 20px 20px;
         border-radius: 8px;
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
         max-height: 90vh;
@@ -39,33 +40,17 @@
         z-index: 999;
       }
 
-      #panel.hidden {
-        transform: translateX(-380px);
-      }
+#panel.hidden {
+  /* Déplace le panneau de 100% de sa largeur + sa marge de 20px */
+  transform: translateX(calc(-100% - 20px));
+}
 
       #toggleBtn {
         position: absolute;
         top: 15px;
         left: 15px;
         background: transparent;
-        color: #333;
-        padding: 5px;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 14px;
-        border: none;
         z-index: 1001;
-        width: 30px;
-        height: 30px;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        gap: 4px;
-      }
-
-      #toggleBtn:hover {
-        background: rgba(0, 0, 0, 0.05);
       }
 
       .burger-line {
@@ -74,42 +59,43 @@
         background-color: #333;
         transition: all 0.3s ease;
       }
-
       #openBtn {
         position: fixed;
         top: 20px;
         left: 20px;
         background: rgba(255, 255, 255, 0.95);
-        color: #333;
-        padding: 8px;
-        border-radius: 6px;
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-        cursor: pointer;
-        border: none;
         z-index: 998;
-        display: none;
-        width: 40px;
-        height: 40px;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        gap: 4px;
+        display: none; /* La logique d'affichage reste la même */
       }
 
       #openBtn.show {
         display: flex;
       }
 
-      #openBtn:hover {
-        background: rgba(255, 255, 255, 1);
-      }
-
       h3 {
-        margin: 0 0 15px 0;
+        /* On retire la marge qui sera maintenant gérée par flexbox */
+        margin: 0;
         font-size: 18px;
         color: #333;
       }
+      .section-header {
+        display: flex;
+        align-items: center;
+        gap: 12px; /* Espace entre l'icône et le titre */
+      }
+      .header-icon {
+        font-size: 20px;
+        width: 24px; /* Largeur fixe pour un alignement parfait */
+        text-align: center;
+        flex-shrink: 0; /* Empêche l'icône de rétrécir */
+      }
 
+      .section-header h3 {
+        font-size: 16px;
+        font-weight: bold;
+        flex-grow: 1; /* Le titre prend toute la place restante */
+      }
       .section {
         margin-bottom: 10px;
         padding-bottom: 0px;
@@ -239,10 +225,14 @@
       }
 
       /* Ligne principale (contient nom/infos et boutons) */
+      /* Ligne principale (contient nom/infos et boutons) */
       .geometry-item-main {
         display: flex;
         justify-content: space-between;
-        align-items: flex-start; /* Aligne les boutons en haut avec la première ligne de texte */
+
+        /* LA CORRECTION CLÉ EST ICI : */
+        align-items: flex-start; /* Aligne les éléments sur le haut */
+
         width: 100%;
         gap: 10px; /* Espace entre la zone de texte et les boutons */
       }
@@ -251,8 +241,10 @@
       .geometry-info {
         flex-grow: 1; /* Prend l'espace disponible */
         display: flex;
-        flex-direction: column; /* Empile le nom et les détails verticalement */
-        gap: 2px; /* Petit espace entre le nom et les détails */
+        flex-direction: row; /* Aligne les enfants horizontalement */
+        align-items: center; /* Centre verticalement le nom et les coordonnées sur la même ligne */
+        gap: 8px; /* Espace horizontal de 8px entre le nom et les coordonnées */
+        flex-wrap: wrap; /* Permet le retour à la ligne si le nom est très long */
       }
 
       .point-name,
@@ -447,19 +439,28 @@
       @media (max-width: 768px) {
         /* Le panneau prend toute la largeur et hauteur de l'écran */
         #panel {
-          width: 100%;
-          height: 100%;
-          top: 0;
-          left: 0;
-          max-height: 100vh;
-          border-radius: 0;
-          box-sizing: border-box;
-          /* Assure que le padding est inclus dans la largeur */
+          position: absolute;
+          top: 20px;
+          left: 20px;
+          background: rgba(255, 255, 255, 0.95);
+          padding: 65px 20px 20px 20px;
+          border-radius: 8px;
+          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+          max-height: 90vh;
+          overflow-y: auto;
+
+          /* --- MODIFICATIONS PRINCIPALES --- */
+          width: fit-content; /* Le panneau s'adapte à son contenu */
+          min-width: 280px; /* On garde une largeur minimale pour une bonne lisibilité */
+          /* --- FIN DES MODIFICATIONS --- */
+
+          transition: transform 0.3s ease;
+          z-index: 999;
         }
 
         /* Ajuste la position du panneau une fois caché */
         #panel.hidden {
-          transform: translateX(-100%);
+          transform: translateX(calc(-100% - 20px));
         }
 
         /* On s'assure que le bouton "Ouvrir" est bien visible */
@@ -501,6 +502,29 @@
         top: -100px; /* Le fait "monter" hors de l'écran */
         pointer-events: none; /* Empêche de cliquer dessus quand il est invisible */
       }
+      #panel.no-transition {
+        transition: none;
+      }
+      /* --- NOUVEAU : Style unifié pour les boutons burger --- */
+      .burger-btn {
+        width: 40px;
+        height: 40px;
+        padding: 8px; /* Assure un espacement interne cohérent */
+        border-radius: 6px;
+        cursor: pointer;
+        border: none;
+
+        /* Utilisation de flexbox pour centrer parfaitement les lignes */
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .burger-btn:hover {
+        background-color: rgba(0, 0, 0, 0.05) !important; /* Effet de survol unifié */
+      }
     </style>
   </head>
 
@@ -508,7 +532,7 @@
     <div id="splashScreen" class="splash-hidden">
       <span id="splashMessage"></span>
     </div>
-    <button id="openBtn" onclick="togglePanel()">
+    <button id="openBtn" class="burger-btn show" onclick="togglePanel()">
       <span class="burger-line"></span>
       <span class="burger-line"></span>
       <span class="burger-line"></span>
@@ -558,13 +582,12 @@
 
       <!-- FIN NOUVEAU -->
     </div>
-    <div id="panel">
-      <button id="toggleBtn" onclick="togglePanel()">
+    <div id="panel" class="hidden">
+      <button id="toggleBtn" class="burger-btn" onclick="togglePanel()">
         <span class="burger-line"></span>
         <span class="burger-line"></span>
         <span class="burger-line"></span>
       </button>
-
       <div class="section collapsible collapsed">
         <div class="section-header">
           <h3 style="font-size: 16px">💾 Gestion des Scènes</h3>
@@ -1437,16 +1460,24 @@
       let wasPanningOrZooming = false; // Pour distinguer un geste caméra d'un tap
       let currentConstructionObjects = [];
       let splashTimer = null;
-      const HIGHLIGHT_COLOR = new THREE.Color(0xffcc00);
-      // Au début de votre fichier
-      /**
-       * Calcule le Plus Grand Commun Diviseur (PGCD) de deux nombres.
-       */
+      let blockNextClick = false; // Variable pour bloquer le "clic fantôme" sur mobile
+      const HIGHLIGHT_COLOR = 0xffff00; // Jaune vif pour la surbrillance
+
       function gcd(a, b) {
         a = Math.abs(a);
         b = Math.abs(b);
         return b === 0 ? a : gcd(b, a % b);
       }
+      // ... après la ligne let splashTimer = null;
+
+      const swipeState = {
+        isSwiping: false, // VRAI si un geste de balayage du panneau est en cours
+        lock: null, // deviendra 'horizontal' ou 'vertical'
+        startX: 0,
+        startY: 0,
+        panelStartTranslateX: 0,
+      };
+      const SWIPE_EDGE_ZONE = 40; // Zone de détection sur le bord gauche
 
       /**
        * Calcule le PGCD de trois nombres.
@@ -1501,330 +1532,318 @@
 
       let rightClickedObjectInstance = null;
 
-      // =====================================================================================
-      // START: GESTION DES ÉVÉNEMENTS FINALE ET CORRIGÉE
-      // =====================================================================================
+     // =====================================================================================
+// START: GESTION DES ÉVÉNEMENTS FINALE ET VÉRIFIÉE
+// =====================================================================================
 
-      // --- Variables globales pour la logique des interactions ---
-      let longPressTimer = null;
-      const LONG_PRESS_DURATION = 500;
-      let touchStartPosition = { x: 0, y: 0 };
-      const TOUCH_MOVE_TOLERANCE = 20;
+// --- Variables globales pour la logique des interactions ---
+let longPressTimer = null;
+const LONG_PRESS_DURATION = 500;
+let touchStartPosition = { x: 0, y: 0 };
+const TOUCH_MOVE_TOLERANCE = 10; // Tolérance en pixels pour différencier un tap d'un drag
 
-      /**
-       * Configure les écouteurs d'événements en fonction de la taille de l'écran.
-       */
-      /**
-       * Configure les écouteurs d'événements de manière universelle.
-       * VERSION CORRIGÉE ET SIMPLIFIÉE
-       */
-      function setupEventListeners() {
-        const canvas = renderer.domElement;
+function setupEventListeners() {
+    const canvas = renderer.domElement;
+    const panel = document.getElementById('panel');
 
-        // 1. Nettoyage systématique des anciens écouteurs
-        canvas.removeEventListener("contextmenu", onRightClick);
-        canvas.removeEventListener("click", onObjectClick);
-        canvas.removeEventListener("touchstart", onTouchStart);
-        canvas.removeEventListener("touchmove", onTouchMove);
-        canvas.removeEventListener("touchend", onTouchEnd);
+    canvas.addEventListener("contextmenu", onRightClick);
+    canvas.addEventListener("click", onObjectClick);
+    canvas.addEventListener("mousedown", onMouseDown);
+    canvas.addEventListener("mousemove", onMouseMove);
+    canvas.addEventListener("mouseup", onMouseUp);
+    canvas.addEventListener("wheel", onWheel);
 
-        // 2. Écouteurs COMMUNS pour le mouvement de la caméra (inchangé)
-        canvas.addEventListener("mousedown", onMouseDown);
-        canvas.addEventListener("mousemove", onMouseMove);
-        canvas.addEventListener("mouseup", onMouseUp);
-        canvas.addEventListener("wheel", onWheel);
-        window.addEventListener("resize", onWindowResize);
-        window.addEventListener("keydown", (event) => {
-          // On vérifie si la touche pressée est bien "Escape"
-          if (event.key === "Escape") {
-            // Si le panneau est ouvert, on le ferme.
-            if (panelOpen) {
-              togglePanel();
-            }
-            // Si un objet est sélectionné, on le désélectionne.
-            if (selectedObjectInstance) {
-              deselectCurrentObject();
-              cancelEdit(); // Annule aussi l'édition d'un point
-              cancelVectorEdit(); // Annule aussi l'édition d'un vecteur
-            }
-          }
-        });
-        // 3. Écouteur UNIVERSEL pour fermer le menu (inchangé)
-        document.addEventListener("mousedown", (e) => {
-          const menu = document.getElementById("contextMenu");
-          if (menu.style.display === "block" && !menu.contains(e.target)) {
+    document.addEventListener("touchstart", handleTouchStart, { passive: false });
+    document.addEventListener("touchmove", handleTouchMove, { passive: false });
+    document.addEventListener("touchend", handleTouchEnd);
+
+    window.addEventListener("resize", onWindowResize);
+    window.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
             hideContextMenu();
-          }
-        });
-        document.getElementById("contextMenu").addEventListener("mousedown", (e) => e.stopPropagation());
+            if (panelOpen) togglePanel();
+            if (selectedObjectInstance) {
+                deselectCurrentObject();
+                cancelEdit();
+                cancelVectorEdit();
+            }
+        }
+    });
 
-        // 4. Activation de TOUS les écouteurs d'interaction, sans condition.
-        // Le navigateur se chargera d'appeler le bon en fonction de l'action de l'utilisateur.
-        console.log("Activation de tous les écouteurs (clic, clic droit, tactile).");
-        canvas.addEventListener("contextmenu", onRightClick); // Pour le clic droit
-        canvas.addEventListener("click", onObjectClick); // Pour le clic gauche
-        canvas.addEventListener("touchstart", onTouchStart, { passive: false }); // Pour le début du contact tactile
-        canvas.addEventListener("touchmove", onTouchMove, { passive: false }); // Pour le glissement tactile
-        canvas.addEventListener("touchend", onTouchEnd); // Pour la fin du contact tactile
-      }
-      // =======================================================
-      // FONCTIONS D'INTERACTION
-      // =======================================================
+    document.addEventListener("mousedown", (e) => {
+        const menu = document.getElementById("contextMenu");
+        if (menu.style.display === "block" && !menu.contains(e.target)) {
+            hideContextMenu();
+        }
+    });
 
-      /**
-       * Gère le CLIC DROIT (Desktop) pour ouvrir le menu.
-       */
-      function onRightClick(event) {
-        event.preventDefault(); // Bloque le menu natif
-        event.stopPropagation(); // Empêche d'autres écouteurs de se déclencher
-        findObjectAndShowMenu(event.clientX, event.clientY);
-      }
+    document.getElementById("contextMenu").addEventListener("mousedown", (e) => e.stopPropagation());
 
-      /**
-       * Gère le CLIC GAUCHE (Desktop) pour la sélection d'objet.
-       */
-      function onObjectClick(event) {
-        if (wasDragged) return;
-        performRaycastSelection(event.clientX, event.clientY);
-      }
+    const stopPropagation = (e) => e.stopPropagation();
+    panel.addEventListener('mousedown', stopPropagation);
+    panel.addEventListener('wheel', stopPropagation);
+    panel.addEventListener('contextmenu', stopPropagation);
+}
 
-      /**
-       * Gère le DÉBUT du contact (Tactile) pour l'appui long.
-       */
-      function onTouchStart(e) {
-        // Empêche le défilement de la page pendant l'interaction 3D
-        e.preventDefault();
+function onRightClick(event) {
+    event.preventDefault();
+    findObjectAndShowMenu(event.clientX, event.clientY);
+}
 
-        // Réinitialiser les états
-        wasDragged = false;
-        wasPanningOrZooming = false;
+function onObjectClick(event) {
+    if (blockNextClick) {
+        blockNextClick = false;
+        return;
+    }
+    if (wasDragged) return;
+    performRaycastSelection(event.clientX, event.clientY);
+}
 
-        // Geste à un doigt (Rotation ou Tap/Appui long)
-        if (e.touches.length === 1) {
-          isDragging = true;
-          const touch = e.touches[0];
-          previousMousePosition = { x: touch.clientX, y: touch.clientY };
-          touchStartPosition = { x: touch.clientX, y: touch.clientY }; // Pour la sélection/menu
+function handleTouchStart(e) {
+    wasDragged = false;
+    wasPanningOrZooming = false;
+    clearTimeout(longPressTimer);
+    longPressTimer = null;
+    const touch = e.touches[0];
 
-          // Démarre le minuteur pour l'appui long (logique existante)
-          longPressTimer = setTimeout(() => {
+    const canStartOpening = !panelOpen && touch.clientX < SWIPE_EDGE_ZONE;
+    const canStartClosing = panelOpen && e.target.closest("#panel");
+    if (canStartOpening || canStartClosing) {
+        swipeState.isSwiping = true;
+        swipeState.lock = null;
+        swipeState.startX = touch.clientX;
+        swipeState.startY = touch.clientY;
+        const panel = document.getElementById("panel");
+        const panelRect = panel.getBoundingClientRect();
+        swipeState.panelStartTranslateX = panel.classList.contains("hidden") ? -panelRect.width : 0;
+        return;
+    }
+
+    swipeState.isSwiping = false;
+
+    if (e.touches.length === 1) {
+        isDragging = true;
+        previousMousePosition = { x: touch.clientX, y: touch.clientY };
+        touchStartPosition = { x: touch.clientX, y: touch.clientY };
+        longPressTimer = setTimeout(() => {
             findObjectAndShowMenu(touchStartPosition.x, touchStartPosition.y);
             longPressTimer = null;
-            isDragging = false; // Annule le glisser si un menu s'ouvre
-          }, LONG_PRESS_DURATION);
+            isDragging = false;
+        }, LONG_PRESS_DURATION);
+    } else if (e.touches.length >= 2) {
+        isPanning = true;
+        wasPanningOrZooming = true;
+        clearTimeout(longPressTimer);
+        longPressTimer = null;
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        initialPinchDistance = Math.sqrt(dx * dx + dy * dy);
+        previousMousePosition = { x: (e.touches[0].clientX + e.touches[1].clientX) / 2, y: (e.touches[0].clientY + e.touches[1].clientY) / 2 };
+    }
+}
 
-          // Geste à deux doigts (Panoramique et Zoom)
-        } else if (e.touches.length === 2) {
-          isPanning = true;
-          wasPanningOrZooming = true; // Indique qu'un geste caméra a commencé
-          clearTimeout(longPressTimer); // Annule un potentiel appui long
-          longPressTimer = null;
-
-          // Calcul de la distance pour le zoom
-          const dx = e.touches[0].clientX - e.touches[1].clientX;
-          const dy = e.touches[0].clientY - e.touches[1].clientY;
-          initialPinchDistance = Math.sqrt(dx * dx + dy * dy);
-
-          // Calcul du point central pour le panoramique
-          previousMousePosition = {
-            x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
-            y: (e.touches[0].clientY + e.touches[1].clientY) / 2,
-          };
-        } else {
-          // Si 3 doigts ou plus, on annule tout
-          isDragging = false;
-          isPanning = false;
-          clearTimeout(longPressTimer);
-          longPressTimer = null;
+function handleTouchMove(e) {
+    if (swipeState.isSwiping) {
+        const touch = e.touches[0];
+        const deltaX = touch.clientX - swipeState.startX;
+        const deltaY = touch.clientY - swipeState.startY;
+        if (!swipeState.lock) {
+            swipeState.lock = Math.abs(deltaX) > Math.abs(deltaY) ? "horizontal" : "vertical";
         }
-      }
-      /**
-       * Gère le MOUVEMENT (Tactile) pour annuler l'appui long.
-       */
-      function onTouchMove(e) {
-        e.preventDefault();
+        if (swipeState.lock === "horizontal") {
+            e.preventDefault();
+            const panel = document.getElementById("panel");
+            panel.classList.add("no-transition");
+            let newX = swipeState.panelStartTranslateX + deltaX;
+            newX = Math.max(-panel.offsetWidth, Math.min(0, newX));
+            panel.style.transform = `translateX(${newX}px)`;
+        }
+        return;
+    }
 
-        // Annulation de la sélection/menu si le doigt bouge trop
-        if (longPressTimer) {
-          const touch = e.touches[0];
-          const deltaX = Math.abs(touch.clientX - touchStartPosition.x);
-          const deltaY = Math.abs(touch.clientY - touchStartPosition.y);
-          if (deltaX > 5 || deltaY > 5) {
+    const touch = e.touches[0];
+    if (longPressTimer) {
+        const moveX = Math.abs(touch.clientX - touchStartPosition.x);
+        const moveY = Math.abs(touch.clientY - touchStartPosition.y);
+        if (moveX > TOUCH_MOVE_TOLERANCE || moveY > TOUCH_MOVE_TOLERANCE) {
             clearTimeout(longPressTimer);
             longPressTimer = null;
-          }
         }
+    }
 
-        // Geste de rotation à un doigt
-        if (e.touches.length === 1 && isDragging) {
-          const touch = e.touches[0];
-          const deltaX = touch.clientX - previousMousePosition.x;
-          const deltaY = touch.clientY - previousMousePosition.y;
-          wasDragged = true; // Marque que c'est un glissement, pas un tap
+    if (isDragging) {
+        e.preventDefault();
+        wasDragged = true;
+        const dX = touch.clientX - previousMousePosition.x;
+        const dY = touch.clientY - previousMousePosition.y;
+        cameraRotation.y += dX * 0.005;
+        cameraRotation.x += dY * 0.005;
+        cameraRotation.x = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, cameraRotation.x));
+        updateCameraPosition();
+        previousMousePosition = { x: touch.clientX, y: touch.clientY };
+    } else if (isPanning && e.touches.length >= 2) {
+        e.preventDefault();
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        const pinch = Math.sqrt(dx*dx + dy*dy);
+        zoomCamera((initialPinchDistance - pinch) * 0.1);
+        initialPinchDistance = pinch;
+        const mid = { x: (e.touches[0].clientX + e.touches[1].clientX) / 2, y: (e.touches[0].clientY + e.touches[1].clientY) / 2 };
+        panCamera(mid.x - previousMousePosition.x, mid.y - previousMousePosition.y);
+        previousMousePosition = mid;
+    }
+}
 
-          // Réutilisation de la logique de la souris
-          cameraRotation.y += deltaX * 0.005;
-          cameraRotation.x += deltaY * 0.005;
-          cameraRotation.x = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, cameraRotation.x));
-          updateCameraPosition();
-          previousMousePosition = { x: touch.clientX, y: touch.clientY };
-
-          // Geste de panoramique/zoom à deux doigts
-        } else if (e.touches.length === 2 && isPanning) {
-          // Calcul du zoom
-          const dx = e.touches[0].clientX - e.touches[1].clientX;
-          const dy = e.touches[0].clientY - e.touches[1].clientY;
-          const newPinchDistance = Math.sqrt(dx * dx + dy * dy);
-          const zoomDelta = initialPinchDistance - newPinchDistance;
-          zoomCamera(zoomDelta * 0.1); // Le multiplicateur ajuste la sensibilité
-          initialPinchDistance = newPinchDistance;
-
-          // Calcul du panoramique
-          const currentMidpoint = {
-            x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
-            y: (e.touches[0].clientY + e.touches[1].clientY) / 2,
-          };
-          const panDeltaX = currentMidpoint.x - previousMousePosition.x;
-          const panDeltaY = currentMidpoint.y - previousMousePosition.y;
-          panCamera(panDeltaX, panDeltaY);
-          previousMousePosition = currentMidpoint;
+function handleTouchEnd(e) {
+    if (swipeState.isSwiping) {
+        if (swipeState.lock === "horizontal") {
+            const panel = document.getElementById("panel");
+            panel.classList.remove("no-transition");
+            panel.style.transform = "";
+            const panelRect = panel.getBoundingClientRect();
+            if (panelRect.left > -panel.offsetWidth / 2) {
+                panelOpen = true;
+                panel.classList.remove("hidden");
+                document.getElementById("openBtn").classList.remove("show");
+            } else {
+                panelOpen = false;
+                panel.classList.add("hidden");
+                document.getElementById("openBtn").classList.add("show");
+            }
         }
-      }
-      /**
-       * Gère la FIN du contact (Tactile) pour détecter un appui court (tap).
-       */
-      function onTouchEnd(e) {
-        // Si un minuteur d'appui long est actif, cela signifie que le doigt a été
-        // relâché avant la fin de la durée, et sans avoir trop bougé.
+    } else {
         if (longPressTimer) {
-          clearTimeout(longPressTimer);
-          longPressTimer = null;
-          // On effectue une sélection seulement si ce n'était pas un geste à deux doigts.
-          if (!wasPanningOrZooming) {
+            clearTimeout(longPressTimer);
+            e.preventDefault();
             performRaycastSelection(touchStartPosition.x, touchStartPosition.y);
-          }
         }
+    }
+    swipeState.isSwiping = false;
+    swipeState.lock = null;
+    isDragging = false;
+    isPanning = false;
+    longPressTimer = null;
+}
 
-        // Réinitialisation finale des états
-        isDragging = false;
-        isPanning = false;
-        wasPanningOrZooming = false; // Important pour le prochain contact
-      }
-      // =======================================================
-      // FONCTIONS DE MENU (COMMUNES)
-      // =======================================================
+function getIntersectionResult(x, y) {
+    mouse.x = (x / window.innerWidth) * 2 - 1;
+    mouse.y = -(y / window.innerHeight) * 2 + 1;
+    raycaster.setFromCamera(mouse, camera);
 
-      /**
-       * Cache le menu contextuel.
-       */
-      function hideContextMenu() {
-        const menu = document.getElementById("contextMenu");
-        if (menu) menu.style.display = "none";
-      }
+    const meshes = [
+        ...geometryManager.points.map((p) => p.mesh),
+        ...geometryManager.lines.map((l) => l.mesh),
+        ...geometryManager.planes.map((p) => p.mesh),
+        ...geometryManager.vectors.map((v) => v.arrowHelper).filter(Boolean).flatMap((a) => [a.line, a.cone]),
+    ];
+    const intersects = raycaster.intersectObjects(meshes);
+    return intersects.length > 0 ? intersects[0] : null;
+}
 
-      /**
-       * Trouve un objet via raycasting et appelle la fonction pour peupler et afficher le menu.
-       */
-      function findObjectAndShowMenu(x, y) {
-        hideContextMenu(); // Toujours cacher un menu précédent
+function performRaycastSelection(x, y) {
+    const intersection = getIntersectionResult(x, y);
+    if (intersection && intersection.object.userData.instance) {
+        // La fonction handleSelection attend le MAILLAGE cliqué
+        handleSelection(intersection.object);
+    } else {
+        deselectCurrentObject();
+        cancelEdit();
+        cancelVectorEdit();
+    }
+}
+/**
+ * Lance un rayon et retourne l'instance de l'objet trouvé, ou null.
+ * C'est la fonction centrale pour toute détection d'objet.
+ */
+function getObjectAtCoordinates(x, y) {
+    mouse.x = (x / window.innerWidth) * 2 - 1;
+    mouse.y = -(y / window.innerHeight) * 2 + 1;
+    raycaster.setFromCamera(mouse, camera);
 
-        mouse.x = (x / window.innerWidth) * 2 - 1;
-        mouse.y = -(y / window.innerHeight) * 2 + 1;
-        raycaster.setFromCamera(mouse, camera);
+    const meshes = [
+        ...geometryManager.points.map((p) => p.mesh),
+        ...geometryManager.lines.map((l) => l.mesh),
+        ...geometryManager.planes.map((p) => p.mesh),
+        ...geometryManager.vectors.map((v) => v.arrowHelper).filter(Boolean).flatMap((a) => [a.line, a.cone]),
+    ];
+    const intersects = raycaster.intersectObjects(meshes);
 
-        const meshes = [
-          ...geometryManager.points.map((p) => p.mesh),
-          ...geometryManager.lines.map((l) => l.mesh),
-          ...geometryManager.planes.map((p) => p.mesh),
-          ...geometryManager.vectors
-            .map((v) => v.arrowHelper)
-            .filter(Boolean)
-            .flatMap((a) => [a.line, a.cone]),
-        ];
-        const intersects = raycaster.intersectObjects(meshes);
+    if (intersects.length > 0) {
+        return intersects[0].object.userData.instance || null;
+    }
+    return null;
+}
 
-        if (intersects.length > 0) {
-          const instance = intersects[0].object.userData.instance;
-          if (instance) {
-            populateAndShowContextMenu(x, y, instance);
-          }
-        }
-      }
+/**
+ * Gère la sélection d'un objet (appelée par clic ou tap).
+ */
+function performRaycastSelection(x, y) {
+    const instance = getObjectAtCoordinates(x, y);
+    if (instance) {
+        handleSelection(instance.mesh); // handleSelection attend le mesh
+    } else {
+        deselectCurrentObject();
+        cancelEdit();
+        cancelVectorEdit();
+    }
+}
 
-      /**
-       * Remplit le menu, le positionne intelligemment et l'affiche.
-       */
-      function populateAndShowContextMenu(x, y, instance) {
-        const menu = document.getElementById("contextMenu");
-        const menuItemsContainer = document.getElementById("contextMenuItems");
-
-        menuItemsContainer.innerHTML = "";
-
-        const createAction = (action, text) => `<li onclick="${action}; hideContextMenu();">${text}</li>`;
-
-        if (instance instanceof Point) {
-          const index = geometryManager.points.indexOf(instance);
-          menuItemsContainer.innerHTML =
+/**
+ * Trouve un objet et affiche le menu contextuel (appelée par clic droit ou appui long).
+ */
+function findObjectAndShowMenu(x, y) {
+    hideContextMenu();
+    const intersection = getIntersectionResult(x, y);
+    if (intersection && intersection.object.userData.instance) {
+        // La fonction populateAndShowContextMenu attend L'INSTANCE de l'objet
+        populateAndShowContextMenu(x, y, intersection.object.userData.instance);
+    }
+}
+function populateAndShowContextMenu(x, y, instance) {
+    const menu = document.getElementById("contextMenu");
+    const menuItemsContainer = document.getElementById("contextMenuItems");
+    menuItemsContainer.innerHTML = "";
+    const createAction = (action, text) => `<li onclick="${action}; hideContextMenu();">${text}</li>`;
+    if (instance instanceof Point) {
+        const index = geometryManager.points.indexOf(instance);
+        menuItemsContainer.innerHTML =
             createAction(`editPoint(${index})`, '<i class="fas fa-pencil-alt"></i> Modifier') +
             createAction(`removePoint(${index})`, '<i class="fas fa-trash-alt"></i> Supprimer');
-        } else if (instance instanceof Vector) {
-          menuItemsContainer.innerHTML =
+    } else if (instance instanceof Vector) {
+        menuItemsContainer.innerHTML =
             createAction(`editVector(${instance.id})`, '<i class="fas fa-pencil-alt"></i> Modifier') +
-            createAction(
-              `toggleVectorVisibility(${instance.id})`,
-              `<i class="fas fa-eye"></i> ${instance.isVisible ? "Cacher" : "Afficher"}`
-            ) +
+            createAction(`toggleVectorVisibility(${instance.id})`, `<i class="fas fa-eye"></i> ${instance.isVisible ? "Cacher" : "Afficher"}`) +
             createAction(`removeVectorById(${instance.id})`, '<i class="fas fa-trash-alt"></i> Supprimer');
-        } else if (instance instanceof Line3D) {
-          // --- MODIFICATION ICI ---
-          menuItemsContainer.innerHTML =
+    } else if (instance instanceof Line3D) {
+        menuItemsContainer.innerHTML =
             createAction(`editLine(${instance.id})`, '<i class="fas fa-pencil-alt"></i> Modifier / Voir') +
-            createAction(
-              `toggleStraightLineVisibility(${instance.id})`,
-              `<i class="fas fa-eye"></i> ${instance.isVisible ? "Cacher" : "Afficher"}`
-            ) +
+            createAction(`toggleStraightLineVisibility(${instance.id})`, `<i class="fas fa-eye"></i> ${instance.isVisible ? "Cacher" : "Afficher"}`) +
             createAction(`removeStraightLineById(${instance.id})`, '<i class="fas fa-trash-alt"></i> Supprimer');
-          // --- FIN DE LA MODIFICATION ---
-        } else if (instance instanceof Plane) {
-          const normalVector = geometryManager.vectors.find((v) => v.parentPlaneId === instance.id && v.isNormalVector);
-          // --- MODIFICATION ICI ---
-          menuItemsContainer.innerHTML =
+    } else if (instance instanceof Plane) {
+        const normalVector = geometryManager.vectors.find((v) => v.parentPlaneId === instance.id && v.isNormalVector);
+        menuItemsContainer.innerHTML =
             createAction(`editPlane(${instance.id})`, '<i class="fas fa-pencil-alt"></i> Modifier / Voir') +
-            createAction(
-              `togglePlaneVisibility(${instance.id})`,
-              `<i class="fas fa-eye"></i> ${instance.isVisible ? "Cacher" : "Afficher"}`
-            ) +
-            createAction(
-              `toggleNormalVector(${instance.id})`,
-              `<i class="fas fa-ruler-vertical"></i> ${normalVector ? "Masquer Vn" : "Afficher Vn"}`
-            ) +
+            createAction(`togglePlaneVisibility(${instance.id})`, `<i class="fas fa-eye"></i> ${instance.isVisible ? "Cacher" : "Afficher"}`) +
+            createAction(`toggleNormalVector(${instance.id})`, `<i class="fas fa-ruler-vertical"></i> ${normalVector ? "Masquer Vn" : "Afficher Vn"}`) +
             createAction(`removePlaneById(${instance.id})`, '<i class="fas fa-trash-alt"></i> Supprimer');
-          // --- FIN DE LA MODIFICATION ---
-        }
+    }
+    menu.style.visibility = "hidden";
+    menu.style.display = "block";
+    const menuWidth = menu.offsetWidth;
+    const menuHeight = menu.offsetHeight;
+    menu.style.display = "none";
+    menu.style.visibility = "visible";
+    let finalX = x; let finalY = y;
+    if (x + menuWidth > window.innerWidth) finalX = window.innerWidth - menuWidth - 5;
+    if (y + menuHeight > window.innerHeight) finalY = window.innerHeight - menuHeight - 5;
+    menu.style.left = `${finalX}px`;
+    menu.style.top = `${finalY}px`;
+    menu.style.display = "block";
+}
 
-        // Mesure et positionnement intelligent (inchangé)
-        menu.style.visibility = "hidden";
-        menu.style.display = "block";
-        const menuWidth = menu.offsetWidth;
-        const menuHeight = menu.offsetHeight;
-        menu.style.display = "none";
-        menu.style.visibility = "visible";
-
-        let finalX = x;
-        let finalY = y;
-        if (x + menuWidth > window.innerWidth) finalX = window.innerWidth - menuWidth - 5;
-        if (y + menuHeight > window.innerHeight) finalY = window.innerHeight - menuHeight - 5;
-
-        menu.style.left = `${finalX}px`;
-        menu.style.top = `${finalY}px`;
-        menu.style.display = "block";
-      }
-      // =====================================================================================
-      // END: GESTION DES ÉVÉNEMENTS FINALE ET CORRIGÉE
-      // =====================================================================================
-      // Elle est utilisée par le tap et le clic gauche
-      // function performRaycastSelection(screenX, screenY) { ... }
-
+// =====================================================================================
+// END: GESTION DES ÉVÉNEMENTS
+// =====================================================================================
       function createAxes() {
         const axisLength = 10;
         const axisRadius = 0.05;
@@ -2163,7 +2182,7 @@
         const y_from_ui = parseFloat(document.getElementById("pointY").value); // Profondeur
         const z_from_ui = parseFloat(document.getElementById("pointZ").value); // Hauteur
         if (!n || isNaN(x) || isNaN(y_from_ui) || isNaN(z_from_ui)) {
-          alert("Données invalides.");
+          showSplashScreen("Données invalides.");
           return;
         }
         // Le constructeur Point attend un nom et un Vector3, pas des coordonnées séparées
@@ -2223,7 +2242,7 @@
         // --- FIN DE LA CORRECTION ---
 
         if (!n || isNaN(x) || isNaN(y_from_ui) || isNaN(z_from_ui)) {
-          alert("Données invalides.");
+          showSplashScreen("Données invalides.");
           return;
         }
 
@@ -2231,7 +2250,7 @@
         // On vérifie si le nouveau nom est déjà pris par un AUTRE objet
         const existingObject = geometryManager.findObjectByName(n);
         if (existingObject && existingObject.id !== p.id) {
-          alert(`Le nom "${n}" est déjà utilisé. Veuillez en choisir un autre.`);
+          showSplashScreen(`Le nom "${n}" est déjà utilisé. Veuillez en choisir un autre.`);
           return;
         }
         // --- FIN DE L'AJOUT ---
@@ -2313,7 +2332,7 @@
       function addStraightLine() {
         const [i1, i2] = [document.getElementById("lineStart").value, document.getElementById("lineEnd").value];
         if (i1 === "" || i2 === "" || i1 === i2) {
-          alert("Sélectionnez deux points différents.");
+          showSplashScreen("Sélectionnez deux points différents.");
           return;
         }
         const p1 = geometryManager.points[i1],
@@ -2345,7 +2364,7 @@
         const lines = equationsText.split("\n").filter((line) => line.trim() !== "");
 
         if (lines.length < 3) {
-          alert("Veuillez entrer les 3 équations paramétriques (x, y, et z).");
+          showSplashScreen("Veuillez entrer les 3 équations paramétriques (x, y, et z).");
           return;
         }
 
@@ -2357,7 +2376,7 @@
           const axisChar = line.trim().charAt(0).toLowerCase();
           if (axisChar !== "x" && axisChar !== "y" && axisChar !== "z") continue;
           if (axesFound[axisChar]) {
-            alert(`L'équation pour l'axe '${axisChar}' est définie plusieurs fois.`);
+            showSplashScreen(`L'équation pour l'axe '${axisChar}' est définie plusieurs fois.`);
             return;
           }
 
@@ -2384,12 +2403,12 @@
           let pointCoord = parseFloat(lineWithoutT.trim() || "0");
 
           if (isNaN(pointCoord) || isNaN(vectorComp)) {
-            alert(`Erreur de syntaxe dans l'équation pour l'axe '${axisChar}'.`);
+            showSplashScreen(`Erreur de syntaxe dans l'équation pour l'axe '${axisChar}'.`);
             return;
           }
 
           if (geometryManager.lines.some((l) => l.name === name)) {
-            alert(`Le nom de droite "${name}" est déjà utilisé. Veuillez en choisir un autre.`);
+            showSplashScreen(`Le nom de droite "${name}" est déjà utilisé. Veuillez en choisir un autre.`);
             return;
           }
 
@@ -2399,7 +2418,7 @@
         }
 
         if (!axesFound.x || !axesFound.y || !axesFound.z) {
-          alert("Les équations pour x, y, et z doivent toutes être présentes.");
+          showSplashScreen("Les équations pour x, y, et z doivent toutes être présentes.");
           return;
         }
 
@@ -2407,7 +2426,7 @@
         const directorVector = new THREE.Vector3(vector.x, vector.y, vector.z);
 
         if (directorVector.lengthSq() < 1e-8) {
-          alert("Le vecteur directeur ne peut pas être nul.");
+          showSplashScreen("Le vecteur directeur ne peut pas être nul.");
           return;
         }
 
@@ -2455,7 +2474,7 @@
 
         // --- Vérification du nom unique ---
         if (geometryManager.planes.some((p) => p.name === n)) {
-          alert(`Le nom de plan "${n}" est déjà utilisé. Veuillez en choisir un autre.`);
+          showSplashScreen(`Le nom de plan "${n}" est déjà utilisé. Veuillez en choisir un autre.`);
           return;
         }
         // --- Fin de la vérification ---
@@ -2464,7 +2483,7 @@
           (id) => document.getElementById(id).value
         );
         if (i1 === "" || i2 === "" || i3 === "" || i1 === i2 || i1 === i3 || i2 === i3) {
-          alert("Sélectionnez trois points distincts.");
+          showSplashScreen("Sélectionnez trois points distincts.");
           return;
         }
         const [p1, p2, p3] = [i1, i2, i3].map((i) => geometryManager.points[i].position);
@@ -2473,7 +2492,7 @@
           new THREE.Vector3().subVectors(p3, p1)
         );
         if (norm.lengthSq() < 1e-6) {
-          alert("Points colinéaires.");
+          showSplashScreen("Points colinéaires.");
           return;
         }
 
@@ -2504,7 +2523,7 @@
       function addPlaneFromEquation() {
         let equationStr = document.getElementById("planeEquationInput").value.trim();
         if (!equationStr) {
-          alert("Veuillez entrer une équation de plan.");
+          showSplashScreen("Veuillez entrer une équation de plan.");
           return;
         }
 
@@ -2541,12 +2560,12 @@
             d = new Function("return " + constantStr)();
           }
         } catch (e) {
-          alert("Erreur de syntaxe dans la constante de l'équation.");
+          showSplashScreen("Erreur de syntaxe dans la constante de l'équation.");
           return;
         }
 
         if (isNaN(a) || isNaN(b) || isNaN(c) || isNaN(d)) {
-          alert("Syntaxe de l'équation invalide.");
+          showSplashScreen("Syntaxe de l'équation invalide.");
           return;
         }
 
@@ -2557,7 +2576,7 @@
         // --- FIN DE LA CORRECTION CRUCIALE ---
 
         if (normal.lengthSq() < 1e-8) {
-          alert("L'équation est invalide (le vecteur normal ne peut pas être nul).");
+          showSplashScreen("L'équation est invalide (le vecteur normal ne peut pas être nul).");
           return;
         }
 
@@ -2566,7 +2585,7 @@
         else if (Math.abs(b) > 1e-6) pointOnPlane = new THREE.Vector3(0, 0, -d / b); // Profondeur (z Three.js)
         else if (Math.abs(c) > 1e-6) pointOnPlane = new THREE.Vector3(0, -d / c, 0); // Hauteur (y Three.js)
         else {
-          alert("Erreur logique inattendue.");
+          showSplashScreen("Erreur logique inattendue.");
           return;
         }
 
@@ -2618,7 +2637,7 @@
       function addVectorFromPoints() {
         const [sIdx, eIdx] = ["vectorStartPoint", "vectorEndPoint"].map((id) => document.getElementById(id).value);
         if (sIdx === "" || eIdx === "" || sIdx === eIdx) {
-          alert("Sélectionnez deux points différents.");
+          showSplashScreen("Sélectionnez deux points différents.");
           return;
         }
         const pS = geometryManager.points[sIdx],
@@ -2639,7 +2658,7 @@
         // On vérifie si un vecteur portant ce nom existe déjà.
         if (geometryManager.vectors.some((vector) => vector.name === n)) {
           // Si c'est le cas, on affiche une alerte et on arrête la fonction.
-          alert(`Le nom de vecteur "${n}" est déjà utilisé. Veuillez en choisir un autre.`);
+          showSplashScreen(`Le nom de vecteur "${n}" est déjà utilisé. Veuillez en choisir un autre.`);
           return;
         }
         // --- FIN DE LA CORRECTION ---
@@ -2648,7 +2667,7 @@
         const vy_from_ui = parseFloat(document.getElementById("vectorCoordY").value); // Profondeur
         const vz_from_ui = parseFloat(document.getElementById("vectorCoordZ").value); // Hauteur
         if (isNaN(vx) || isNaN(vy_from_ui) || isNaN(vz_from_ui)) {
-          alert("Composantes invalides");
+          showSplashScreen("Composantes invalides");
           return;
         }
 
@@ -2688,7 +2707,9 @@
         // --- DÉBUT DE LA CORRECTION ---
         // On vérifie si un autre vecteur (avec un ID différent) utilise déjà ce nom.
         if (geometryManager.vectors.some((vec) => vec.name === n && vec.id !== id)) {
-          alert(`Le nom de vecteur "${n}" est déjà utilisé par un autre vecteur. Veuillez en choisir un autre.`);
+          showSplashScreen(
+            `Le nom de vecteur "${n}" est déjà utilisé par un autre vecteur. Veuillez en choisir un autre.`
+          );
           return;
         }
         // --- FIN DE LA CORRECTION ---
@@ -2697,7 +2718,7 @@
         const vy_from_ui = parseFloat(document.getElementById("vectorCoordY").value);
         const vz_from_ui = parseFloat(document.getElementById("vectorCoordZ").value);
         if (isNaN(vx) || isNaN(vy_from_ui) || isNaN(vz_from_ui)) {
-          alert("Composantes invalides.");
+          showSplashScreen("Composantes invalides.");
           return;
         }
 
@@ -2900,7 +2921,7 @@
         const resultDiv = document.getElementById("vectorSumResult");
 
         if (!u || !v || originId === "") {
-          alert("Veuillez sélectionner deux vecteurs et un point de départ pour la construction.");
+          showSplashScreen("Veuillez sélectionner deux vecteurs et un point de départ pour la construction.");
           resultDiv.textContent = "Sélection invalide.";
           return;
         }
@@ -3097,7 +3118,7 @@
         const r = document.getElementById("vectorSumResult");
 
         if (!v1 || !v2) {
-          alert("Veuillez sélectionner deux vecteurs.");
+          showSplashScreen("Veuillez sélectionner deux vecteurs.");
           r.textContent = "Veuillez sélectionner deux vecteurs.";
           return;
         }
@@ -3160,7 +3181,7 @@
         const r = document.getElementById("vectorProductResult");
 
         if (!v1 || !v2) {
-          alert("Sélectionnez deux vecteurs.");
+          showSplashScreen("Sélectionnez deux vecteurs.");
           r.textContent = "Veuillez sélectionner deux vecteurs.";
           return;
         }
@@ -3699,7 +3720,7 @@
        */
       function applyTranslation() {
         if (!selectedObjectInstance) {
-          alert("Aucun objet n'est sélectionné.");
+          showSplashScreen("Aucun objet n'est sélectionné.");
           return;
         }
 
@@ -3753,7 +3774,7 @@
 
       function applyRotation() {
         if (!selectedObjectInstance) {
-          alert("Aucun objet n'est sélectionné.");
+          showSplashScreen("Aucun objet n'est sélectionné.");
           return;
         }
 
@@ -3882,7 +3903,7 @@
 
       function applySymmetry() {
         if (!selectedObjectInstance) {
-          alert("Aucun objet n'est sélectionné.");
+          showSplashScreen("Aucun objet n'est sélectionné.");
           return;
         }
 
@@ -3890,7 +3911,7 @@
         const refId = document.getElementById("symmetryRefSelect").value;
 
         if (!type || !refId) {
-          alert("Veuillez sélectionner un type et une référence pour la symétrie.");
+          showSplashScreen("Veuillez sélectionner un type et une référence pour la symétrie.");
           return;
         }
 
@@ -3923,7 +3944,7 @@
         else if (type === "plane") refObject = geometryManager.findPlaneById(parseInt(refId));
 
         if (!refObject) {
-          alert("Référence de symétrie non trouvée.");
+          showSplashScreen("Référence de symétrie non trouvée.");
           return;
         }
 
@@ -4004,7 +4025,7 @@
       function saveScene() {
         const sceneName = document.getElementById("sceneNameInput").value.trim();
         if (!sceneName) {
-          alert("Veuillez donner un nom à votre scène.");
+          showSplashScreen("Veuillez donner un nom à votre scène.");
           return;
         }
         // 1. Sérialiser la géométrie actuelle
