@@ -1156,7 +1156,7 @@
           this.directorVector = directorVector.clone();
           this.color = new THREE.Color(color);
           this.derivedFrom = derivedFrom;
-          this.isVisible = true; // La propriété existe déjà, c'est parfait
+          this.isVisible = true;
           const lineLength = 100;
           const dir = this.directorVector.clone().normalize();
           const visualStart = new THREE.Vector3().addVectors(this.startPoint, dir.clone().multiplyScalar(-lineLength));
@@ -1528,7 +1528,7 @@
       let currentConstructionObjects = [];
       let splashTimer = null;
       let blockNextClick = false; // Variable pour bloquer le "clic fantôme" sur mobile
-      const HIGHLIGHT_COLOR = 0xffff00; // Jaune vif pour la surbrillance
+      const HIGHLIGHT_COLOR = 0xffcc00; // Jaune vif pour la surbrillance
       let longPressTimer = null;
       const LONG_PRESS_DURATION = 500;
       let touchStartPosition = { x: 0, y: 0 };
@@ -1919,82 +1919,94 @@ function handleTouchStart(e) {
           console.log("❌ 2. Aucun objet trouvé sous la souris.");
         }
       }
+function populateAndShowContextMenu(x, y, instance) {
+  console.log("🛠️ Construction du menu pour :", instance.constructor.name);
 
-      function populateAndShowContextMenu(x, y, instance) {
-        console.log("🛠️ Construction du menu pour :", instance.constructor.name);
+  const menu = document.getElementById("contextMenu");
+  const menuItemsContainer = document.getElementById("contextMenuItems");
 
-        const menu = document.getElementById("contextMenu");
-        const menuItemsContainer = document.getElementById("contextMenuItems");
+  // 1. Vider le menu précédent
+  menuItemsContainer.innerHTML = "";
 
-        // 1. Vider le menu précédent
-        menuItemsContainer.innerHTML = "";
+  // Helper pour créer les lignes (li)
+  const createAction = (action, text) =>
+    `<li onclick="${action}; hideContextMenu();" style="padding:8px 15px; cursor:pointer; border-bottom:1px solid #eee; color:#333;">${text}</li>`;
 
-        // Helper pour créer les lignes (li)
-        const createAction = (action, text) =>
-          `<li onclick="${action}; hideContextMenu();" style="padding:8px 15px; cursor:pointer; border-bottom:1px solid #eee; color:#333;">${text}</li>`;
+  let htmlContent = "";
 
-        let htmlContent = "";
+  // 2. Générer le contenu selon le type
+  if (instance instanceof Point) {
+    const index = geometryManager.points.indexOf(instance);
+    htmlContent += createAction(`editPoint(${index})`, "✏️ Modifier le point");
+    // --- AJOUT ---
+    htmlContent += createAction(`openTransformationPanel('point', ${index})`, "🔄 Transformations");
+    // -------------
+    htmlContent += createAction(`removePoint(${index})`, "🗑️ Supprimer le point");
 
-        // 2. Générer le contenu selon le type
-        if (instance instanceof Point) {
-          const index = geometryManager.points.indexOf(instance);
-          htmlContent += createAction(`editPoint(${index})`, "✏️ Modifier le point");
-          htmlContent += createAction(`removePoint(${index})`, "🗑️ Supprimer le point");
-        } else if (instance instanceof Vector) {
-          htmlContent += createAction(`editVector(${instance.id})`, "✏️ Modifier le vecteur");
-          htmlContent += createAction(
-            `toggleVectorVisibility(${instance.id})`,
-            instance.isVisible ? "🙈 Cacher" : "👁️ Afficher"
-          );
-          htmlContent += createAction(`removeVectorById(${instance.id})`, "🗑️ Supprimer");
-        } else if (instance instanceof Line3D) {
-          htmlContent += createAction(`editLine(${instance.id})`, "✏️ Modifier la droite");
-          htmlContent += createAction(
-            `toggleStraightLineVisibility(${instance.id})`,
-            instance.isVisible ? "🙈 Cacher" : "👁️ Afficher"
-          );
-          htmlContent += createAction(`removeStraightLineById(${instance.id})`, "🗑️ Supprimer");
-        } else if (instance instanceof Plane) {
-          htmlContent += createAction(`editPlane(${instance.id})`, "✏️ Modifier le plan");
-          htmlContent += createAction(
-            `togglePlaneVisibility(${instance.id})`,
-            instance.isVisible ? "🙈 Cacher" : "👁️ Afficher"
-          );
-          htmlContent += createAction(`toggleNormalVector(${instance.id})`, "📏 Vecteur Normal (Vn)");
-          htmlContent += createAction(`removePlaneById(${instance.id})`, "🗑️ Supprimer");
-        }
+  } else if (instance instanceof Vector) {
+    htmlContent += createAction(`editVector(${instance.id})`, "✏️ Modifier le vecteur");
+    // --- AJOUT ---
+    htmlContent += createAction(`openTransformationPanel('vector', ${instance.id})`, "🔄 Transformations");
+    // -------------
+    htmlContent += createAction(
+      `toggleVectorVisibility(${instance.id})`,
+      instance.isVisible ? "🙈 Cacher" : "👁️ Afficher"
+    );
+    htmlContent += createAction(`removeVectorById(${instance.id})`, "🗑️ Supprimer");
 
-        // 3. Vérifier si du contenu a été généré
-        if (htmlContent === "") {
-          console.warn("⚠️ Menu vide : type d'objet non reconnu", instance);
-          return;
-        }
+  } else if (instance instanceof Line3D) {
+    htmlContent += createAction(`editLine(${instance.id})`, "✏️ Modifier la droite");
+    // --- AJOUT ---
+    htmlContent += createAction(`openTransformationPanel('line', ${instance.id})`, "🔄 Transformations");
+    // -------------
+    htmlContent += createAction(
+      `toggleStraightLineVisibility(${instance.id})`,
+      instance.isVisible ? "🙈 Cacher" : "👁️ Afficher"
+    );
+    htmlContent += createAction(`removeStraightLineById(${instance.id})`, "🗑️ Supprimer");
 
-        menuItemsContainer.innerHTML = htmlContent;
+  } else if (instance instanceof Plane) {
+    htmlContent += createAction(`editPlane(${instance.id})`, "✏️ Modifier le plan");
+    // --- AJOUT ---
+    htmlContent += createAction(`openTransformationPanel('plane', ${instance.id})`, "🔄 Transformations");
+    // -------------
+    htmlContent += createAction(
+      `togglePlaneVisibility(${instance.id})`,
+      instance.isVisible ? "🙈 Cacher" : "👁️ Afficher"
+    );
+    htmlContent += createAction(`toggleNormalVector(${instance.id})`, "📏 Vecteur Normal (Vn)");
+    htmlContent += createAction(`removePlaneById(${instance.id})`, "🗑️ Supprimer");
+  }
 
-        // 4. Affichage et Positionnement (Logique Fixed)
-        menu.style.display = "block"; // On l'affiche pour pouvoir calculer sa taille
+  // 3. Vérifier si du contenu a été généré
+  if (htmlContent === "") {
+    console.warn("⚠️ Menu vide : type d'objet non reconnu", instance);
+    return;
+  }
 
-        const menuWidth = menu.offsetWidth || 160;
-        const menuHeight = menu.offsetHeight || 100;
+  menuItemsContainer.innerHTML = htmlContent;
 
-        // Calcul pour ne pas sortir de l'écran
-        let finalX = x;
-        let finalY = y;
+  // 4. Affichage et Positionnement
+  menu.style.display = "block";
 
-        if (x + menuWidth > window.innerWidth) {
-          finalX = window.innerWidth - menuWidth - 10;
-        }
-        if (y + menuHeight > window.innerHeight) {
-          finalY = window.innerHeight - menuHeight - 10;
-        }
+  const menuWidth = menu.offsetWidth || 160;
+  const menuHeight = menu.offsetHeight || 100;
 
-        // Application des positions
-        menu.style.left = finalX + "px";
-        menu.style.top = finalY + "px";
+  let finalX = x;
+  let finalY = y;
 
-        console.log(`✅ Menu affiché en (${finalX}, ${finalY})`);
-      }
+  if (x + menuWidth > window.innerWidth) {
+    finalX = window.innerWidth - menuWidth - 10;
+  }
+  if (y + menuHeight > window.innerHeight) {
+    finalY = window.innerHeight - menuHeight - 10;
+  }
+
+  menu.style.left = finalX + "px";
+  menu.style.top = finalY + "px";
+}
+
+
       // =====================================================================================
       // END: GESTION DES ÉVÉNEMENTS
       // =====================================================================================
@@ -2367,8 +2379,58 @@ function handleTouchStart(e) {
         ensurePanelVisible();
         expandSectionAndScrollToItem(`plane-item-${id}`, "planeList");
       }
-      // --- Points ---
-      // VERSION ORIGINALE (avec les anciens IDs)
+
+      // --- NOUVELLE FONCTION POUR LE MENU CONTEXTUEL ---
+function openTransformationPanel(type, id) {
+  ensurePanelVisible(); // Ouvre le panneau latéral s'il est fermé
+
+  // 1. Retrouver l'instance de l'objet
+  let instance = null;
+  if (type === 'point') {
+    instance = geometryManager.points[id];
+  } else if (type === 'line') {
+    instance = geometryManager.findLineById(id);
+  } else if (type === 'plane') {
+    instance = geometryManager.findPlaneById(id);
+  } else if (type === 'vector') {
+    instance = geometryManager.findVectorById(id);
+  }
+
+  if (instance) {
+    // 2. Forcer la sélection de cet objet (indispensable pour que les boutons fonctionnent)
+    // On désélectionne l'ancien d'abord pour nettoyer
+    if (selectedObjectInstance && selectedObjectInstance !== instance) {
+      deselectCurrentObject();
+    }
+    selectedObjectInstance = instance;
+
+    // 3. Mettre l'objet en surbrillance (jaune)
+    const HIGHLIGHT_COLOR = 0xffff00;
+    if (instance instanceof Vector) {
+       if (instance.arrowHelper) instance.arrowHelper.setColor(HIGHLIGHT_COLOR);
+    } else if (instance.mesh) {
+       instance.mesh.material.color.set(HIGHLIGHT_COLOR);
+       if (instance instanceof Plane) instance.mesh.material.opacity = 0.75;
+    }
+
+    // 4. Afficher l'interface de transformation
+    document.getElementById("transformations-hint").style.display = "none";
+    document.getElementById("transformations-container").style.display = "block";
+
+    // 5. Déplier la section "Transformations"
+    const transContainer = document.getElementById("transformations-container");
+    const section = transContainer.closest(".section");
+    if (section && section.classList.contains("collapsed")) {
+      section.classList.remove("collapsed");
+    }
+
+    // 6. Faire défiler jusqu'aux options
+    setTimeout(() => {
+        transContainer.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100); // Petit délai pour laisser le temps au dépliage
+  }
+}
+
       function addPoint() {
         const n = document.getElementById("pointName").value.trim();
         const x = parseFloat(document.getElementById("pointX").value);
