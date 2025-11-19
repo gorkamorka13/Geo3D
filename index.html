@@ -575,6 +575,26 @@
       background-color: rgba(0, 0, 0, 0.05) !important;
       /* Effet de survol unifié */
     }
+
+    #tooltip {
+      position: fixed;
+      background-color: rgba(0, 0, 0, 0.8);
+      /* Fond noir semi-transparent */
+      color: #fff;
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-family: Arial, sans-serif;
+      pointer-events: none;
+      /* L'info-bulle laisse passer les clics */
+      display: none;
+      /* Caché par défaut */
+      z-index: 10000;
+      white-space: nowrap;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+      /* Petit décalage pour ne pas être sous le curseur */
+      transform: translate(15px, 15px);
+    }
   </style>
 </head>
 
@@ -582,6 +602,9 @@
   <div id="splashScreen" class="splash-hidden">
     <span id="splashMessage"></span>
   </div>
+
+  <div id="tooltip"></div>
+
   <button id="openBtn" class="burger-btn show" onclick="togglePanel()">
     <span class="burger-line"></span>
     <span class="burger-line"></span>
@@ -1676,7 +1699,7 @@
         performRaycastSelection(event.clientX, event.clientY);
       }
 
-function handleTouchStart(e) {
+      function handleTouchStart(e) {
         wasDragged = false;
         // wasPanningOrZooming = false;
         clearTimeout(longPressTimer);
@@ -1686,7 +1709,7 @@ function handleTouchStart(e) {
         // Si on touche le bouton d'ouverture, on laisse le "click" standard faire son travail
         // et on empêche la logique de swipe de prendre le dessus.
         if (e.target.closest("#openBtn")) {
-            return;
+          return;
         }
         // --- FIN CORRECTION ---
 
@@ -1919,92 +1942,92 @@ function handleTouchStart(e) {
           console.log("❌ 2. Aucun objet trouvé sous la souris.");
         }
       }
-function populateAndShowContextMenu(x, y, instance) {
-  console.log("🛠️ Construction du menu pour :", instance.constructor.name);
+      function populateAndShowContextMenu(x, y, instance) {
+        console.log("🛠️ Construction du menu pour :", instance.constructor.name);
 
-  const menu = document.getElementById("contextMenu");
-  const menuItemsContainer = document.getElementById("contextMenuItems");
+        const menu = document.getElementById("contextMenu");
+        const menuItemsContainer = document.getElementById("contextMenuItems");
 
-  // 1. Vider le menu précédent
-  menuItemsContainer.innerHTML = "";
+        // 1. Vider le menu précédent
+        menuItemsContainer.innerHTML = "";
 
-  // Helper pour créer les lignes (li)
-  const createAction = (action, text) =>
-    `<li onclick="${action}; hideContextMenu();" style="padding:8px 15px; cursor:pointer; border-bottom:1px solid #eee; color:#333;">${text}</li>`;
+        // Helper pour créer les lignes (li)
+        const createAction = (action, text) =>
+          `<li onclick="${action}; hideContextMenu();" style="padding:8px 15px; cursor:pointer; border-bottom:1px solid #eee; color:#333;">${text}</li>`;
 
-  let htmlContent = "";
+        let htmlContent = "";
 
-  // 2. Générer le contenu selon le type
-  if (instance instanceof Point) {
-    const index = geometryManager.points.indexOf(instance);
-    htmlContent += createAction(`editPoint(${index})`, "✏️ Modifier le point");
-    // --- AJOUT ---
-    htmlContent += createAction(`openTransformationPanel('point', ${index})`, "🔄 Transformations");
-    // -------------
-    htmlContent += createAction(`removePoint(${index})`, "🗑️ Supprimer le point");
+        // 2. Générer le contenu selon le type
+        if (instance instanceof Point) {
+          const index = geometryManager.points.indexOf(instance);
+          htmlContent += createAction(`editPoint(${index})`, "✏️ Modifier le point");
+          // --- AJOUT ---
+          htmlContent += createAction(`openTransformationPanel('point', ${index})`, "🔄 Transformations");
+          // -------------
+          htmlContent += createAction(`removePoint(${index})`, "🗑️ Supprimer le point");
 
-  } else if (instance instanceof Vector) {
-    htmlContent += createAction(`editVector(${instance.id})`, "✏️ Modifier le vecteur");
-    // --- AJOUT ---
-    htmlContent += createAction(`openTransformationPanel('vector', ${instance.id})`, "🔄 Transformations");
-    // -------------
-    htmlContent += createAction(
-      `toggleVectorVisibility(${instance.id})`,
-      instance.isVisible ? "🙈 Cacher" : "👁️ Afficher"
-    );
-    htmlContent += createAction(`removeVectorById(${instance.id})`, "🗑️ Supprimer");
+        } else if (instance instanceof Vector) {
+          htmlContent += createAction(`editVector(${instance.id})`, "✏️ Modifier le vecteur");
+          // --- AJOUT ---
+          htmlContent += createAction(`openTransformationPanel('vector', ${instance.id})`, "🔄 Transformations");
+          // -------------
+          htmlContent += createAction(
+            `toggleVectorVisibility(${instance.id})`,
+            instance.isVisible ? "🙈 Cacher" : "👁️ Afficher"
+          );
+          htmlContent += createAction(`removeVectorById(${instance.id})`, "🗑️ Supprimer");
 
-  } else if (instance instanceof Line3D) {
-    htmlContent += createAction(`editLine(${instance.id})`, "✏️ Modifier la droite");
-    // --- AJOUT ---
-    htmlContent += createAction(`openTransformationPanel('line', ${instance.id})`, "🔄 Transformations");
-    // -------------
-    htmlContent += createAction(
-      `toggleStraightLineVisibility(${instance.id})`,
-      instance.isVisible ? "🙈 Cacher" : "👁️ Afficher"
-    );
-    htmlContent += createAction(`removeStraightLineById(${instance.id})`, "🗑️ Supprimer");
+        } else if (instance instanceof Line3D) {
+          htmlContent += createAction(`editLine(${instance.id})`, "✏️ Modifier la droite");
+          // --- AJOUT ---
+          htmlContent += createAction(`openTransformationPanel('line', ${instance.id})`, "🔄 Transformations");
+          // -------------
+          htmlContent += createAction(
+            `toggleStraightLineVisibility(${instance.id})`,
+            instance.isVisible ? "🙈 Cacher" : "👁️ Afficher"
+          );
+          htmlContent += createAction(`removeStraightLineById(${instance.id})`, "🗑️ Supprimer");
 
-  } else if (instance instanceof Plane) {
-    htmlContent += createAction(`editPlane(${instance.id})`, "✏️ Modifier le plan");
-    // --- AJOUT ---
-    htmlContent += createAction(`openTransformationPanel('plane', ${instance.id})`, "🔄 Transformations");
-    // -------------
-    htmlContent += createAction(
-      `togglePlaneVisibility(${instance.id})`,
-      instance.isVisible ? "🙈 Cacher" : "👁️ Afficher"
-    );
-    htmlContent += createAction(`toggleNormalVector(${instance.id})`, "📏 Vecteur Normal (Vn)");
-    htmlContent += createAction(`removePlaneById(${instance.id})`, "🗑️ Supprimer");
-  }
+        } else if (instance instanceof Plane) {
+          htmlContent += createAction(`editPlane(${instance.id})`, "✏️ Modifier le plan");
+          // --- AJOUT ---
+          htmlContent += createAction(`openTransformationPanel('plane', ${instance.id})`, "🔄 Transformations");
+          // -------------
+          htmlContent += createAction(
+            `togglePlaneVisibility(${instance.id})`,
+            instance.isVisible ? "🙈 Cacher" : "👁️ Afficher"
+          );
+          htmlContent += createAction(`toggleNormalVector(${instance.id})`, "📏 Vecteur Normal (Vn)");
+          htmlContent += createAction(`removePlaneById(${instance.id})`, "🗑️ Supprimer");
+        }
 
-  // 3. Vérifier si du contenu a été généré
-  if (htmlContent === "") {
-    console.warn("⚠️ Menu vide : type d'objet non reconnu", instance);
-    return;
-  }
+        // 3. Vérifier si du contenu a été généré
+        if (htmlContent === "") {
+          console.warn("⚠️ Menu vide : type d'objet non reconnu", instance);
+          return;
+        }
 
-  menuItemsContainer.innerHTML = htmlContent;
+        menuItemsContainer.innerHTML = htmlContent;
 
-  // 4. Affichage et Positionnement
-  menu.style.display = "block";
+        // 4. Affichage et Positionnement
+        menu.style.display = "block";
 
-  const menuWidth = menu.offsetWidth || 160;
-  const menuHeight = menu.offsetHeight || 100;
+        const menuWidth = menu.offsetWidth || 160;
+        const menuHeight = menu.offsetHeight || 100;
 
-  let finalX = x;
-  let finalY = y;
+        let finalX = x;
+        let finalY = y;
 
-  if (x + menuWidth > window.innerWidth) {
-    finalX = window.innerWidth - menuWidth - 10;
-  }
-  if (y + menuHeight > window.innerHeight) {
-    finalY = window.innerHeight - menuHeight - 10;
-  }
+        if (x + menuWidth > window.innerWidth) {
+          finalX = window.innerWidth - menuWidth - 10;
+        }
+        if (y + menuHeight > window.innerHeight) {
+          finalY = window.innerHeight - menuHeight - 10;
+        }
 
-  menu.style.left = finalX + "px";
-  menu.style.top = finalY + "px";
-}
+        menu.style.left = finalX + "px";
+        menu.style.top = finalY + "px";
+      }
 
 
       // =====================================================================================
@@ -2381,55 +2404,55 @@ function populateAndShowContextMenu(x, y, instance) {
       }
 
       // --- NOUVELLE FONCTION POUR LE MENU CONTEXTUEL ---
-function openTransformationPanel(type, id) {
-  ensurePanelVisible(); // Ouvre le panneau latéral s'il est fermé
+      function openTransformationPanel(type, id) {
+        ensurePanelVisible(); // Ouvre le panneau latéral s'il est fermé
 
-  // 1. Retrouver l'instance de l'objet
-  let instance = null;
-  if (type === 'point') {
-    instance = geometryManager.points[id];
-  } else if (type === 'line') {
-    instance = geometryManager.findLineById(id);
-  } else if (type === 'plane') {
-    instance = geometryManager.findPlaneById(id);
-  } else if (type === 'vector') {
-    instance = geometryManager.findVectorById(id);
-  }
+        // 1. Retrouver l'instance de l'objet
+        let instance = null;
+        if (type === 'point') {
+          instance = geometryManager.points[id];
+        } else if (type === 'line') {
+          instance = geometryManager.findLineById(id);
+        } else if (type === 'plane') {
+          instance = geometryManager.findPlaneById(id);
+        } else if (type === 'vector') {
+          instance = geometryManager.findVectorById(id);
+        }
 
-  if (instance) {
-    // 2. Forcer la sélection de cet objet (indispensable pour que les boutons fonctionnent)
-    // On désélectionne l'ancien d'abord pour nettoyer
-    if (selectedObjectInstance && selectedObjectInstance !== instance) {
-      deselectCurrentObject();
-    }
-    selectedObjectInstance = instance;
+        if (instance) {
+          // 2. Forcer la sélection de cet objet (indispensable pour que les boutons fonctionnent)
+          // On désélectionne l'ancien d'abord pour nettoyer
+          if (selectedObjectInstance && selectedObjectInstance !== instance) {
+            deselectCurrentObject();
+          }
+          selectedObjectInstance = instance;
 
-    // 3. Mettre l'objet en surbrillance (jaune)
-    const HIGHLIGHT_COLOR = 0xffff00;
-    if (instance instanceof Vector) {
-       if (instance.arrowHelper) instance.arrowHelper.setColor(HIGHLIGHT_COLOR);
-    } else if (instance.mesh) {
-       instance.mesh.material.color.set(HIGHLIGHT_COLOR);
-       if (instance instanceof Plane) instance.mesh.material.opacity = 0.75;
-    }
+          // 3. Mettre l'objet en surbrillance (jaune)
+          const HIGHLIGHT_COLOR = 0xffff00;
+          if (instance instanceof Vector) {
+            if (instance.arrowHelper) instance.arrowHelper.setColor(HIGHLIGHT_COLOR);
+          } else if (instance.mesh) {
+            instance.mesh.material.color.set(HIGHLIGHT_COLOR);
+            if (instance instanceof Plane) instance.mesh.material.opacity = 0.75;
+          }
 
-    // 4. Afficher l'interface de transformation
-    document.getElementById("transformations-hint").style.display = "none";
-    document.getElementById("transformations-container").style.display = "block";
+          // 4. Afficher l'interface de transformation
+          document.getElementById("transformations-hint").style.display = "none";
+          document.getElementById("transformations-container").style.display = "block";
 
-    // 5. Déplier la section "Transformations"
-    const transContainer = document.getElementById("transformations-container");
-    const section = transContainer.closest(".section");
-    if (section && section.classList.contains("collapsed")) {
-      section.classList.remove("collapsed");
-    }
+          // 5. Déplier la section "Transformations"
+          const transContainer = document.getElementById("transformations-container");
+          const section = transContainer.closest(".section");
+          if (section && section.classList.contains("collapsed")) {
+            section.classList.remove("collapsed");
+          }
 
-    // 6. Faire défiler jusqu'aux options
-    setTimeout(() => {
-        transContainer.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 100); // Petit délai pour laisser le temps au dépliage
-  }
-}
+          // 6. Faire défiler jusqu'aux options
+          setTimeout(() => {
+            transContainer.scrollIntoView({ behavior: "smooth", block: "start" });
+          }, 100); // Petit délai pour laisser le temps au dépliage
+        }
+      }
 
       function addPoint() {
         const n = document.getElementById("pointName").value.trim();
@@ -3812,6 +3835,9 @@ function openTransformationPanel(type, id) {
           updateCameraPosition();
         } else if (isPanning) panCamera(dX, dY);
         previousMousePosition = { x: e.clientX, y: e.clientY };
+        if (!isDragging && !isPanning) {
+          handleHover(e.clientX, e.clientY);
+        }
       }
 
       function onMouseUp() {
@@ -4551,6 +4577,88 @@ function openTransformationPanel(type, id) {
           btn.style.cursor = "default";
         }
       }
+
+      function handleHover(clientX, clientY) {
+  const tooltip = document.getElementById("tooltip");
+
+  // Si on bouge la caméra, on cache tout pour ne pas gêner la vue
+  if (isDragging || isPanning) {
+    tooltip.style.display = "none";
+    document.body.style.cursor = "default";
+    return;
+  }
+
+  const intersection = getIntersectionResult(clientX, clientY);
+
+  if (intersection && intersection.object.userData.instance) {
+    const instance = intersection.object.userData.instance;
+    let content = "";
+
+    // Style CSS inline pour les détails (gris clair, un peu plus petit)
+    // display: block permet de forcer le retour à la ligne proprement
+    const detailStyle = 'style="color: #ddd; font-size: 0.9em; display: block; margin-top: 2px;"';
+
+    // --- 1. POINT (Coordonnées) ---
+    if (instance instanceof Point) {
+        const x = formatNumber(instance.position.x);
+        const y_ui = formatNumber(instance.position.z); // ThreeJS Z = UI Y (Profondeur)
+        const z_ui = formatNumber(instance.position.y); // ThreeJS Y = UI Z (Hauteur)
+
+        content = `📍 <strong>${instance.name}</strong>
+                   <span ${detailStyle}>Coord : (${x}, ${y_ui}, ${z_ui})</span>`;
+
+    // --- 2. VECTEUR (Composantes + Norme) ---
+    } else if (instance instanceof Vector) {
+        const v = instance.components;
+        const x = formatNumber(v.x);
+        const y_ui = formatNumber(v.z); // Inversion
+        const z_ui = formatNumber(v.y); // Inversion
+        const norm = formatNumber(v.length());
+
+        content = `↗️ <strong>${instance.name}</strong>
+                   <span ${detailStyle}>Coord : (${x}, ${y_ui}, ${z_ui})</span>
+                   <span ${detailStyle}>Norme : ${norm}</span>`;
+
+    // --- 3. DROITE (Vecteur Directeur) ---
+    } else if (instance instanceof Line3D) {
+        const u = instance.directorVector;
+        const x = formatNumber(u.x);
+        const y_ui = formatNumber(u.z); // Inversion
+        const z_ui = formatNumber(u.y); // Inversion
+
+        content = `📏 <strong>${instance.name}</strong>
+                   <span ${detailStyle}>Vect. dir. : (${x}, ${y_ui}, ${z_ui})</span>`;
+
+    // --- 4. PLAN (Vecteur Normal) ---
+    } else if (instance instanceof Plane) {
+        // On utilise displayNormal pour garder les valeurs "brutes" (ex: entiers) si possible
+        const n = instance.displayNormal;
+        const x = formatNumber(n.x);
+        const y_ui = formatNumber(n.z); // Inversion
+        const z_ui = formatNumber(n.y); // Inversion
+
+        content = `🔷 <strong>${instance.name}</strong>
+                   <span ${detailStyle}>Normale : (${x}, ${y_ui}, ${z_ui})</span>`;
+
+    // --- CAS PAR DÉFAUT ---
+    } else {
+        content = instance.name;
+    }
+
+    tooltip.innerHTML = content;
+
+    // Positionnement avec un décalage de 15px
+    tooltip.style.left = (clientX + 15) + "px";
+    tooltip.style.top = (clientY + 15) + "px";
+    tooltip.style.display = "block";
+
+    document.body.style.cursor = "pointer";
+  } else {
+    tooltip.style.display = "none";
+    document.body.style.cursor = "default";
+  }
+}
+
     </script>
 </body>
 
