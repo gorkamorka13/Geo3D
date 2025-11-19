@@ -972,7 +972,17 @@
             <!-- Sous-section Symétrie -->
             <h4 class="sub-section-title" style="margin-top: 20px">Symétrie</h4>
             <label>Symétrie par rapport à :</label>
+
             <select id="symmetryTypeSelect" onchange="updateSymmetryUI()">
+              <option value="origin">Origine (0,0,0)</option>
+
+              <option value="axis_x">Axe X</option>
+              <option value="axis_y">Axe Y (Profondeur)</option>
+              <option value="axis_z">Axe Z (Hauteur)</option>
+
+              <option value="plane_xy">Plan XY (Sol)</option>
+              <option value="plane_xz">Plan XZ (Face)</option>
+              <option value="plane_yz">Plan YZ (Côté)</option>
               <option value="">-- Choisir un type --</option>
               <option value="point">Un Point</option>
               <option value="line">Une Droite</option>
@@ -3794,106 +3804,101 @@
         updateAllUI();
       }
 
-function applyRotation() {
-  if (!selectedObjectInstance) {
-    showSplashScreen("Aucun objet n'est sélectionné.");
-    return;
-  }
+      function applyRotation() {
+        if (!selectedObjectInstance) {
+          showSplashScreen("Aucun objet n'est sélectionné.");
+          return;
+        }
 
-  // 1. Récupération de l'angle
-  const angleDeg = parseFloat(document.getElementById("rotationAngle").value) || 0;
-  const angleRad = (angleDeg * Math.PI) / 180;
+        // 1. Récupération de l'angle
+        const angleDeg = parseFloat(document.getElementById("rotationAngle").value) || 0;
+        const angleRad = (angleDeg * Math.PI) / 180;
 
-  // 2. Récupération et correction de l'Axe
-  const axisSelect = document.getElementById("rotationAxisSelect");
-  const axisValue = axisSelect.value.toLowerCase().trim(); // Sécurité contre les majuscules/espaces
+        // 2. Récupération et correction de l'Axe
+        const axisSelect = document.getElementById("rotationAxisSelect");
+        const axisValue = axisSelect.value.toLowerCase().trim(); // Sécurité contre les majuscules/espaces
 
-  let rotationAxis;
+        let rotationAxis;
 
-  // --- C'EST ICI QUE SE JOUE LA CORRECTION ---
-  if (axisValue === "x") {
-      // Axe X (Rouge) : Ne change pas
-      rotationAxis = new THREE.Vector3(1, 0, 0);
+        // --- C'EST ICI QUE SE JOUE LA CORRECTION ---
+        if (axisValue === "x") {
+          // Axe X (Rouge) : Ne change pas
+          rotationAxis = new THREE.Vector3(1, 0, 0);
+        } else if (axisValue === "y") {
+          // L'utilisateur choisit "Axe Y" (Profondeur dans votre interface)
+          // Cela correspond à l'axe Z de Three.js (L'axe BLEU)
+          rotationAxis = new THREE.Vector3(0, 0, 1);
+        } else {
+          // L'utilisateur choisit "Axe Z" (Hauteur/Verticale)
+          // Cela correspond à l'axe Y de Three.js (L'axe VERT)
+          rotationAxis = new THREE.Vector3(0, 1, 0);
+        }
 
-  } else if (axisValue === "y") {
-      // L'utilisateur choisit "Axe Y" (Profondeur dans votre interface)
-      // Cela correspond à l'axe Z de Three.js (L'axe BLEU)
-      rotationAxis = new THREE.Vector3(0, 0, 1);
+        // 3. Récupération du centre de rotation
+        const centerValue = document.getElementById("rotationCenterSelect").value;
+        const centerOfRotation =
+          centerValue === "origin"
+            ? new THREE.Vector3(0, 0, 0)
+            : geometryManager.points[parseInt(centerValue)].position.clone();
 
-  } else {
-      // L'utilisateur choisit "Axe Z" (Hauteur/Verticale)
-      // Cela correspond à l'axe Y de Three.js (L'axe VERT)
-      rotationAxis = new THREE.Vector3(0, 1, 0);
-  }
+        const inst = selectedObjectInstance;
 
-  // 3. Récupération du centre de rotation
-  const centerValue = document.getElementById("rotationCenterSelect").value;
-  const centerOfRotation =
-    centerValue === "origin"
-      ? new THREE.Vector3(0, 0, 0)
-      : geometryManager.points[parseInt(centerValue)].position.clone();
+        // Helper : Appliquer la rotation mathématique à un point
+        const rotatePoint = (p, c) => {
+          p.sub(c); // Ramener au centre relatif
+          p.applyAxisAngle(rotationAxis, angleRad); // Tourner
+          p.add(c); // Remettre à la position absolue
+        };
 
-  const inst = selectedObjectInstance;
+        // 4. Application de la rotation selon le type d'objet
+        if (inst instanceof Point) {
+          const newPos = inst.position.clone();
+          rotatePoint(newPos, centerOfRotation);
 
-  // Helper : Appliquer la rotation mathématique à un point
-  const rotatePoint = (p, c) => {
-    p.sub(c); // Ramener au centre relatif
-    p.applyAxisAngle(rotationAxis, angleRad); // Tourner
-    p.add(c); // Remettre à la position absolue
-  };
+          // Mise à jour directe des positions Three.js
+          inst.position.copy(newPos);
+          inst.mesh.position.copy(inst.position);
+          inst.updateLabelPosition();
+        } else if (inst instanceof Vector) {
+          const newOrigin = inst.origin.clone();
+          rotatePoint(newOrigin, centerOfRotation);
 
-  // 4. Application de la rotation selon le type d'objet
-  if (inst instanceof Point) {
-    const newPos = inst.position.clone();
-    rotatePoint(newPos, centerOfRotation);
+          // Le vecteur lui-même (ses composantes) tourne aussi
+          const newComponents = inst.components.clone().applyAxisAngle(rotationAxis, angleRad);
 
-    // Mise à jour directe des positions Three.js
-    inst.position.copy(newPos);
-    inst.mesh.position.copy(inst.position);
-    inst.updateLabelPosition();
+          inst.update(inst.name, newOrigin, newComponents);
+        } else if (inst instanceof Plane) {
+          rotatePoint(inst.pointOnPlane, centerOfRotation);
 
-  } else if (inst instanceof Vector) {
-    const newOrigin = inst.origin.clone();
-    rotatePoint(newOrigin, centerOfRotation);
+          // La normale du plan tourne aussi
+          inst.normal.applyAxisAngle(rotationAxis, angleRad);
+          inst.displayNormal.applyAxisAngle(rotationAxis, angleRad);
 
-    // Le vecteur lui-même (ses composantes) tourne aussi
-    const newComponents = inst.components.clone().applyAxisAngle(rotationAxis, angleRad);
+          inst.mesh.position.copy(inst.pointOnPlane);
+          inst.mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), inst.normal.clone().normalize());
+        } else if (inst instanceof Line3D) {
+          rotatePoint(inst.startPoint, centerOfRotation);
+          inst.directorVector.applyAxisAngle(rotationAxis, angleRad);
 
-    inst.update(inst.name, newOrigin, newComponents);
+          // Recalcul géométrie (identique au fix de translation)
+          const lineLength = 100;
+          const dir = inst.directorVector.clone().normalize();
+          const start = new THREE.Vector3().addVectors(inst.startPoint, dir.clone().multiplyScalar(-lineLength));
+          const end = new THREE.Vector3().addVectors(inst.startPoint, dir.clone().multiplyScalar(lineLength));
 
-  } else if (inst instanceof Plane) {
-    rotatePoint(inst.pointOnPlane, centerOfRotation);
+          inst.mesh.geometry.dispose();
+          inst.mesh.geometry = new THREE.BufferGeometry().setFromPoints([start, end]);
 
-    // La normale du plan tourne aussi
-    inst.normal.applyAxisAngle(rotationAxis, angleRad);
-    inst.displayNormal.applyAxisAngle(rotationAxis, angleRad);
+          // Conserver la couleur de sélection
+          if (inst === selectedObjectInstance) {
+            inst.mesh.material.color.set(HIGHLIGHT_COLOR);
+          }
+        }
 
-    inst.mesh.position.copy(inst.pointOnPlane);
-    inst.mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), inst.normal.clone().normalize());
+        updateAllUI();
+      }
 
-  } else if (inst instanceof Line3D) {
-    rotatePoint(inst.startPoint, centerOfRotation);
-    inst.directorVector.applyAxisAngle(rotationAxis, angleRad);
-
-    // Recalcul géométrie (identique au fix de translation)
-    const lineLength = 100;
-    const dir = inst.directorVector.clone().normalize();
-    const start = new THREE.Vector3().addVectors(inst.startPoint, dir.clone().multiplyScalar(-lineLength));
-    const end = new THREE.Vector3().addVectors(inst.startPoint, dir.clone().multiplyScalar(lineLength));
-
-    inst.mesh.geometry.dispose();
-    inst.mesh.geometry = new THREE.BufferGeometry().setFromPoints([start, end]);
-
-    // Conserver la couleur de sélection
-    if(inst === selectedObjectInstance) {
-        inst.mesh.material.color.set(HIGHLIGHT_COLOR);
-    }
-  }
-
-  updateAllUI();
-}
-
-       function updateSymmetryUI() {
+      function updateSymmetryUI() {
         const type = document.getElementById("symmetryTypeSelect").value;
         const container = document.getElementById("symmetryOptionsContainer");
         const applyBtn = document.getElementById("applySymmetryBtn");
@@ -3904,6 +3909,18 @@ function applyRotation() {
           return;
         }
 
+        // Liste des types qui nécessitent une sélection d'objet dans la scène
+        const needsSelection = ["point", "line", "plane"];
+
+        if (!needsSelection.includes(type)) {
+          // CAS 1 : Symétrie "Fixe" (Origine, Axes, Plans principaux)
+          // Pas de menu secondaire, on affiche juste le bouton
+          container.innerHTML = `<p style="font-size:11px; color:#666; margin:5px 0;">Symétrie standard sélectionnée.</p>`;
+          applyBtn.style.display = "block";
+          return;
+        }
+
+        // CAS 2 : Symétrie par rapport à un objet existant (Code existant)
         let selectHTML = `<label>Référence :</label><select id="symmetryRefSelect" style="width: 100%;">`;
         let hasOptions = false;
 
@@ -3938,8 +3955,6 @@ function applyRotation() {
 
         selectHTML += `</select>`;
         container.innerHTML = selectHTML;
-
-        // N'afficher le bouton que si des objets de référence existent
         applyBtn.style.display = hasOptions ? "block" : "none";
       }
 
@@ -3950,120 +3965,129 @@ function applyRotation() {
         }
 
         const type = document.getElementById("symmetryTypeSelect").value;
-        const refId = document.getElementById("symmetryRefSelect").value;
+        let refObject = null;
 
-        if (!type || !refId) {
-          showSplashScreen("Veuillez sélectionner un type et une référence pour la symétrie.");
-          return;
+        // Gestion des types nécessitant une référence
+        if (["point", "line", "plane"].includes(type)) {
+          const refId = document.getElementById("symmetryRefSelect").value;
+          if (!refId) return;
+          if (type === "point") refObject = geometryManager.points[parseInt(refId)];
+          else if (type === "line") refObject = geometryManager.findLineById(parseInt(refId));
+          else if (type === "plane") refObject = geometryManager.findPlaneById(parseInt(refId));
         }
 
+        // --- FONCTION DE TRANSFORMATION UNIFIÉE ---
+        // Cette fonction prend un Vector3 (position) et renvoie le nouveau Vector3 transformé
+        const transformVector = (v) => {
+          const p = v.clone();
+
+          switch (type) {
+            // --- CAS STANDARD (Fixes) ---
+            case "origin":
+              return p.negate(); // (-x, -y, -z)
+
+            case "axis_x": // Symétrie axe X : on garde X, on inverse le reste
+              return new THREE.Vector3(p.x, -p.y, -p.z);
+
+            case "axis_y": // UI Axe Y (Profondeur) -> ThreeJS Axe Z. On garde Z, on inverse X et Y(hauteur)
+              return new THREE.Vector3(-p.x, -p.y, p.z);
+
+            case "axis_z": // UI Axe Z (Hauteur) -> ThreeJS Axe Y. On garde Y, on inverse X et Z
+              return new THREE.Vector3(-p.x, p.y, -p.z);
+
+            case "plane_xy": // UI Plan XY (Sol) -> On inverse la Hauteur (ThreeJS Y)
+              return new THREE.Vector3(p.x, -p.y, p.z);
+
+            case "plane_xz": // UI Plan XZ (Face) -> On inverse la Profondeur (ThreeJS Z)
+              return new THREE.Vector3(p.x, p.y, -p.z);
+
+            case "plane_yz": // UI Plan YZ (Côté) -> On inverse X
+              return new THREE.Vector3(-p.x, p.y, p.z);
+
+            // --- CAS AVANCÉS (Objets de référence) ---
+            case "point":
+              // p' = center - (p - center) = 2*center - p
+              return refObject.position.clone().multiplyScalar(2).sub(p);
+
+            case "line":
+              const lineStart = refObject.startPoint;
+              const lineDir = refObject.directorVector.clone().normalize();
+              const vStartToP = new THREE.Vector3().subVectors(p, lineStart);
+              const projection = lineDir.multiplyScalar(vStartToP.dot(lineDir));
+              const projectedPoint = new THREE.Vector3().addVectors(lineStart, projection);
+              // p' = proj - (p - proj) = 2*proj - p
+              return projectedPoint.multiplyScalar(2).sub(p);
+
+            case "plane":
+              const vP0P = new THREE.Vector3().subVectors(p, refObject.pointOnPlane);
+              const dist = vP0P.dot(refObject.normal); // Distance signée
+              // p' = p - 2 * dist * normal
+              return p.clone().addScaledVector(refObject.normal, -2 * dist);
+
+            default:
+              return p;
+          }
+        };
+
+        // --- APPLICATION DE LA TRANSFORMATION À L'OBJET SÉLECTIONNÉ ---
         const inst = selectedObjectInstance;
 
-        // --- Fonctions d'aide à la symétrie (NON-DESTRUCTIVES) ---
-        // Elles retournent toujours un NOUVEAU vecteur.
-        const reflectPointInPoint = (p, center) => p.clone().sub(center).negate().add(center);
-
-        const reflectPointInLine = (p, line) => {
-          const line3 = new THREE.Line3(
-            line.startPoint,
-            new THREE.Vector3().addVectors(line.startPoint, line.directorVector)
-          );
-          const projectedPoint = new THREE.Vector3();
-          line3.closestPointToPoint(p.clone(), true, projectedPoint);
-          return p.clone().sub(projectedPoint).negate().add(projectedPoint);
-        };
-
-        const reflectPointInPlane = (p, plane) => {
-          const v = new THREE.Vector3().subVectors(p, plane.pointOnPlane);
-          const dist = v.dot(plane.normal);
-          return p.clone().addScaledVector(plane.normal, -2 * dist);
-        };
-
-        // --- Logique principale ---
-        let refObject;
-        if (type === "point") refObject = geometryManager.points[parseInt(refId)];
-        else if (type === "line") refObject = geometryManager.findLineById(parseInt(refId));
-        else if (type === "plane") refObject = geometryManager.findPlaneById(parseInt(refId));
-
-        if (!refObject) {
-          showSplashScreen("Référence de symétrie non trouvée.");
-          return;
-        }
-
         if (inst instanceof Point) {
-          let newPos = inst.position; // On prend la position actuelle
-          if (type === "point") newPos = reflectPointInPoint(inst.position, refObject.position);
-          else if (type === "line") newPos = reflectPointInLine(inst.position, refObject);
-          else if (type === "plane") newPos = reflectPointInPlane(inst.position, refObject);
-          inst.update(inst.name, newPos.x, newPos.y, newPos.z);
+          const newPos = transformVector(inst.position);
+          inst.update(inst.name, newPos.x, newPos.y, newPos.z); // Note: update gère l'inversion Y/Z interne si on passe des coords brutes, ici on passe x,y,z du vecteur ThreeJS, donc attention.
+          // CORRECTION POUR POINT : update() prend (x, y_ui, z_ui).
+          // Si on a un vecteur ThreeJS (x, y_3js, z_3js), y_ui = z_3js et z_ui = y_3js.
+          // MAIS votre classe Point stocke directement new THREE.Vector3(x, y, z).
+          // La méthode update() fait : this.position.set(x, y, z).
+          // Donc on peut simplement faire :
+          inst.position.copy(newPos);
+          inst.mesh.position.copy(inst.position);
+          inst.updateLabelPosition();
         } else if (inst instanceof Vector) {
-          let newOrigin = inst.origin;
-          let endPoint = new THREE.Vector3().addVectors(inst.origin, inst.components);
+          const newOrigin = transformVector(inst.origin);
+          const endPoint = new THREE.Vector3().addVectors(inst.origin, inst.components);
+          const newEndPoint = transformVector(endPoint);
+          const newComponents = new THREE.Vector3().subVectors(newEndPoint, newOrigin);
 
-          if (type === "point") {
-            newOrigin = reflectPointInPoint(inst.origin, refObject.position);
-            endPoint = reflectPointInPoint(endPoint, refObject.position);
-          } else if (type === "line") {
-            newOrigin = reflectPointInLine(inst.origin, refObject);
-            endPoint = reflectPointInLine(endPoint, refObject);
-          } else if (type === "plane") {
-            newOrigin = reflectPointInPlane(inst.origin, refObject);
-            endPoint = reflectPointInPlane(endPoint, refObject);
-          }
-          const newComponents = new THREE.Vector3().subVectors(endPoint, newOrigin);
           inst.update(inst.name, newOrigin, newComponents);
         } else if (inst instanceof Line3D) {
-          // Pour une droite, on réfléchit son point de départ et son vecteur directeur.
-          let newStartPoint = inst.startPoint;
-          let newDirectorVector = inst.directorVector;
-          let endPoint = new THREE.Vector3().addVectors(inst.startPoint, inst.directorVector);
+          const newStart = transformVector(inst.startPoint);
+          // Pour le vecteur directeur, on transforme le point "start + dir" et on soustrait le nouveau start
+          const endPoint = new THREE.Vector3().addVectors(inst.startPoint, inst.directorVector);
+          const newEnd = transformVector(endPoint);
+          const newDir = new THREE.Vector3().subVectors(newEnd, newStart);
 
-          if (type === "point") {
-            newStartPoint = reflectPointInPoint(inst.startPoint, refObject.position);
-            newDirectorVector = reflectPointInPoint(endPoint, refObject.position).sub(newStartPoint);
-          } else if (type === "line") {
-            newStartPoint = reflectPointInLine(inst.startPoint, refObject);
-            newDirectorVector = reflectPointInLine(endPoint, refObject).sub(newStartPoint);
-          } else if (type === "plane") {
-            newStartPoint = reflectPointInPlane(inst.startPoint, refObject);
-            newDirectorVector = reflectPointInPlane(endPoint, refObject).sub(newStartPoint);
-          }
+          // Mise à jour manuelle (similaire à translation/rotation)
+          inst.startPoint.copy(newStart);
+          inst.directorVector.copy(newDir);
 
-          inst.startPoint.copy(newStartPoint);
-          inst.directorVector.copy(newDirectorVector);
           const lineLength = 100;
           const dir = inst.directorVector.clone().normalize();
           const start = new THREE.Vector3().addVectors(inst.startPoint, dir.clone().multiplyScalar(-lineLength));
           const end = new THREE.Vector3().addVectors(inst.startPoint, dir.clone().multiplyScalar(lineLength));
-          inst.mesh.geometry.setFromPoints([start, end]);
-          inst.mesh.geometry.computeBoundingSphere();
-        } else if (inst instanceof Plane) {
-          // Pour un plan, on réfléchit son point de référence et son vecteur normal.
-          let newPointOnPlane = inst.pointOnPlane;
-          let endPointNormal = new THREE.Vector3().addVectors(inst.pointOnPlane, inst.normal);
 
-          if (type === "point") {
-            newPointOnPlane = reflectPointInPoint(inst.pointOnPlane, refObject.position);
-            inst.normal.copy(reflectPointInPoint(endPointNormal, refObject.position).sub(newPointOnPlane));
-          } else if (type === "line") {
-            newPointOnPlane = reflectPointInLine(inst.pointOnPlane, refObject);
-            inst.normal.copy(reflectPointInLine(endPointNormal, refObject).sub(newPointOnPlane));
-          } else if (type === "plane") {
-            newPointOnPlane = reflectPointInPlane(inst.pointOnPlane, refObject);
-            // La réflexion d'un vecteur normal par rapport à un plan est une opération de réflexion vectorielle.
-            inst.normal.reflect(refObject.normal);
-          }
+          inst.mesh.geometry.dispose();
+          inst.mesh.geometry = new THREE.BufferGeometry().setFromPoints([start, end]);
+          if (inst === selectedObjectInstance) inst.mesh.material.color.set(HIGHLIGHT_COLOR);
+        } else if (inst instanceof Plane) {
+          // Transformation du point d'ancrage
+          const newPointOnPlane = transformVector(inst.pointOnPlane);
+
+          // Transformation de la normale : on transforme (point + normal) et on soustrait le nouveau point
+          const pointPlusNormal = new THREE.Vector3().addVectors(inst.pointOnPlane, inst.normal);
+          const newPointPlusNormal = transformVector(pointPlusNormal);
+          const newNormal = new THREE.Vector3().subVectors(newPointPlusNormal, newPointOnPlane).normalize();
+
           inst.pointOnPlane.copy(newPointOnPlane);
-          inst.displayNormal.copy(inst.normal); // Synchroniser le vecteur d'affichage
+          inst.normal.copy(newNormal);
+          inst.displayNormal.copy(newNormal);
 
           inst.mesh.position.copy(inst.pointOnPlane);
-          inst.mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), inst.normal.clone().normalize());
+          inst.mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), inst.normal);
         }
 
         updateAllUI();
-        console.log(`Symétrie par rapport à "${refObject.name}" appliquée à "${inst.name}".`);
       }
-
       function saveScene() {
         const sceneName = document.getElementById("sceneNameInput").value.trim();
         if (!sceneName) {
