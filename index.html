@@ -40,10 +40,10 @@
         z-index: 999;
       }
 
-#panel.hidden {
-  /* Déplace le panneau de 100% de sa largeur + sa marge de 20px */
-  transform: translateX(calc(-100% - 20px));
-}
+      #panel.hidden {
+        /* Déplace le panneau de 100% de sa largeur + sa marge de 20px */
+        transform: translateX(calc(-100% - 20px));
+      }
 
       #toggleBtn {
         position: absolute;
@@ -352,15 +352,18 @@
 
       /* --- STYLES POUR LE MENU CONTEXTUEL --- */
       .context-menu {
-        position: absolute;
-        z-index: 10000;
+        position: fixed; /* CHANGEMENT : fixed au lieu de absolute */
+        top: 0;
+        left: 0;
+        z-index: 2147483647; /* Le maximum possible en CSS */
         background-color: #ffffff;
-        border: 1px solid #ccc;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        border-radius: 6px;
+        border: 1px solid #999;
+        box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.5);
+        border-radius: 4px;
         padding: 5px 0;
         min-width: 160px;
         font-family: Arial, sans-serif;
+        display: none; /* Caché par défaut */
       }
 
       .context-menu-items {
@@ -1078,6 +1081,12 @@
         removeFromScene(scene) {
           scene.remove(this.mesh);
           scene.remove(this.label);
+          if (this.mesh.geometry) this.mesh.geometry.dispose();
+          if (this.mesh.material) this.mesh.material.dispose();
+          if (this.label.material) {
+            if (this.label.material.map) this.label.material.map.dispose(); // Texture du texte
+            this.label.material.dispose();
+          }
         }
       }
 
@@ -1115,6 +1124,8 @@
         }
         removeFromScene(scene) {
           scene.remove(this.mesh);
+          if (this.mesh.geometry) this.mesh.geometry.dispose();
+          if (this.mesh.material) this.mesh.material.dispose();
         }
       }
       /**
@@ -1169,12 +1180,13 @@
         }
         removeFromScene(scene) {
           scene.remove(this.mesh);
+          if (this.mesh.geometry) this.mesh.geometry.dispose();
+          if (this.mesh.material) this.mesh.material.dispose();
         }
       }
       /**
        * Classe représentant un vecteur 3D.
        */
-      // Trouvez la classe Vector et remplacez-la entièrement par ce code mis à jour.
 
       class Vector {
         constructor(name, origin, components, color = 0xffa500, derivedFrom = null) {
@@ -1457,18 +1469,22 @@
       let raycaster,
         mouse,
         selectedObjectInstance = null;
-      let wasPanningOrZooming = false; // Pour distinguer un geste caméra d'un tap
+      // let wasPanningOrZooming = false; // Pour distinguer un geste caméra d'un tap
       let currentConstructionObjects = [];
       let splashTimer = null;
       let blockNextClick = false; // Variable pour bloquer le "clic fantôme" sur mobile
       const HIGHLIGHT_COLOR = 0xffff00; // Jaune vif pour la surbrillance
+      let longPressTimer = null;
+      const LONG_PRESS_DURATION = 500;
+      let touchStartPosition = { x: 0, y: 0 };
+      const TOUCH_MOVE_TOLERANCE = 10; // Tolérance en pixels pour différencier un tap d'un drag
+      // let rightClickedObjectInstance = null;
 
       function gcd(a, b) {
         a = Math.abs(a);
         b = Math.abs(b);
         return b === 0 ? a : gcd(b, a % b);
       }
-      // ... après la ligne let splashTimer = null;
 
       const swipeState = {
         isSwiping: false, // VRAI si un geste de balayage du panneau est en cours
@@ -1479,12 +1495,10 @@
       };
       const SWIPE_EDGE_ZONE = 40; // Zone de détection sur le bord gauche
 
-      /**
-       * Calcule le PGCD de trois nombres.
-       */
       function gcdOfThree(a, b, c) {
         return gcd(gcd(a, b), c);
       }
+
       function init() {
         scene = new THREE.Scene();
         geometryManager = new GeometryManager(scene);
@@ -1519,6 +1533,7 @@
         animate();
         updateAllUI();
       }
+
       function formatNumber(value, decimalPlaces = 2) {
         if (typeof value !== "number" || isNaN(value)) {
           return value; // Retourne la valeur telle quelle si ce n'est pas un nombre
@@ -1530,327 +1545,422 @@
         return value.toFixed(decimalPlaces);
       }
 
-      let rightClickedObjectInstance = null;
+      // =====================================================================================
+      // START: GESTION DES ÉVÉNEMENTS FINALE ET VÉRIFIÉE
+      // =====================================================================================
 
-     // =====================================================================================
-// START: GESTION DES ÉVÉNEMENTS FINALE ET VÉRIFIÉE
-// =====================================================================================
+      // --- Variables globales pour la logique des interactions ---
 
-// --- Variables globales pour la logique des interactions ---
-let longPressTimer = null;
-const LONG_PRESS_DURATION = 500;
-let touchStartPosition = { x: 0, y: 0 };
-const TOUCH_MOVE_TOLERANCE = 10; // Tolérance en pixels pour différencier un tap d'un drag
+      function setupEventListeners() {
+        const canvas = renderer.domElement;
+        const panel = document.getElementById("panel");
 
-function setupEventListeners() {
-    const canvas = renderer.domElement;
-    const panel = document.getElementById('panel');
+        canvas.addEventListener("contextmenu", onRightClick);
+        canvas.addEventListener("click", onObjectClick);
+        canvas.addEventListener("mousedown", onMouseDown);
+        canvas.addEventListener("mousemove", onMouseMove);
+        canvas.addEventListener("mouseup", onMouseUp);
+        canvas.addEventListener("wheel", onWheel);
 
-    canvas.addEventListener("contextmenu", onRightClick);
-    canvas.addEventListener("click", onObjectClick);
-    canvas.addEventListener("mousedown", onMouseDown);
-    canvas.addEventListener("mousemove", onMouseMove);
-    canvas.addEventListener("mouseup", onMouseUp);
-    canvas.addEventListener("wheel", onWheel);
+        document.addEventListener("touchstart", handleTouchStart, { passive: false });
+        document.addEventListener("touchmove", handleTouchMove, { passive: false });
+        document.addEventListener("touchend", handleTouchEnd);
 
-    document.addEventListener("touchstart", handleTouchStart, { passive: false });
-    document.addEventListener("touchmove", handleTouchMove, { passive: false });
-    document.addEventListener("touchend", handleTouchEnd);
-
-    window.addEventListener("resize", onWindowResize);
-    window.addEventListener("keydown", (event) => {
-        if (event.key === "Escape") {
+        window.addEventListener("resize", onWindowResize);
+        window.addEventListener("keydown", (event) => {
+          if (event.key === "Escape") {
             hideContextMenu();
             if (panelOpen) togglePanel();
             if (selectedObjectInstance) {
-                deselectCurrentObject();
-                cancelEdit();
-                cancelVectorEdit();
+              deselectCurrentObject();
+              cancelEdit();
+              cancelVectorEdit();
             }
-        }
-    });
+          }
+        });
 
-    document.addEventListener("mousedown", (e) => {
-        const menu = document.getElementById("contextMenu");
-        if (menu.style.display === "block" && !menu.contains(e.target)) {
+        document.addEventListener("mousedown", (e) => {
+          const menu = document.getElementById("contextMenu");
+          if (menu.style.display === "block" && !menu.contains(e.target)) {
             hideContextMenu();
+          }
+        });
+
+        document.getElementById("contextMenu").addEventListener("mousedown", (e) => e.stopPropagation());
+
+        const stopPropagation = (e) => e.stopPropagation();
+        panel.addEventListener("mousedown", stopPropagation);
+        panel.addEventListener("wheel", stopPropagation);
+        panel.addEventListener("contextmenu", stopPropagation);
+      }
+
+      function onRightClick(event) {
+        event.preventDefault();
+        console.log("👉 1. Clic droit détecté à :", event.clientX, event.clientY);
+        findObjectAndShowMenu(event.clientX, event.clientY);
+      }
+
+      function onObjectClick(event) {
+        if (blockNextClick) {
+          blockNextClick = false;
+          return;
         }
-    });
+        if (wasDragged) return;
+        performRaycastSelection(event.clientX, event.clientY);
+      }
 
-    document.getElementById("contextMenu").addEventListener("mousedown", (e) => e.stopPropagation());
+      function handleTouchStart(e) {
+        wasDragged = false;
+        // wasPanningOrZooming = false;
+        clearTimeout(longPressTimer);
+        longPressTimer = null;
+        const touch = e.touches[0];
 
-    const stopPropagation = (e) => e.stopPropagation();
-    panel.addEventListener('mousedown', stopPropagation);
-    panel.addEventListener('wheel', stopPropagation);
-    panel.addEventListener('contextmenu', stopPropagation);
-}
+        const canStartOpening = !panelOpen && touch.clientX < SWIPE_EDGE_ZONE;
+        const canStartClosing = panelOpen && e.target.closest("#panel");
+        if (canStartOpening || canStartClosing) {
+          swipeState.isSwiping = true;
+          swipeState.lock = null;
+          swipeState.startX = touch.clientX;
+          swipeState.startY = touch.clientY;
+          const panel = document.getElementById("panel");
+          const panelRect = panel.getBoundingClientRect();
+          swipeState.panelStartTranslateX = panel.classList.contains("hidden") ? -panelRect.width : 0;
+          return;
+        }
 
-function onRightClick(event) {
-    event.preventDefault();
-    findObjectAndShowMenu(event.clientX, event.clientY);
-}
+        swipeState.isSwiping = false;
 
-function onObjectClick(event) {
-    if (blockNextClick) {
-        blockNextClick = false;
-        return;
-    }
-    if (wasDragged) return;
-    performRaycastSelection(event.clientX, event.clientY);
-}
-
-function handleTouchStart(e) {
-    wasDragged = false;
-    wasPanningOrZooming = false;
-    clearTimeout(longPressTimer);
-    longPressTimer = null;
-    const touch = e.touches[0];
-
-    const canStartOpening = !panelOpen && touch.clientX < SWIPE_EDGE_ZONE;
-    const canStartClosing = panelOpen && e.target.closest("#panel");
-    if (canStartOpening || canStartClosing) {
-        swipeState.isSwiping = true;
-        swipeState.lock = null;
-        swipeState.startX = touch.clientX;
-        swipeState.startY = touch.clientY;
-        const panel = document.getElementById("panel");
-        const panelRect = panel.getBoundingClientRect();
-        swipeState.panelStartTranslateX = panel.classList.contains("hidden") ? -panelRect.width : 0;
-        return;
-    }
-
-    swipeState.isSwiping = false;
-
-    if (e.touches.length === 1) {
-        isDragging = true;
-        previousMousePosition = { x: touch.clientX, y: touch.clientY };
-        touchStartPosition = { x: touch.clientX, y: touch.clientY };
-        longPressTimer = setTimeout(() => {
+        if (e.touches.length === 1) {
+          isDragging = true;
+          previousMousePosition = { x: touch.clientX, y: touch.clientY };
+          touchStartPosition = { x: touch.clientX, y: touch.clientY };
+          longPressTimer = setTimeout(() => {
             findObjectAndShowMenu(touchStartPosition.x, touchStartPosition.y);
             longPressTimer = null;
             isDragging = false;
-        }, LONG_PRESS_DURATION);
-    } else if (e.touches.length >= 2) {
-        isPanning = true;
-        wasPanningOrZooming = true;
-        clearTimeout(longPressTimer);
-        longPressTimer = null;
-        const dx = e.touches[0].clientX - e.touches[1].clientX;
-        const dy = e.touches[0].clientY - e.touches[1].clientY;
-        initialPinchDistance = Math.sqrt(dx * dx + dy * dy);
-        previousMousePosition = { x: (e.touches[0].clientX + e.touches[1].clientX) / 2, y: (e.touches[0].clientY + e.touches[1].clientY) / 2 };
-    }
-}
-
-function handleTouchMove(e) {
-    if (swipeState.isSwiping) {
-        const touch = e.touches[0];
-        const deltaX = touch.clientX - swipeState.startX;
-        const deltaY = touch.clientY - swipeState.startY;
-        if (!swipeState.lock) {
-            swipeState.lock = Math.abs(deltaX) > Math.abs(deltaY) ? "horizontal" : "vertical";
+          }, LONG_PRESS_DURATION);
+        } else if (e.touches.length >= 2) {
+          isPanning = true;
+          // wasPanningOrZooming = true;
+          clearTimeout(longPressTimer);
+          longPressTimer = null;
+          const dx = e.touches[0].clientX - e.touches[1].clientX;
+          const dy = e.touches[0].clientY - e.touches[1].clientY;
+          initialPinchDistance = Math.sqrt(dx * dx + dy * dy);
+          previousMousePosition = {
+            x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
+            y: (e.touches[0].clientY + e.touches[1].clientY) / 2,
+          };
         }
-        if (swipeState.lock === "horizontal") {
+      }
+
+      function handleTouchMove(e) {
+        if (swipeState.isSwiping) {
+          const touch = e.touches[0];
+          const deltaX = touch.clientX - swipeState.startX;
+          const deltaY = touch.clientY - swipeState.startY;
+          if (!swipeState.lock) {
+            swipeState.lock = Math.abs(deltaX) > Math.abs(deltaY) ? "horizontal" : "vertical";
+          }
+          if (swipeState.lock === "horizontal") {
             e.preventDefault();
             const panel = document.getElementById("panel");
             panel.classList.add("no-transition");
             let newX = swipeState.panelStartTranslateX + deltaX;
             newX = Math.max(-panel.offsetWidth, Math.min(0, newX));
             panel.style.transform = `translateX(${newX}px)`;
+          }
+          return;
         }
-        return;
-    }
 
-    const touch = e.touches[0];
-    if (longPressTimer) {
-        const moveX = Math.abs(touch.clientX - touchStartPosition.x);
-        const moveY = Math.abs(touch.clientY - touchStartPosition.y);
-        if (moveX > TOUCH_MOVE_TOLERANCE || moveY > TOUCH_MOVE_TOLERANCE) {
+        const touch = e.touches[0];
+        if (longPressTimer) {
+          const moveX = Math.abs(touch.clientX - touchStartPosition.x);
+          const moveY = Math.abs(touch.clientY - touchStartPosition.y);
+          if (moveX > TOUCH_MOVE_TOLERANCE || moveY > TOUCH_MOVE_TOLERANCE) {
             clearTimeout(longPressTimer);
             longPressTimer = null;
+          }
         }
-    }
 
-    if (isDragging) {
-        e.preventDefault();
-        wasDragged = true;
-        const dX = touch.clientX - previousMousePosition.x;
-        const dY = touch.clientY - previousMousePosition.y;
-        cameraRotation.y += dX * 0.005;
-        cameraRotation.x += dY * 0.005;
-        cameraRotation.x = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, cameraRotation.x));
-        updateCameraPosition();
-        previousMousePosition = { x: touch.clientX, y: touch.clientY };
-    } else if (isPanning && e.touches.length >= 2) {
-        e.preventDefault();
-        const dx = e.touches[0].clientX - e.touches[1].clientX;
-        const dy = e.touches[0].clientY - e.touches[1].clientY;
-        const pinch = Math.sqrt(dx*dx + dy*dy);
-        zoomCamera((initialPinchDistance - pinch) * 0.1);
-        initialPinchDistance = pinch;
-        const mid = { x: (e.touches[0].clientX + e.touches[1].clientX) / 2, y: (e.touches[0].clientY + e.touches[1].clientY) / 2 };
-        panCamera(mid.x - previousMousePosition.x, mid.y - previousMousePosition.y);
-        previousMousePosition = mid;
-    }
-}
+        if (isDragging) {
+          e.preventDefault();
+          wasDragged = true;
+          const dX = touch.clientX - previousMousePosition.x;
+          const dY = touch.clientY - previousMousePosition.y;
+          cameraRotation.y += dX * 0.005;
+          cameraRotation.x += dY * 0.005;
+          cameraRotation.x = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, cameraRotation.x));
+          updateCameraPosition();
+          previousMousePosition = { x: touch.clientX, y: touch.clientY };
+        } else if (isPanning && e.touches.length >= 2) {
+          e.preventDefault();
+          const dx = e.touches[0].clientX - e.touches[1].clientX;
+          const dy = e.touches[0].clientY - e.touches[1].clientY;
+          const pinch = Math.sqrt(dx * dx + dy * dy);
+          zoomCamera((initialPinchDistance - pinch) * 0.1);
+          initialPinchDistance = pinch;
+          const mid = {
+            x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
+            y: (e.touches[0].clientY + e.touches[1].clientY) / 2,
+          };
+          panCamera(mid.x - previousMousePosition.x, mid.y - previousMousePosition.y);
+          previousMousePosition = mid;
+        }
+      }
 
-function handleTouchEnd(e) {
-    if (swipeState.isSwiping) {
-        if (swipeState.lock === "horizontal") {
+      function handleTouchEnd(e) {
+        if (swipeState.isSwiping) {
+          if (swipeState.lock === "horizontal") {
             const panel = document.getElementById("panel");
             panel.classList.remove("no-transition");
             panel.style.transform = "";
             const panelRect = panel.getBoundingClientRect();
             if (panelRect.left > -panel.offsetWidth / 2) {
-                panelOpen = true;
-                panel.classList.remove("hidden");
-                document.getElementById("openBtn").classList.remove("show");
+              panelOpen = true;
+              panel.classList.remove("hidden");
+              document.getElementById("openBtn").classList.remove("show");
             } else {
-                panelOpen = false;
-                panel.classList.add("hidden");
-                document.getElementById("openBtn").classList.add("show");
+              panelOpen = false;
+              panel.classList.add("hidden");
+              document.getElementById("openBtn").classList.add("show");
             }
-        }
-    } else {
-        if (longPressTimer) {
+          }
+        } else {
+          if (longPressTimer) {
             clearTimeout(longPressTimer);
             e.preventDefault();
             performRaycastSelection(touchStartPosition.x, touchStartPosition.y);
+          }
         }
-    }
-    swipeState.isSwiping = false;
-    swipeState.lock = null;
-    isDragging = false;
-    isPanning = false;
-    longPressTimer = null;
-}
+        swipeState.isSwiping = false;
+        swipeState.lock = null;
+        isDragging = false;
+        isPanning = false;
+        longPressTimer = null;
+      }
 
-function getIntersectionResult(x, y) {
-    mouse.x = (x / window.innerWidth) * 2 - 1;
-    mouse.y = -(y / window.innerHeight) * 2 + 1;
-    raycaster.setFromCamera(mouse, camera);
+      function getIntersectionResult(x, y) {
+        // 1. Transformation des coordonnées (inchangé)
+        mouse.x = (x / window.innerWidth) * 2 - 1;
+        mouse.y = -(y / window.innerHeight) * 2 + 1;
+        raycaster.setFromCamera(mouse, camera);
 
-    const meshes = [
-        ...geometryManager.points.map((p) => p.mesh),
-        ...geometryManager.lines.map((l) => l.mesh),
-        ...geometryManager.planes.map((p) => p.mesh),
-        ...geometryManager.vectors.map((v) => v.arrowHelper).filter(Boolean).flatMap((a) => [a.line, a.cone]),
-    ];
-    const intersects = raycaster.intersectObjects(meshes);
-    return intersects.length > 0 ? intersects[0] : null;
-}
+        // 2. Rassemblement des objets, MAIS avec un filtre sur la visibilité
+        const meshes = [];
 
-function performRaycastSelection(x, y) {
-    const intersection = getIntersectionResult(x, y);
-    if (intersection && intersection.object.userData.instance) {
-        // La fonction handleSelection attend le MAILLAGE cliqué
-        handleSelection(intersection.object);
-    } else {
-        deselectCurrentObject();
-        cancelEdit();
-        cancelVectorEdit();
-    }
-}
-/**
- * Lance un rayon et retourne l'instance de l'objet trouvé, ou null.
- * C'est la fonction centrale pour toute détection d'objet.
- */
-function getObjectAtCoordinates(x, y) {
-    mouse.x = (x / window.innerWidth) * 2 - 1;
-    mouse.y = -(y / window.innerHeight) * 2 + 1;
-    raycaster.setFromCamera(mouse, camera);
+        // A. Points (s'ils ont une propriété isVisible ou via le mesh directly)
+        // Par défaut vos points sont toujours visibles, mais on vérifie le mesh au cas où
+        meshes.push(...geometryManager.points.filter((p) => p.mesh.visible).map((p) => p.mesh));
 
-    const meshes = [
-        ...geometryManager.points.map((p) => p.mesh),
-        ...geometryManager.lines.map((l) => l.mesh),
-        ...geometryManager.planes.map((p) => p.mesh),
-        ...geometryManager.vectors.map((v) => v.arrowHelper).filter(Boolean).flatMap((a) => [a.line, a.cone]),
-    ];
-    const intersects = raycaster.intersectObjects(meshes);
+        // B. Droites (Seulement si isVisible est true)
+        meshes.push(...geometryManager.lines.filter((l) => l.isVisible).map((l) => l.mesh));
 
-    if (intersects.length > 0) {
-        return intersects[0].object.userData.instance || null;
-    }
-    return null;
-}
+        // C. Plans (C'est ici que votre problème se réglait)
+        meshes.push(...geometryManager.planes.filter((p) => p.isVisible).map((p) => p.mesh));
 
-/**
- * Gère la sélection d'un objet (appelée par clic ou tap).
- */
-function performRaycastSelection(x, y) {
-    const instance = getObjectAtCoordinates(x, y);
-    if (instance) {
-        handleSelection(instance.mesh); // handleSelection attend le mesh
-    } else {
-        deselectCurrentObject();
-        cancelEdit();
-        cancelVectorEdit();
-    }
-}
+        // D. Vecteurs (Seulement si isVisible est true)
+        // Pour les vecteurs, c'est un peu plus complexe car ils ont une ligne et un cône
+        geometryManager.vectors.forEach((v) => {
+          if (v.isVisible && v.arrowHelper) {
+            meshes.push(v.arrowHelper.line, v.arrowHelper.cone);
+          }
+        });
 
-/**
- * Trouve un objet et affiche le menu contextuel (appelée par clic droit ou appui long).
- */
-function findObjectAndShowMenu(x, y) {
-    hideContextMenu();
-    const intersection = getIntersectionResult(x, y);
-    if (intersection && intersection.object.userData.instance) {
-        // La fonction populateAndShowContextMenu attend L'INSTANCE de l'objet
-        populateAndShowContextMenu(x, y, intersection.object.userData.instance);
-    }
-}
-function populateAndShowContextMenu(x, y, instance) {
-    const menu = document.getElementById("contextMenu");
-    const menuItemsContainer = document.getElementById("contextMenuItems");
-    menuItemsContainer.innerHTML = "";
-    const createAction = (action, text) => `<li onclick="${action}; hideContextMenu();">${text}</li>`;
-    if (instance instanceof Point) {
-        const index = geometryManager.points.indexOf(instance);
-        menuItemsContainer.innerHTML =
-            createAction(`editPoint(${index})`, '<i class="fas fa-pencil-alt"></i> Modifier') +
-            createAction(`removePoint(${index})`, '<i class="fas fa-trash-alt"></i> Supprimer');
-    } else if (instance instanceof Vector) {
-        menuItemsContainer.innerHTML =
-            createAction(`editVector(${instance.id})`, '<i class="fas fa-pencil-alt"></i> Modifier') +
-            createAction(`toggleVectorVisibility(${instance.id})`, `<i class="fas fa-eye"></i> ${instance.isVisible ? "Cacher" : "Afficher"}`) +
-            createAction(`removeVectorById(${instance.id})`, '<i class="fas fa-trash-alt"></i> Supprimer');
-    } else if (instance instanceof Line3D) {
-        menuItemsContainer.innerHTML =
-            createAction(`editLine(${instance.id})`, '<i class="fas fa-pencil-alt"></i> Modifier / Voir') +
-            createAction(`toggleStraightLineVisibility(${instance.id})`, `<i class="fas fa-eye"></i> ${instance.isVisible ? "Cacher" : "Afficher"}`) +
-            createAction(`removeStraightLineById(${instance.id})`, '<i class="fas fa-trash-alt"></i> Supprimer');
-    } else if (instance instanceof Plane) {
-        const normalVector = geometryManager.vectors.find((v) => v.parentPlaneId === instance.id && v.isNormalVector);
-        menuItemsContainer.innerHTML =
-            createAction(`editPlane(${instance.id})`, '<i class="fas fa-pencil-alt"></i> Modifier / Voir') +
-            createAction(`togglePlaneVisibility(${instance.id})`, `<i class="fas fa-eye"></i> ${instance.isVisible ? "Cacher" : "Afficher"}`) +
-            createAction(`toggleNormalVector(${instance.id})`, `<i class="fas fa-ruler-vertical"></i> ${normalVector ? "Masquer Vn" : "Afficher Vn"}`) +
-            createAction(`removePlaneById(${instance.id})`, '<i class="fas fa-trash-alt"></i> Supprimer');
-    }
-    menu.style.visibility = "hidden";
-    menu.style.display = "block";
-    const menuWidth = menu.offsetWidth;
-    const menuHeight = menu.offsetHeight;
-    menu.style.display = "none";
-    menu.style.visibility = "visible";
-    let finalX = x; let finalY = y;
-    if (x + menuWidth > window.innerWidth) finalX = window.innerWidth - menuWidth - 5;
-    if (y + menuHeight > window.innerHeight) finalY = window.innerHeight - menuHeight - 5;
-    menu.style.left = `${finalX}px`;
-    menu.style.top = `${finalY}px`;
-    menu.style.display = "block";
-}
+        // 3. Lancement du rayon uniquement sur les objets visibles
+        const intersects = raycaster.intersectObjects(meshes);
 
-// =====================================================================================
-// END: GESTION DES ÉVÉNEMENTS
-// =====================================================================================
+        return intersects.length > 0 ? intersects[0] : null;
+      }
+
+      function performRaycastSelection(x, y) {
+        const intersection = getIntersectionResult(x, y);
+        if (intersection && intersection.object.userData.instance) {
+          // La fonction handleSelection attend le MAILLAGE cliqué
+          handleSelection(intersection.object);
+        } else {
+          deselectCurrentObject();
+          cancelEdit();
+          cancelVectorEdit();
+        }
+      }
+
+      function getObjectAtCoordinates(x, y) {
+        mouse.x = (x / window.innerWidth) * 2 - 1;
+        mouse.y = -(y / window.innerHeight) * 2 + 1;
+        raycaster.setFromCamera(mouse, camera);
+
+        const meshes = [
+          ...geometryManager.points.map((p) => p.mesh),
+          ...geometryManager.lines.map((l) => l.mesh),
+          ...geometryManager.planes.map((p) => p.mesh),
+          ...geometryManager.vectors
+            .map((v) => v.arrowHelper)
+            .filter(Boolean)
+            .flatMap((a) => [a.line, a.cone]),
+        ];
+        const intersects = raycaster.intersectObjects(meshes);
+
+        if (intersects.length > 0) {
+          return intersects[0].object.userData.instance || null;
+        }
+        return null;
+      }
+
+      function performRaycastSelection(x, y) {
+        const instance = getObjectAtCoordinates(x, y);
+        if (instance) {
+          handleSelection(instance.mesh); // handleSelection attend le mesh
+        } else {
+          deselectCurrentObject();
+          cancelEdit();
+          cancelVectorEdit();
+        }
+      }
+
+      function findObjectAndShowMenu(x, y) {
+        // On vérifie que la fonction existe bien avant de l'appeler
+        if (typeof hideContextMenu === "function") {
+          hideContextMenu();
+        } else {
+          console.error("❌ Erreur : hideContextMenu n'est pas définie !");
+          return;
+        }
+
+        const intersection = getIntersectionResult(x, y);
+
+        if (intersection) {
+          console.log("✅ 2. Objet touché !", intersection.object);
+
+          if (intersection.object.userData && intersection.object.userData.instance) {
+            console.log("✅ 3. Instance trouvée, lancement du menu...");
+            populateAndShowContextMenu(x, y, intersection.object.userData.instance);
+          } else {
+            console.warn("⚠️ Objet touché mais pas de données 'instance' (userData vide ?)");
+          }
+        } else {
+          console.log("❌ 2. Aucun objet trouvé sous la souris.");
+        }
+      }
+
+      function populateAndShowContextMenu(x, y, instance) {
+        console.log("🛠️ Construction du menu pour :", instance.constructor.name);
+
+        const menu = document.getElementById("contextMenu");
+        const menuItemsContainer = document.getElementById("contextMenuItems");
+
+        // 1. Vider le menu précédent
+        menuItemsContainer.innerHTML = "";
+
+        // Helper pour créer les lignes (li)
+        const createAction = (action, text) =>
+          `<li onclick="${action}; hideContextMenu();" style="padding:8px 15px; cursor:pointer; border-bottom:1px solid #eee; color:#333;">${text}</li>`;
+
+        let htmlContent = "";
+
+        // 2. Générer le contenu selon le type
+        if (instance instanceof Point) {
+          const index = geometryManager.points.indexOf(instance);
+          htmlContent += createAction(`editPoint(${index})`, "✏️ Modifier le point");
+          htmlContent += createAction(`removePoint(${index})`, "🗑️ Supprimer le point");
+        } else if (instance instanceof Vector) {
+          htmlContent += createAction(`editVector(${instance.id})`, "✏️ Modifier le vecteur");
+          htmlContent += createAction(
+            `toggleVectorVisibility(${instance.id})`,
+            instance.isVisible ? "🙈 Cacher" : "👁️ Afficher"
+          );
+          htmlContent += createAction(`removeVectorById(${instance.id})`, "🗑️ Supprimer");
+        } else if (instance instanceof Line3D) {
+          htmlContent += createAction(`editLine(${instance.id})`, "✏️ Modifier la droite");
+          htmlContent += createAction(
+            `toggleStraightLineVisibility(${instance.id})`,
+            instance.isVisible ? "🙈 Cacher" : "👁️ Afficher"
+          );
+          htmlContent += createAction(`removeStraightLineById(${instance.id})`, "🗑️ Supprimer");
+        } else if (instance instanceof Plane) {
+          htmlContent += createAction(`editPlane(${instance.id})`, "✏️ Modifier le plan");
+          htmlContent += createAction(
+            `togglePlaneVisibility(${instance.id})`,
+            instance.isVisible ? "🙈 Cacher" : "👁️ Afficher"
+          );
+          htmlContent += createAction(`toggleNormalVector(${instance.id})`, "📏 Vecteur Normal (Vn)");
+          htmlContent += createAction(`removePlaneById(${instance.id})`, "🗑️ Supprimer");
+        }
+
+        // 3. Vérifier si du contenu a été généré
+        if (htmlContent === "") {
+          console.warn("⚠️ Menu vide : type d'objet non reconnu", instance);
+          return;
+        }
+
+        menuItemsContainer.innerHTML = htmlContent;
+
+        // 4. Affichage et Positionnement (Logique Fixed)
+        menu.style.display = "block"; // On l'affiche pour pouvoir calculer sa taille
+
+        const menuWidth = menu.offsetWidth || 160;
+        const menuHeight = menu.offsetHeight || 100;
+
+        // Calcul pour ne pas sortir de l'écran
+        let finalX = x;
+        let finalY = y;
+
+        if (x + menuWidth > window.innerWidth) {
+          finalX = window.innerWidth - menuWidth - 10;
+        }
+        if (y + menuHeight > window.innerHeight) {
+          finalY = window.innerHeight - menuHeight - 10;
+        }
+
+        // Application des positions
+        menu.style.left = finalX + "px";
+        menu.style.top = finalY + "px";
+
+        console.log(`✅ Menu affiché en (${finalX}, ${finalY})`);
+      }
+      // =====================================================================================
+      // END: GESTION DES ÉVÉNEMENTS
+      // =====================================================================================
       function createAxes() {
         const axisLength = 10;
-        const axisRadius = 0.05;
+        const axisRadius = 0.04;
         const headLength = 0.4;
         const headRadius = 0.12;
 
-        const createAxisArrow = (color, direction) => {
+        // --- Helper pour créer le texte (Label) ---
+        const createAxisLabel = (text, colorHex) => {
+          const canvas = document.createElement("canvas");
+          const context = canvas.getContext("2d");
+          canvas.width = 256;
+          canvas.height = 256;
+
+          // Fond transparent
+          context.clearRect(0, 0, canvas.width, canvas.height);
+
+          // Style du texte
+          context.font = "50px Arial";
+          context.textAlign = "center";
+          context.textBaseline = "middle";
+
+          // On utilise la couleur de l'axe pour le texte
+          context.fillStyle = "#" + new THREE.Color(colorHex).getHexString();
+          context.fillText(text, canvas.width / 2, canvas.height / 2);
+
+          // Création de la texture et du sprite
+          const texture = new THREE.CanvasTexture(canvas);
+          const material = new THREE.SpriteMaterial({
+            map: texture,
+            depthTest: false, // Toujours visible au-dessus des objets
+            transparent: true,
+          });
+
+          const sprite = new THREE.Sprite(material);
+          sprite.scale.set(2.5, 2.5, 1); // Taille de l'étiquette
+          return sprite;
+        };
+
+        const createAxisArrow = (color, direction, labelText) => {
           const material = new THREE.MeshBasicMaterial({
             color: color,
             depthTest: false, // Garde l'axe visible à travers les autres objets
@@ -1858,43 +1968,54 @@ function populateAndShowContextMenu(x, y, instance) {
 
           const group = new THREE.Group();
 
-          // Le corps de l'axe (un cylindre)
+          // 1. Le corps de l'axe (cylindre)
           const shaftGeometry = new THREE.CylinderGeometry(axisRadius, axisRadius, axisLength, 12);
           const shaft = new THREE.Mesh(shaftGeometry, material);
           shaft.position.copy(direction).multiplyScalar(axisLength / 2);
           shaft.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction);
           group.add(shaft);
 
-          // La tête de l'axe (un cône)
+          // 2. La tête de l'axe (cône)
           const headGeometry = new THREE.ConeGeometry(headRadius, headLength, 12);
           const head = new THREE.Mesh(headGeometry, material);
           head.position.copy(direction).multiplyScalar(axisLength);
           head.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction);
           group.add(head);
 
-          // Configuration des propriétés de rendu des axes
+          // 3. L'étiquette (Sprite)
+          const label = createAxisLabel(labelText, color);
+          // On place l'étiquette un peu plus loin que la pointe de la flèche
+          const labelPos = direction.clone().multiplyScalar(axisLength + 1.5);
+          label.position.copy(labelPos);
+          group.add(label);
+
+          // Configuration des propriétés de rendu
           group.traverse((child) => {
             if (child.material) {
               child.material.depthTest = true;
               child.material.transparent = true;
               child.material.opacity = 1.0;
-              child.material.depthWrite = true; // Important pour la visibilité
-              child.renderOrder = 1; // S'assurer que les axes sont rendus après le plan
+              child.material.depthWrite = true;
+              child.renderOrder = 1;
             }
           });
 
           return group;
         };
 
-        // Création et ajout des 3 axes à la scène avec un renderOrder moyen
-        // pour qu'ils soient au-dessus du quadrillage mais en dessous des objets
-        const xAxis = createAxisArrow(0xff0000, new THREE.Vector3(1, 0, 0));
-        const yAxis = createAxisArrow(0x00ff00, new THREE.Vector3(0, 1, 0));
-        const zAxis = createAxisArrow(0x0000ff, new THREE.Vector3(0, 0, 1));
+        // Création et ajout des 3 axes à la scène
+        // NOTE : Adaptation à votre logique UI (Z = Hauteur, Y = Profondeur)
 
-        // Les axes ont un renderOrder de 1 (au-dessus du quadrillage à -1)
+        // Axe X (Rouge) -> Label "X"
+        const xAxis = createAxisArrow(0xff0000, new THREE.Vector3(1, 0, 0), "X");
+
+        // Axe Y ThreeJS (Vert - Vertical) -> Label "Z" (Car votre UI considère la hauteur comme Z)
+        const yAxis = createAxisArrow(0x00ff00, new THREE.Vector3(0, 1, 0), "Z");
+
+        // Axe Z ThreeJS (Bleu - Profondeur) -> Label "Y" (Car votre UI considère la profondeur comme Y)
+        const zAxis = createAxisArrow(0x0000ff, new THREE.Vector3(0, 0, 1), "Y");
+
         [xAxis, yAxis, zAxis].forEach((axis) => {
-          axis.renderOrder = 1;
           scene.add(axis);
         });
       }
@@ -1933,10 +2054,7 @@ function populateAndShowContextMenu(x, y, instance) {
         updateVectorList();
         updateSelects();
       }
-      /**
-       * Met à jour la liste des points dans le panneau.
-       * VERSION MODIFIÉE pour un affichage sur une seule ligne.
-       */
+
       function updatePointList() {
         const list = document.getElementById("pointList");
         list.innerHTML = "";
@@ -1962,6 +2080,7 @@ function populateAndShowContextMenu(x, y, instance) {
           list.appendChild(item);
         });
       }
+
       function updateStraightLineList() {
         const list = document.getElementById("lineList");
         list.innerHTML =
@@ -1989,6 +2108,7 @@ function populateAndShowContextMenu(x, y, instance) {
           list.appendChild(item);
         });
       }
+
       function updatePlaneList() {
         const list = document.getElementById("planeList");
         list.innerHTML = geometryManager.planes.length === 0 ? '<div class="point-item">Aucun plan créé.</div>' : "";
@@ -2035,6 +2155,7 @@ function populateAndShowContextMenu(x, y, instance) {
           list.appendChild(item);
         });
       }
+
       function updateVectorList() {
         const list = document.getElementById("vectorList");
         list.innerHTML =
@@ -2191,10 +2312,6 @@ function populateAndShowContextMenu(x, y, instance) {
         updateAllUI();
       }
 
-      // Remplacez votre ancienne fonction editPoint par celle-ci
-
-      // Remplacez votre ancienne fonction editPoint par cette version corrigée
-
       function editPoint(index) {
         ensurePanelVisible(); // Ouvre le panneau si nécessaire
         const p = geometryManager.points[index];
@@ -2225,7 +2342,6 @@ function populateAndShowContextMenu(x, y, instance) {
         }
         document.getElementById("pointName").scrollIntoView({ behavior: "smooth", block: "center" });
       }
-      // Remplacez votre fonction par cette version corrigée et améliorée
 
       function updatePoint() {
         const i = document.getElementById("editPointIndex").value;
@@ -2261,6 +2377,7 @@ function populateAndShowContextMenu(x, y, instance) {
         updateAllUI();
         cancelEdit();
       }
+
       function cancelEdit() {
         // Vider les champs
         document.getElementById("pointName").value = "";
@@ -2297,15 +2414,7 @@ function populateAndShowContextMenu(x, y, instance) {
           updateAllUI();
         }
       }
-      // function clearAllPoints() {
-      //     if (confirm("Effacer tous les points, droites, plans et vecteurs ?")) {
-      //         geometryManager.clearAll();
-      //         updateAllUI();
-      //     }
-      // }
-      /**
-       * Supprime UNIQUEMENT tous les points de la scène et du gestionnaire.
-       */
+
       function clearAllPoints() {
         // 1. Modifier le message de confirmation pour qu'il soit précis.
         if (
@@ -2352,12 +2461,6 @@ function populateAndShowContextMenu(x, y, instance) {
         }
       }
 
-      // ===================================================================
-      // AJOUTEZ LA NOUVELLE FONCTION ICI
-      // ===================================================================
-      /**
-       * Crée une droite 3D à partir de ses équations paramétriques.
-       */
       function addLineFromEquation() {
         const name = document.getElementById("lineNameFromEquation").value.trim() || "Droite (Eq)";
         const equationsText = document.getElementById("lineEquationInput").value;
@@ -2433,12 +2536,7 @@ function populateAndShowContextMenu(x, y, instance) {
         geometryManager.addLine(new Line3D(name, startPoint, directorVector));
         updateAllUI();
       }
-      // ===================================================================
 
-      /**
-       * Affiche ou masque une droite dans la scène.
-       * @param {number} lineId L'ID de la droite à modifier.
-       */
       function toggleStraightLineVisibility(lineId) {
         const line = geometryManager.findLineById(lineId);
         if (line) {
@@ -2465,10 +2563,6 @@ function populateAndShowContextMenu(x, y, instance) {
       }
 
       // --- Plans ---
-      // REMPLACEZ TOUT LE BLOC DE VOTRE ANCIENNE FONCTION addPlane() PAR CECI :
-
-      // Remplacez votre fonction addPlane par celle-ci
-
       function addPlane() {
         const n = document.getElementById("planeName").value.trim() || "Plan";
 
@@ -2515,11 +2609,7 @@ function populateAndShowContextMenu(x, y, instance) {
         document.getElementById("planeName").value = "";
         // --- FIN DE LA CORRECTION ---
       }
-      /**
-       * Crée un plan 3D à partir de son équation cartésienne.
-       * Cette version gère des syntaxes flexibles (ex: "2x - y = 6 - 3z"),
-       * les coefficients implicites (ex: "x" pour "1x"), et assure un nom unique.
-       */
+
       function addPlaneFromEquation() {
         let equationStr = document.getElementById("planeEquationInput").value.trim();
         if (!equationStr) {
@@ -2597,6 +2687,7 @@ function populateAndShowContextMenu(x, y, instance) {
         geometryManager.addPlane(newPlane);
         updateAllUI();
       }
+
       function removePlaneById(id) {
         const p = geometryManager.findPlaneById(id);
         if (p && confirm(`Supprimer le plan "${p.name}" ?`)) {
@@ -2650,7 +2741,7 @@ function populateAndShowContextMenu(x, y, instance) {
         geometryManager.addVector(new Vector(uniqueName, pS.position, c));
         updateAllUI();
       }
-      // REMPLACEZ L'ANCIENNE FONCTION PAR CELLE-CI
+
       function addVectorFromCoords() {
         const n = document.getElementById("vectorNameCoords").value.trim() || "Vecteur";
 
@@ -2680,6 +2771,7 @@ function populateAndShowContextMenu(x, y, instance) {
         cancelVectorEdit();
         updateAllUI();
       }
+
       function editVector(id) {
         ensurePanelVisible(); // <-- AJOUTEZ CETTE LIGNE
         const v = geometryManager.findVectorById(id);
@@ -2757,6 +2849,7 @@ function populateAndShowContextMenu(x, y, instance) {
 
         // deselectCurrentObject();
       }
+
       function removeVectorById(id) {
         const v = geometryManager.findVectorById(id);
         if (v && confirm(`Supprimer "${v.name}" ?`)) {
@@ -2764,6 +2857,7 @@ function populateAndShowContextMenu(x, y, instance) {
           updateAllUI();
         }
       }
+
       function clearAllVectors() {
         if (confirm("Effacer tous les vecteurs ?")) {
           geometryManager.vectors.forEach((vector) => vector.removeFromScene(scene));
@@ -2771,6 +2865,7 @@ function populateAndShowContextMenu(x, y, instance) {
           updateAllUI();
         }
       }
+
       function toggleVectorVisibility(id) {
         const v = geometryManager.findVectorById(id);
         if (v) {
@@ -2779,15 +2874,6 @@ function populateAndShowContextMenu(x, y, instance) {
         }
       }
 
-      // =====================================================================================
-      // SECTION 6 : SÉLECTION 3D (RAYCASTING)
-      // =====================================================================================
-      /**
-       * Lance un rayon depuis les coordonnées de l'écran pour sélectionner un objet.
-       * Cette fonction est maintenant le cœur de la sélection pour le clic ET le tap.
-       * @param {number} screenX La coordonnée X du clic/tap.
-       * @param {number} screenY La coordonnée Y du clic/tap.
-       */
       function performRaycastSelection(screenX, screenY) {
         mouse.x = (screenX / window.innerWidth) * 2 - 1;
         mouse.y = -(screenY / window.innerHeight) * 2 + 1;
@@ -2816,12 +2902,12 @@ function populateAndShowContextMenu(x, y, instance) {
         }
       }
 
-      // L'ancienne fonction 'onObjectClick' devient beaucoup plus simple
       function onObjectClick(e) {
         if (wasDragged) return; // Garde la sécurité pour la souris
         e.preventDefault();
         performRaycastSelection(e.clientX, e.clientY);
       }
+
       function handleSelection(mesh) {
         const inst = mesh.userData.instance;
         if (!inst) return;
@@ -2883,11 +2969,6 @@ function populateAndShowContextMenu(x, y, instance) {
         document.getElementById("transformations-container").style.display = "none";
       }
 
-      /**
-       * Met à jour l'interface après la sélection d'un objet.
-       * CORRIGÉ : Réutilise les fonctions editLine et editPlane pour garantir
-       * l'ouverture du panneau et la surbrillance.
-       */
       function updatePanelForSelection(inst) {
         if (inst instanceof Point) {
           // Pour les points, on appelle la fonction d'édition directe
@@ -2903,13 +2984,7 @@ function populateAndShowContextMenu(x, y, instance) {
           editPlane(inst.id);
         }
       }
-      // =====================================================================================
-      // SECTION 7 : CALCULS GÉOMÉTRIQUES
-      // =====================================================================================
-      /**
-       * Construit une représentation visuelle de la somme de deux vecteurs
-       * en utilisant la relation de Chasles.
-       */
+
       function constructChaslesSum() {
         // 1. Nettoyer toute construction précédente pour repartir de zéro
         clearChaslesConstruction();
@@ -2978,9 +3053,6 @@ function populateAndShowContextMenu(x, y, instance) {
         document.getElementById("clearChaslesBtn").style.display = "block";
       }
 
-      /**
-       * Supprime tous les objets géométriques temporaires créés par la construction de Chasles.
-       */
       function clearChaslesConstruction() {
         if (currentConstructionObjects.length === 0) {
           return; // Rien à faire
@@ -3002,9 +3074,6 @@ function populateAndShowContextMenu(x, y, instance) {
 
         updateAllUI();
       }
-      // Remplacez votre fonction displayPlaneEquation par celle-ci
-
-      // Remplacez votre fonction displayPlaneEquation par ce code final
 
       function displayPlaneEquation() {
         const s = document.getElementById("equationPlaneSelect"),
@@ -3074,6 +3143,7 @@ function populateAndShowContextMenu(x, y, instance) {
 
         r.innerHTML = `<strong>${equation} = 0</strong>`;
       }
+
       function displayLineEquation() {
         const s = document.getElementById("equationLineSelect"),
           r = document.getElementById("lineEquationDisplay");
@@ -3169,10 +3239,6 @@ function populateAndShowContextMenu(x, y, instance) {
         r.innerHTML = `<strong>${v1.name} ⋅ ${v2.name} = ${dP.toFixed(3)}</strong>`;
       }
 
-      // REMPLACEZ L'ANCIENNE FONCTION PAR CELLE-CI
-
-      // REMPLACEZ L'ANCIENNE FONCTION PAR CELLE-CI
-
       function calculateVectorProduct() {
         const [v1, v2] = [
           geometryManager.findVectorById(parseInt(document.getElementById("crossVectorSelect1").value)),
@@ -3210,6 +3276,7 @@ function populateAndShowContextMenu(x, y, instance) {
 
         updateAllUI();
       }
+
       function calculatePointPointDistance() {
         const [i1, i2] = [
           document.getElementById("distPointSelect1").value,
@@ -3223,6 +3290,7 @@ function populateAndShowContextMenu(x, y, instance) {
           3
         )}</strong>`;
       }
+
       function calculatePointLineDistance() {
         const pI = document.getElementById("distPointSelect3").value,
           lI = document.getElementById("distLineSelect1").value;
@@ -3244,6 +3312,7 @@ function populateAndShowContextMenu(x, y, instance) {
           3
         )}</strong>`;
       }
+
       function calculatePointPlaneDistance() {
         const pI = document.getElementById("calcPointSelect").value,
           plId = parseInt(document.getElementById("calcPlaneSelect1").value);
@@ -3258,6 +3327,7 @@ function populateAndShowContextMenu(x, y, instance) {
         const d = Math.abs(vP0P.dot(pl.normal));
         r.innerHTML = `Distance = <strong>${d.toFixed(3)}</strong>`;
       }
+
       function calculateLineLineAngle() {
         const [l1, l2] = [
           geometryManager.findLineById(parseInt(document.getElementById("angleLineSelect1").value)),
@@ -3272,6 +3342,7 @@ function populateAndShowContextMenu(x, y, instance) {
         if (a > 90) a = 180 - a;
         r.innerHTML = `Angle ≈ <strong>${a.toFixed(2)}°</strong>`;
       }
+
       function calculatePlanePlaneAngle() {
         const [p1, p2] = [
           geometryManager.findPlaneById(parseInt(document.getElementById("anglePlaneSelect1").value)),
@@ -3286,6 +3357,7 @@ function populateAndShowContextMenu(x, y, instance) {
         if (a > 90) a = 180 - a;
         r.innerHTML = `Angle ≈ <strong>${a.toFixed(2)}°</strong>`;
       }
+
       function calculateLinePlaneAngle() {
         const l = geometryManager.findLineById(parseInt(document.getElementById("angleLineSelect3").value)),
           p = geometryManager.findPlaneById(parseInt(document.getElementById("anglePlaneSelect3").value));
@@ -3299,19 +3371,9 @@ function populateAndShowContextMenu(x, y, instance) {
         const a = (Math.asin(dot) * 180) / Math.PI;
         r.innerHTML = `Angle ≈ <strong>${a.toFixed(2)}°</strong>`;
       }
-      // Remplacez votre fonction par celle-ci
-
-      // Remplacez votre fonction par cette version CORRECTE
-
-      // Remplacez votre fonction par cette version DÉFINITIVE
-
-      // Remplacez intégralement votre fonction par celle-ci
-
-      // Remplacez votre fonction par cette version améliorée
-
-      // Remplacez votre fonction par cette version finale qui utilise votre formatNumber
 
       function calculateLinePlaneIntersection() {
+        console.log("calculateLinePlaneIntersection1");
         // 1. Récupération des éléments UI (inchangé)
         const lineSelect = document.getElementById("calcLineSelect");
         const planeSelect = document.getElementById("calcPlaneSelect2");
@@ -3382,7 +3444,9 @@ function populateAndShowContextMenu(x, y, instance) {
 
         // --- FIN DE LA MODIFICATION ---
       }
+
       function calculatePlanePlaneIntersection() {
+        console.log("calculatePlanePlaneIntersection");
         const plane1Id = parseInt(document.getElementById("calcPlaneSelect3").value); // CORRECTED ID
         const plane2Id = parseInt(document.getElementById("calcPlaneSelect4").value); // CORRECTED ID
         const r = document.getElementById("calcResultDisplay3");
@@ -3511,50 +3575,7 @@ function populateAndShowContextMenu(x, y, instance) {
       // =====================================================================================
       // SECTION 8 : CONTRÔLE CAMÉRA ET FONCTIONS UTILITAIRES
       // =====================================================================================
-      /**
-       * Ouvre la section correspondante dans le panneau et fait défiler jusqu'à l'élément spécifié.
-       * @param {string} itemId L'ID de l'élément HTML à cibler (ex: "line-item-3").
-       * @param {string} listId L'ID de la liste parente (ex: "lineList").
-       */
-      /**
-       * Ouvre la section correspondante, fait défiler jusqu'à un élément et le met en surbrillance.
-       * @param {string} itemId L'ID de l'élément HTML à cibler (ex: "line-item-3").
-       * @param {string} listId L'ID de la liste parente (ex: "lineList").
-       */
-      function expandSectionAndScrollToItem(itemId, listId) {
-        const listElement = document.getElementById(listId);
-        if (!listElement) return;
 
-        // 1. Trouver la section parente et la déplier si elle est fermée
-        const section = listElement.closest(".section.collapsible");
-        if (section && section.classList.contains("collapsed")) {
-          section.classList.remove("collapsed");
-        }
-
-        // 2. Trouver l'élément spécifique dans la liste
-        const itemElement = document.getElementById(itemId);
-        if (itemElement) {
-          // Un petit délai pour s'assurer que l'animation d'ouverture est terminée
-          setTimeout(() => {
-            // Faire défiler l'élément pour qu'il soit visible
-            itemElement.scrollIntoView({ behavior: "smooth", block: "center" });
-
-            // --- GESTION DE LA SURBRILLANCE ---
-            // D'abord, retirer la surbrillance de tout autre élément
-            document.querySelectorAll(".geometry-item.highlight").forEach((el) => {
-              el.classList.remove("highlight");
-            });
-
-            // Ajouter la surbrillance à l'élément actuel
-            itemElement.classList.add("highlight");
-
-            // Retirer la surbrillance après un court instant
-            setTimeout(() => {
-              itemElement.classList.remove("highlight");
-            }, 2000); // La surbrillance disparaîtra après 2 secondes
-          }, 300); // 300ms est une bonne valeur pour attendre la fin de l'expansion
-        }
-      }
       function expandSectionAndScrollToItem(itemId, listId) {
         const listElement = document.getElementById(listId);
         if (!listElement) return;
@@ -3574,6 +3595,7 @@ function populateAndShowContextMenu(x, y, instance) {
           }, 300); // 300ms est une bonne valeur
         }
       }
+
       function togglePanel() {
         const p = document.getElementById("panel"),
           o = document.getElementById("openBtn");
@@ -3581,11 +3603,7 @@ function populateAndShowContextMenu(x, y, instance) {
         p.classList.toggle("hidden", !panelOpen);
         o.classList.toggle("show", !panelOpen);
       }
-      // ... (juste après la fonction togglePanel())
 
-      /**
-       * S'assure que le panneau principal est visible. Si non, l'ouvre.
-       */
       function ensurePanelVisible() {
         // La variable globale 'panelOpen' nous indique l'état actuel du panneau.
         if (!panelOpen) {
@@ -3606,25 +3624,30 @@ function populateAndShowContextMenu(x, y, instance) {
         });
         updateAllUI();
       }
+
       function toggleAutoLoadTestPoints() {
         const c = document.getElementById("autoLoadTestPointsCheckbox");
         localStorage.setItem("autoLoadTestPoints", c.checked);
       }
+
       function loadTestPointsOnce() {
         addFixedTestPoints();
       }
+
       function updateCameraPosition() {
         camera.position.x = cameraTarget.x + cameraDistance * Math.sin(cameraRotation.y) * Math.cos(cameraRotation.x);
         camera.position.y = cameraTarget.y + cameraDistance * Math.sin(cameraRotation.x);
         camera.position.z = cameraTarget.z + cameraDistance * Math.cos(cameraRotation.y) * Math.cos(cameraRotation.x);
         camera.lookAt(cameraTarget);
       }
+
       function onMouseDown(e) {
         wasDragged = false;
         if (e.button === 0) isDragging = true;
         else if (e.button === 2) isPanning = true;
         previousMousePosition = { x: e.clientX, y: e.clientY };
       }
+
       function onMouseMove(e) {
         const dX = e.clientX - previousMousePosition.x,
           dY = e.clientY - previousMousePosition.y;
@@ -3637,10 +3660,12 @@ function populateAndShowContextMenu(x, y, instance) {
         } else if (isPanning) panCamera(dX, dY);
         previousMousePosition = { x: e.clientX, y: e.clientY };
       }
+
       function onMouseUp() {
         isDragging = false;
         isPanning = false;
       }
+
       function onWheel(e) {
         e.preventDefault();
         zoomCamera(e.deltaY * 0.01);
@@ -3656,13 +3681,16 @@ function populateAndShowContextMenu(x, y, instance) {
         cameraTarget.addScaledVector(u, dY * speed);
         updateCameraPosition();
       }
+
       function zoomCamera(d) {
         cameraDistance = Math.max(3, Math.min(50, cameraDistance + d));
         updateCameraPosition();
       }
+
       function resetCamera(btn) {
         setCameraView("isometric", btn);
       }
+
       function setCameraView(v, btn) {
         cameraTarget.set(0, 0, 0);
         cameraDistance = 15;
@@ -3691,13 +3719,13 @@ function populateAndShowContextMenu(x, y, instance) {
         document.querySelectorAll("#cameraControls .camera-btn").forEach((b) => b.classList.remove("active"));
         if (btn) btn.classList.add("active");
       }
+
       function onWindowResize() {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
       }
 
-      // Lancement de l'application
       document.addEventListener("DOMContentLoaded", () => {
         document.querySelectorAll(".section-header").forEach((header) => {
           header.addEventListener("click", () => header.closest(".section").classList.toggle("collapsed"));
@@ -3706,152 +3734,166 @@ function populateAndShowContextMenu(x, y, instance) {
         const resetBtn = document.getElementById("btnReset");
         resetCamera(resetBtn);
       });
-      /**
-       * Applique une translation à l'objet actuellement sélectionné.
-       */
-      /**
-       * Applique une translation à l'objet actuellement sélectionné.
-       * Cette version est corrigée pour maintenir la sélection et la couleur.
-       */
-      /**
-       * Applique une translation à l'objet actuellement sélectionné.
-       * VERSION CORRIGÉE : Remplace complètement la géométrie de la ligne pour garantir
-       * la mise à jour du raycasting (détection du clic).
-       */
+
       function applyTranslation() {
         if (!selectedObjectInstance) {
           showSplashScreen("Aucun objet n'est sélectionné.");
           return;
         }
 
+        // 1. Récupération des valeurs de l'interface
         const dx = parseFloat(document.getElementById("transX").value) || 0;
-        const dy = parseFloat(document.getElementById("transY").value) || 0;
-        const dz = parseFloat(document.getElementById("transZ").value) || 0;
-        const translationVector = new THREE.Vector3(dx, dy, dz);
+        const dy_ui = parseFloat(document.getElementById("transY").value) || 0; // L'utilisateur pense "Y" (Profondeur)
+        const dz_ui = parseFloat(document.getElementById("transZ").value) || 0; // L'utilisateur pense "Z" (Hauteur)
+
+        // 2. CORRECTION DE L'AXE : Conversion vers le repère Three.js
+        // Three.js X = UI X
+        // Three.js Y (Vertical) = UI Z (Hauteur)
+        // Three.js Z (Profondeur) = UI Y (Profondeur)
+        const translationVector = new THREE.Vector3(dx, dz_ui, dy_ui);
 
         const inst = selectedObjectInstance;
 
-        // La logique pour les autres objets reste la même
+        // 3. Application de la translation selon le type d'objet
         if (inst instanceof Point) {
           const newPos = inst.position.clone().add(translationVector);
-          inst.update(inst.name, newPos.x, newPos.y, newPos.z);
+          // Note : update() attend (nom, x, z, y) car elle refait la conversion en interne,
+          // mais ici on manipule directement des positions Three.js, donc on passe x, y, z du vecteur position
+          // C'est une petite subtilité : on met à jour la position brute.
+          inst.position.copy(newPos);
+          inst.mesh.position.copy(inst.position);
+          inst.updateLabelPosition();
         } else if (inst instanceof Vector) {
           const newOrigin = inst.origin.clone().add(translationVector);
+          // Pour le vecteur, on met à jour l'origine, les composantes ne changent pas
           inst.update(inst.name, newOrigin, inst.components);
         } else if (inst instanceof Plane) {
           inst.pointOnPlane.add(translationVector);
           inst.mesh.position.copy(inst.pointOnPlane);
-        }
-        // Logique corrigée spécifiquement pour la droite
-        else if (inst instanceof Line3D) {
-          // Mettre à jour les données logiques de l'objet
+        } else if (inst instanceof Line3D) {
+          // Déplacer le point de départ
           inst.startPoint.add(translationVector);
 
-          // Calculer les points de la nouvelle géométrie
+          // Recalculer la géométrie visuelle
           const lineLength = 100;
           const dir = inst.directorVector.clone().normalize();
           const start = new THREE.Vector3().addVectors(inst.startPoint, dir.clone().multiplyScalar(-lineLength));
           const end = new THREE.Vector3().addVectors(inst.startPoint, dir.clone().multiplyScalar(lineLength));
 
-          // --- MÉTHODE CORRIGÉE ET ROBUSTE ---
-          // ÉTAPE 1: Détruire l'ancienne géométrie pour éviter les fuites de mémoire.
-          inst.mesh.geometry.dispose();
+          // Mise à jour propre de la géométrie
+          inst.mesh.geometry.dispose(); // Nettoyage mémoire
+          inst.mesh.geometry = new THREE.BufferGeometry().setFromPoints([start, end]);
 
-          // ÉTAPE 2: Créer une GÉOMÉTRIE COMPLÈTEMENT NOUVELLE avec les points mis à jour.
-          const newGeometry = new THREE.BufferGeometry().setFromPoints([start, end]);
-
-          // ÉTAPE 3: Assigner cette nouvelle géométrie au mesh de la ligne.
-          // C'est cette étape qui force Three.js à tout recalculer.
-          inst.mesh.geometry = newGeometry;
-          // --- FIN DE LA MÉTHODE CORRIGÉE ---
-
-          // On réinitialise la couleur qui était passée en jaune lors de la sélection.
-          inst.mesh.material.color.copy(inst.color);
+          // Réinitialiser la couleur si nécessaire (garde la sélection active visuellement)
+          if (inst === selectedObjectInstance) {
+            inst.mesh.material.color.set(HIGHLIGHT_COLOR);
+          }
         }
 
+        // 4. Mise à jour de l'interface (notamment les coordonnées dans la liste)
         updateAllUI();
       }
 
-      function applyRotation() {
-        if (!selectedObjectInstance) {
-          showSplashScreen("Aucun objet n'est sélectionné.");
-          return;
-        }
+function applyRotation() {
+  if (!selectedObjectInstance) {
+    showSplashScreen("Aucun objet n'est sélectionné.");
+    return;
+  }
 
-        // Récupération des paramètres (inchangée)
-        const angleDeg = parseFloat(document.getElementById("rotationAngle").value) || 0;
-        const angleRad = (angleDeg * Math.PI) / 180;
-        const axisValue = document.getElementById("rotationAxisSelect").value;
-        const rotationAxis = new THREE.Vector3(
-          axisValue === "x" ? 1 : 0,
-          axisValue === "y" ? 1 : 0,
-          axisValue === "z" ? 1 : 0
-        );
-        const centerValue = document.getElementById("rotationCenterSelect").value;
-        const centerOfRotation =
-          centerValue === "origin"
-            ? new THREE.Vector3(0, 0, 0)
-            : geometryManager.points[parseInt(centerValue)].position.clone();
+  // 1. Récupération de l'angle
+  const angleDeg = parseFloat(document.getElementById("rotationAngle").value) || 0;
+  const angleRad = (angleDeg * Math.PI) / 180;
 
-        const inst = selectedObjectInstance;
-        const rotatePoint = (p, c) => {
-          p.sub(c);
-          p.applyAxisAngle(rotationAxis, angleRad);
-          p.add(c);
-        };
+  // 2. Récupération et correction de l'Axe
+  const axisSelect = document.getElementById("rotationAxisSelect");
+  const axisValue = axisSelect.value.toLowerCase().trim(); // Sécurité contre les majuscules/espaces
 
-        // La logique pour les autres objets reste la même
-        if (inst instanceof Point) {
-          const newPos = inst.position.clone();
-          rotatePoint(newPos, centerOfRotation);
-          inst.update(inst.name, newPos.x, newPos.y, newPos.z);
-        } else if (inst instanceof Vector) {
-          const newOrigin = inst.origin.clone();
-          rotatePoint(newOrigin, centerOfRotation);
-          const newComponents = inst.components.clone().applyAxisAngle(rotationAxis, angleRad);
-          inst.update(inst.name, newOrigin, newComponents);
-        } else if (inst instanceof Plane) {
-          rotatePoint(inst.pointOnPlane, centerOfRotation);
-          inst.normal.applyAxisAngle(rotationAxis, angleRad);
-          inst.displayNormal.applyAxisAngle(rotationAxis, angleRad);
-          inst.mesh.position.copy(inst.pointOnPlane);
-          inst.mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), inst.normal.clone().normalize());
-        }
-        // Logique corrigée spécifiquement pour la droite
-        else if (inst instanceof Line3D) {
-          // Mettre à jour les données logiques de l'objet
-          rotatePoint(inst.startPoint, centerOfRotation);
-          inst.directorVector.applyAxisAngle(rotationAxis, angleRad);
+  let rotationAxis;
 
-          // Calculer les points de la nouvelle géométrie
-          const lineLength = 100;
-          const dir = inst.directorVector.clone().normalize();
-          const start = new THREE.Vector3().addVectors(inst.startPoint, dir.clone().multiplyScalar(-lineLength));
-          const end = new THREE.Vector3().addVectors(inst.startPoint, dir.clone().multiplyScalar(lineLength));
+  // --- C'EST ICI QUE SE JOUE LA CORRECTION ---
+  if (axisValue === "x") {
+      // Axe X (Rouge) : Ne change pas
+      rotationAxis = new THREE.Vector3(1, 0, 0);
 
-          // --- MÉTHODE CORRIGÉE ET ROBUSTE ---
-          // ÉTAPE 1: Détruire l'ancienne géométrie pour éviter les fuites de mémoire.
-          inst.mesh.geometry.dispose();
+  } else if (axisValue === "y") {
+      // L'utilisateur choisit "Axe Y" (Profondeur dans votre interface)
+      // Cela correspond à l'axe Z de Three.js (L'axe BLEU)
+      rotationAxis = new THREE.Vector3(0, 0, 1);
 
-          // ÉTAPE 2: Créer une GÉOMÉTRIE COMPLÈTEMENT NOUVELLE avec les points mis à jour.
-          const newGeometry = new THREE.BufferGeometry().setFromPoints([start, end]);
+  } else {
+      // L'utilisateur choisit "Axe Z" (Hauteur/Verticale)
+      // Cela correspond à l'axe Y de Three.js (L'axe VERT)
+      rotationAxis = new THREE.Vector3(0, 1, 0);
+  }
 
-          // ÉTAPE 3: Assigner cette nouvelle géométrie au mesh de la ligne.
-          // C'est cette étape qui force Three.js à tout recalculer.
-          inst.mesh.geometry = newGeometry;
-          // --- FIN DE LA MÉTHODE CORRIGÉE ---
+  // 3. Récupération du centre de rotation
+  const centerValue = document.getElementById("rotationCenterSelect").value;
+  const centerOfRotation =
+    centerValue === "origin"
+      ? new THREE.Vector3(0, 0, 0)
+      : geometryManager.points[parseInt(centerValue)].position.clone();
 
-          // On réinitialise la couleur qui était passée en jaune lors de la sélection.
-          inst.mesh.material.color.copy(inst.color);
-        }
+  const inst = selectedObjectInstance;
 
-        updateAllUI();
-      }
+  // Helper : Appliquer la rotation mathématique à un point
+  const rotatePoint = (p, c) => {
+    p.sub(c); // Ramener au centre relatif
+    p.applyAxisAngle(rotationAxis, angleRad); // Tourner
+    p.add(c); // Remettre à la position absolue
+  };
 
-      /**
-       * Met à jour l'UI de la section symétrie en fonction du type choisi.
-       */
-      function updateSymmetryUI() {
+  // 4. Application de la rotation selon le type d'objet
+  if (inst instanceof Point) {
+    const newPos = inst.position.clone();
+    rotatePoint(newPos, centerOfRotation);
+
+    // Mise à jour directe des positions Three.js
+    inst.position.copy(newPos);
+    inst.mesh.position.copy(inst.position);
+    inst.updateLabelPosition();
+
+  } else if (inst instanceof Vector) {
+    const newOrigin = inst.origin.clone();
+    rotatePoint(newOrigin, centerOfRotation);
+
+    // Le vecteur lui-même (ses composantes) tourne aussi
+    const newComponents = inst.components.clone().applyAxisAngle(rotationAxis, angleRad);
+
+    inst.update(inst.name, newOrigin, newComponents);
+
+  } else if (inst instanceof Plane) {
+    rotatePoint(inst.pointOnPlane, centerOfRotation);
+
+    // La normale du plan tourne aussi
+    inst.normal.applyAxisAngle(rotationAxis, angleRad);
+    inst.displayNormal.applyAxisAngle(rotationAxis, angleRad);
+
+    inst.mesh.position.copy(inst.pointOnPlane);
+    inst.mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), inst.normal.clone().normalize());
+
+  } else if (inst instanceof Line3D) {
+    rotatePoint(inst.startPoint, centerOfRotation);
+    inst.directorVector.applyAxisAngle(rotationAxis, angleRad);
+
+    // Recalcul géométrie (identique au fix de translation)
+    const lineLength = 100;
+    const dir = inst.directorVector.clone().normalize();
+    const start = new THREE.Vector3().addVectors(inst.startPoint, dir.clone().multiplyScalar(-lineLength));
+    const end = new THREE.Vector3().addVectors(inst.startPoint, dir.clone().multiplyScalar(lineLength));
+
+    inst.mesh.geometry.dispose();
+    inst.mesh.geometry = new THREE.BufferGeometry().setFromPoints([start, end]);
+
+    // Conserver la couleur de sélection
+    if(inst === selectedObjectInstance) {
+        inst.mesh.material.color.set(HIGHLIGHT_COLOR);
+    }
+  }
+
+  updateAllUI();
+}
+
+       function updateSymmetryUI() {
         const type = document.getElementById("symmetryTypeSelect").value;
         const container = document.getElementById("symmetryOptionsContainer");
         const applyBtn = document.getElementById("applySymmetryBtn");
@@ -4081,7 +4123,6 @@ function populateAndShowContextMenu(x, y, instance) {
         // 4. Mettre à jour la liste des scènes chargeables
         populateSavedScenesSelect();
       }
-      // À ajouter dans votre <script>
 
       function loadScene() {
         const sceneName = document.getElementById("savedScenesSelect").value;
@@ -4141,7 +4182,6 @@ function populateAndShowContextMenu(x, y, instance) {
         // 3. Mettre à jour l'ensemble de l'interface
         updateAllUI();
       }
-      // À ajouter dans votre <script>
 
       function deleteScene() {
         const sceneName = document.getElementById("savedScenesSelect").value;
@@ -4173,9 +4213,11 @@ function populateAndShowContextMenu(x, y, instance) {
           });
         }
       }
+
       document.addEventListener("DOMContentLoaded", () => {
         populateSavedScenesSelect(); // Ajoutez cette ligne !
       });
+
       function showSplashScreen(message, duration = 2000) {
         const splashElement = document.getElementById("splashScreen");
         const messageElement = document.getElementById("splashMessage");
@@ -4194,6 +4236,13 @@ function populateAndShowContextMenu(x, y, instance) {
           splashElement.classList.add("splash-hidden");
           splashTimer = null; // Réinitialiser le timer
         }, duration);
+      }
+      function hideContextMenu() {
+        console.log("hideContextMenu");
+        const menu = document.getElementById("contextMenu");
+        if (menu) {
+          menu.style.display = "none";
+        }
       }
     </script>
   </body>
