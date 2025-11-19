@@ -1,586 +1,638 @@
 <!DOCTYPE html>
 <html lang="fr">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-    <title>Éditeur de Points 3D</title>
-    <!-- IMPORTANT: La bibliothèque Three.js et OrbitControls seront chargées ici par votre JavaScript -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-    <!-- Ajout de Font Awesome pour les icônes -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
-    <style>
-      body {
-        margin: 0;
-        overflow: hidden;
-        font-family: Arial, sans-serif;
-      }
 
-      #container {
-        width: 100vw;
-        height: 100vh;
-        /* Le container principal du viewer 3D */
-        position: relative;
-        /* Nécessaire pour positionner les boutons de caméra à l'intérieur */
-      }
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Éditeur de Points 3D</title>
+  <!-- IMPORTANT: La bibliothèque Three.js et OrbitControls seront chargées ici par votre JavaScript -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <!-- Ajout de Font Awesome pour les icônes -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+    }
 
+    #container {
+      width: 100vw;
+      height: 100vh;
+      /* Le container principal du viewer 3D */
+      position: relative;
+      /* Nécessaire pour positionner les boutons de caméra à l'intérieur */
+    }
+
+    #panel {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      background: rgba(255, 255, 255, 0.95);
+      /* AUGMENTER LE PADDING HAUT POUR FAIRE DE LA PLACE AU BOUTON */
+      padding: 65px 20px 20px 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+      max-height: 90vh;
+      overflow-y: auto;
+      width: 320px;
+      transition: transform 0.3s ease;
+      z-index: 999;
+    }
+
+    #panel.hidden {
+      /* Déplace le panneau de 100% de sa largeur + sa marge de 20px */
+      transform: translateX(calc(-100% - 20px));
+    }
+
+    #toggleBtn {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      background: transparent;
+      z-index: 1001;
+    }
+
+    .burger-line {
+      width: 20px;
+      height: 2px;
+      background-color: #333;
+      transition: all 0.3s ease;
+    }
+
+    #openBtn {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      background: rgba(255, 255, 255, 0.95);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+      z-index: 998;
+      display: none;
+      /* La logique d'affichage reste la même */
+    }
+
+    #openBtn.show {
+      display: flex;
+    }
+
+    h3 {
+      /* On retire la marge qui sera maintenant gérée par flexbox */
+      margin: 0;
+      font-size: 18px;
+      color: #333;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      /* Espace entre l'icône et le titre */
+    }
+
+    .header-icon {
+      font-size: 20px;
+      width: 24px;
+      /* Largeur fixe pour un alignement parfait */
+      text-align: center;
+      flex-shrink: 0;
+      /* Empêche l'icône de rétrécir */
+    }
+
+    .section-header h3 {
+      font-size: 16px;
+      font-weight: bold;
+      flex-grow: 1;
+      /* Le titre prend toute la place restante */
+    }
+
+    .section {
+      margin-bottom: 10px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #ddd;
+    }
+
+    .section:last-of-type {
+      border-bottom: none;
+      margin-bottom: 0;
+    }
+
+    .input-group {
+      margin-bottom: 10px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 13px;
+      font-weight: bold;
+      color: #555;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 13px;
+      box-sizing: border-box;
+    }
+
+    .coord-inputs {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+    }
+
+    .coord-inputs input {
+      width: 100%;
+    }
+
+    button {
+      width: 100%;
+      margin: 8px 0;
+      padding: 10px;
+      background: #4caf50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    button:hover {
+      background: #45a049;
+    }
+
+    .btn-secondary {
+      background: #2196f3;
+    }
+
+    .btn-secondary:hover {
+      background: #0b7dda;
+    }
+
+    .btn-danger {
+      background: #f44336;
+    }
+
+    .btn-danger:hover {
+      background: #da190b;
+    }
+
+    .btn-warning {
+      background: #ff9800;
+    }
+
+    .btn-warning:hover {
+      background: #e68900;
+    }
+
+    .btn-violet {
+      background: #8a2be2;
+      /* Un violet bien visible */
+    }
+
+    .btn-violet:hover {
+      background: #7a25c4;
+      /* Un peu plus foncé au survol */
+    }
+
+    .btn-violet-light {
+      background: #9370db;
+      /* Un violet plus clair (MediumPurple) */
+    }
+
+    .btn-violet-light:hover {
+      background: #825fbc;
+      /* Un peu plus foncé au survol */
+    }
+
+    .point-list,
+    .geometry-list {
+      max-height: 200px;
+      overflow-y: auto;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 5px;
+      background: #f9f9f9;
+    }
+
+    /* --- STYLES RÉVISÉS POUR TOUTES LES LISTES --- */
+    .point-item,
+    .geometry-item {
+      padding: 8px;
+      margin: 5px 0;
+      background: white;
+      border-radius: 4px;
+      display: flex;
+      flex-direction: column;
+      /* Force les enfants (lignes) à s'empiler */
+      align-items: stretch;
+      /* Les enfants prennent toute la largeur */
+      font-size: 13px;
+      border: 1px solid #eee;
+      /* Bordure subtile pour mieux délimiter les items */
+    }
+
+    /* Ligne principale (contient nom/infos et boutons) */
+    /* Ligne principale (contient nom/infos et boutons) */
+    .geometry-item-main {
+      display: flex;
+      justify-content: space-between;
+
+      /* LA CORRECTION CLÉ EST ICI : */
+      align-items: flex-start;
+      /* Aligne les éléments sur le haut */
+
+      width: 100%;
+      gap: 10px;
+      /* Espace entre la zone de texte et les boutons */
+    }
+
+    /* Conteneur pour le nom et les infos (coordonnées, etc.) */
+    .geometry-info {
+      flex-grow: 1;
+      /* Prend l'espace disponible */
+      display: flex;
+      flex-direction: row;
+      /* Aligne les enfants horizontalement */
+      align-items: center;
+      /* Centre verticalement le nom et les coordonnées sur la même ligne */
+      gap: 8px;
+      /* Espace horizontal de 8px entre le nom et les coordonnées */
+      flex-wrap: wrap;
+      /* Permet le retour à la ligne si le nom est très long */
+    }
+
+    .point-name,
+    .geometry-name {
+      font-weight: bold;
+      color: #333;
+      font-size: 13px;
+      white-space: normal;
+      /* Permet au texte de passer à la ligne */
+      word-break: break-word;
+      /* Coupe les mots très longs si nécessaire */
+    }
+
+    .geometry-coords,
+    .geometry-details {
+      font-size: 12px;
+      /* Police légèrement plus petite pour les détails */
+      color: #666;
+      /* Couleur plus discrète pour les informations secondaires */
+      white-space: normal;
+      word-break: break-word;
+    }
+
+    /* Ligne secondaire (utilisée pour la norme du vecteur) */
+    .geometry-details-secondary {
+      font-size: 11px;
+      color: #666;
+      margin-top: 4px;
+      padding-left: 2px;
+    }
+
+    /* Conteneur des boutons */
+    .geometry-actions {
+      display: flex;
+      gap: 5px;
+      flex-shrink: 0;
+      /* Empêche les boutons de se compresser */
+    }
+
+    .geometry-actions button {
+      width: auto;
+      padding: 5px 8px;
+      /* Un peu moins de padding pour être plus compact */
+      font-size: 11px;
+      margin: 0;
+    }
+
+    /* --- STYLES POUR LES CONTRÔLES DE CAMÉRA (À RESTAURER) --- */
+    #cameraControls {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      /* RESTE TOUJOURS À DROITE */
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 990;
+    }
+
+    .camera-btn {
+      width: 40px;
+      height: 40px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: #f0f0f0;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+      color: #333;
+      font-size: 18px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .camera-btn:hover {
+      background-color: #e0e0e0;
+    }
+
+    /* Style pour le bouton actif (celui qui est sélectionné) */
+    .camera-btn.active {
+      background-color: #007bff;
+      color: white;
+      border-color: #007bff;
+    }
+
+    /* Icones pour les vues */
+    .fa-cube {
+      transform: rotateX(20deg) rotateY(-20deg);
+    }
+
+    .equation-display {
+      background: #e9e9e9;
+      padding: 10px;
+      border-radius: 4px;
+      font-family: "Courier New", monospace;
+      font-size: 13px;
+      color: #333;
+      min-height: 20px;
+      display: block;
+      text-align: left;
+      word-break: break-all;
+    }
+
+    .sub-section-title {
+      font-size: 13px;
+      margin-top: 10px;
+      margin-bottom: 10px;
+      color: #444;
+    }
+
+    /* --- STYLES POUR LE MENU CONTEXTUEL --- */
+    .context-menu {
+      position: fixed;
+      /* CHANGEMENT : fixed au lieu de absolute */
+      top: 0;
+      left: 0;
+      z-index: 2147483647;
+      /* Le maximum possible en CSS */
+      background-color: #ffffff;
+      border: 1px solid #999;
+      box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.5);
+      border-radius: 4px;
+      padding: 5px 0;
+      min-width: 160px;
+      font-family: Arial, sans-serif;
+      display: none;
+      /* Caché par défaut */
+    }
+
+    .context-menu-items {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .context-menu-items li {
+      padding: 8px 15px;
+      font-size: 14px;
+      color: #333;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      /* Espace entre l'icône et le texte */
+    }
+
+    .context-menu-items li:hover {
+      background-color: #f0f0f0;
+    }
+
+    .context-menu-items li i {
+      color: #555;
+      /* Couleur des icônes */
+    }
+
+    /* --- FIN DES STYLES POUR LE MENU CONTEXTUEL --- */
+
+    .edit-actions-container {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      /* Trois colonnes de largeur égale */
+      gap: 8px;
+      /* Espace entre les boutons */
+      margin-top: 10px;
+    }
+
+    .edit-actions-container button {
+      font-size: 12px;
+      margin: 0;
+      /* Annule la marge par défaut des boutons */
+      width: 100%;
+      /* Fait en sorte que chaque bouton remplisse sa colonne */
+      padding: 10px 5px;
+      /* Ajuste le padding pour les textes plus courts */
+    }
+
+    .section.collapsible .section-header {
+      cursor: pointer;
+      position: relative;
+    }
+
+    .section.collapsible.collapsed .section-content {
+      display: none;
+    }
+
+    .section.collapsible .section-header::after {
+      content: "▲";
+      font-size: 12px;
+      color: #666;
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      transition: transform 0.3s ease;
+    }
+
+    .section.collapsible.collapsed .section-header::after {
+      transform: translateY(-50%) rotate(180deg);
+    }
+
+    /* --- FIN DE L'AJOUT --- */
+
+    @media (max-width: 768px) {
+
+      /* Le panneau prend toute la largeur et hauteur de l'écran */
       #panel {
         position: absolute;
         top: 20px;
         left: 20px;
         background: rgba(255, 255, 255, 0.95);
-        /* AUGMENTER LE PADDING HAUT POUR FAIRE DE LA PLACE AU BOUTON */
         padding: 65px 20px 20px 20px;
         border-radius: 8px;
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
         max-height: 90vh;
         overflow-y: auto;
-        width: 320px;
+
+        /* --- MODIFICATIONS PRINCIPALES --- */
+        width: fit-content;
+        /* Le panneau s'adapte à son contenu */
+        min-width: 280px;
+        /* On garde une largeur minimale pour une bonne lisibilité */
+        /* --- FIN DES MODIFICATIONS --- */
+
         transition: transform 0.3s ease;
         z-index: 999;
       }
 
+      /* Ajuste la position du panneau une fois caché */
       #panel.hidden {
-        /* Déplace le panneau de 100% de sa largeur + sa marge de 20px */
         transform: translateX(calc(-100% - 20px));
       }
 
-      #toggleBtn {
-        position: absolute;
+      /* On s'assure que le bouton "Ouvrir" est bien visible */
+      #openBtn {
         top: 15px;
         left: 15px;
-        background: transparent;
-        z-index: 1001;
       }
 
-      .burger-line {
+      .camera-btn svg {
         width: 20px;
-        height: 2px;
-        background-color: #333;
-        transition: all 0.3s ease;
+        height: 20px;
+        pointer-events: none;
       }
-      #openBtn {
-        position: fixed;
-        top: 20px;
-        left: 20px;
-        background: rgba(255, 255, 255, 0.95);
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-        z-index: 998;
-        display: none; /* La logique d'affichage reste la même */
-      }
-
-      #openBtn.show {
-        display: flex;
-      }
-
-      h3 {
-        /* On retire la marge qui sera maintenant gérée par flexbox */
-        margin: 0;
-        font-size: 18px;
-        color: #333;
-      }
-      .section-header {
-        display: flex;
-        align-items: center;
-        gap: 12px; /* Espace entre l'icône et le titre */
-      }
-      .header-icon {
-        font-size: 20px;
-        width: 24px; /* Largeur fixe pour un alignement parfait */
-        text-align: center;
-        flex-shrink: 0; /* Empêche l'icône de rétrécir */
-      }
-
-      .section-header h3 {
-        font-size: 16px;
-        font-weight: bold;
-        flex-grow: 1; /* Le titre prend toute la place restante */
-      }
-      .section {
-        margin-bottom: 10px;
-        padding-bottom: 0px;
-        border-bottom: 1px solid #ddd;
-      }
-      .section:last-of-type {
-        border-bottom: none;
-        margin-bottom: 0;
-      }
-
-      .input-group {
-        margin-bottom: 10px;
-      }
-
-      label {
-        display: block;
-        margin-bottom: 5px;
-        font-size: 13px;
-        font-weight: bold;
-        color: #555;
-      }
-
-      input,
-      select,
-      textarea {
-        width: 100%;
-        padding: 8px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        font-size: 13px;
-        box-sizing: border-box;
-      }
-
-      .coord-inputs {
-        display: grid;
-        grid-template-columns: 1fr 1fr 1fr;
-        gap: 8px;
-      }
-
-      .coord-inputs input {
-        width: 100%;
-      }
-
-      button {
-        width: 100%;
-        margin: 8px 0;
-        padding: 10px;
-        background: #4caf50;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 14px;
-        font-weight: bold;
-      }
-
-      button:hover {
-        background: #45a049;
-      }
-
-      .btn-secondary {
-        background: #2196f3;
-      }
-
-      .btn-secondary:hover {
-        background: #0b7dda;
-      }
-
-      .btn-danger {
-        background: #f44336;
-      }
-
-      .btn-danger:hover {
-        background: #da190b;
-      }
-
-      .btn-warning {
-        background: #ff9800;
-      }
-
-      .btn-warning:hover {
-        background: #e68900;
-      }
-
-      .btn-violet {
-        background: #8a2be2;
-        /* Un violet bien visible */
-      }
-
-      .btn-violet:hover {
-        background: #7a25c4;
-        /* Un peu plus foncé au survol */
-      }
-
-      .btn-violet-light {
-        background: #9370db;
-        /* Un violet plus clair (MediumPurple) */
-      }
-
-      .btn-violet-light:hover {
-        background: #825fbc;
-        /* Un peu plus foncé au survol */
-      }
-
-      .point-list,
-      .geometry-list {
-        max-height: 200px;
-        overflow-y: auto;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        padding: 5px;
-        background: #f9f9f9;
-      }
-
-      /* --- STYLES RÉVISÉS POUR TOUTES LES LISTES --- */
-      .point-item,
-      .geometry-item {
-        padding: 8px;
-        margin: 5px 0;
-        background: white;
-        border-radius: 4px;
-        display: flex;
-        flex-direction: column; /* Force les enfants (lignes) à s'empiler */
-        align-items: stretch; /* Les enfants prennent toute la largeur */
-        font-size: 13px;
-        border: 1px solid #eee; /* Bordure subtile pour mieux délimiter les items */
-      }
-
-      /* Ligne principale (contient nom/infos et boutons) */
-      /* Ligne principale (contient nom/infos et boutons) */
-      .geometry-item-main {
-        display: flex;
-        justify-content: space-between;
-
-        /* LA CORRECTION CLÉ EST ICI : */
-        align-items: flex-start; /* Aligne les éléments sur le haut */
-
-        width: 100%;
-        gap: 10px; /* Espace entre la zone de texte et les boutons */
-      }
-
-      /* Conteneur pour le nom et les infos (coordonnées, etc.) */
-      .geometry-info {
-        flex-grow: 1; /* Prend l'espace disponible */
-        display: flex;
-        flex-direction: row; /* Aligne les enfants horizontalement */
-        align-items: center; /* Centre verticalement le nom et les coordonnées sur la même ligne */
-        gap: 8px; /* Espace horizontal de 8px entre le nom et les coordonnées */
-        flex-wrap: wrap; /* Permet le retour à la ligne si le nom est très long */
-      }
-
-      .point-name,
-      .geometry-name {
-        font-weight: bold;
-        color: #333;
-        font-size: 13px;
-        white-space: normal; /* Permet au texte de passer à la ligne */
-        word-break: break-word; /* Coupe les mots très longs si nécessaire */
-      }
-
-      .geometry-coords,
-      .geometry-details {
-        font-size: 12px; /* Police légèrement plus petite pour les détails */
-        color: #666; /* Couleur plus discrète pour les informations secondaires */
-        white-space: normal;
-        word-break: break-word;
-      }
-
-      /* Ligne secondaire (utilisée pour la norme du vecteur) */
-      .geometry-details-secondary {
-        font-size: 11px;
-        color: #666;
-        margin-top: 4px;
-        padding-left: 2px;
-      }
-
-      /* Conteneur des boutons */
-      .geometry-actions {
-        display: flex;
-        gap: 5px;
-        flex-shrink: 0; /* Empêche les boutons de se compresser */
-      }
-
-      .geometry-actions button {
-        width: auto;
-        padding: 5px 8px; /* Un peu moins de padding pour être plus compact */
-        font-size: 11px;
-        margin: 0;
-      }
-
-      /* --- STYLES POUR LES CONTRÔLES DE CAMÉRA (À RESTAURER) --- */
-      #cameraControls {
-        position: absolute;
-        top: 20px;
-        right: 20px;
-        /* RESTE TOUJOURS À DROITE */
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        z-index: 990;
-      }
-
-      .camera-btn {
-        width: 40px;
-        height: 40px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        background-color: #f0f0f0;
-        border: 1px solid #ccc;
-        border-radius: 5px;
-        cursor: pointer;
-        transition: background-color 0.2s, border-color 0.2s, color 0.2s;
-        color: #333;
-        font-size: 18px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      }
-
-      .camera-btn:hover {
-        background-color: #e0e0e0;
-      }
-
-      /* Style pour le bouton actif (celui qui est sélectionné) */
-      .camera-btn.active {
-        background-color: #007bff;
-        color: white;
-        border-color: #007bff;
-      }
-
-      /* Icones pour les vues */
-      .fa-cube {
-        transform: rotateX(20deg) rotateY(-20deg);
-      }
-
-      .equation-display {
-        background: #e9e9e9;
-        padding: 10px;
-        border-radius: 4px;
-        font-family: "Courier New", monospace;
-        font-size: 13px;
-        color: #333;
-        min-height: 20px;
-        display: block;
-        text-align: left;
-        word-break: break-all;
-      }
-
-      .sub-section-title {
-        font-size: 13px;
-        margin-top: 10px;
-        margin-bottom: 10px;
-        color: #444;
-      }
-
-      /* --- STYLES POUR LE MENU CONTEXTUEL --- */
-      .context-menu {
-        position: fixed; /* CHANGEMENT : fixed au lieu de absolute */
-        top: 0;
-        left: 0;
-        z-index: 2147483647; /* Le maximum possible en CSS */
-        background-color: #ffffff;
-        border: 1px solid #999;
-        box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.5);
-        border-radius: 4px;
-        padding: 5px 0;
-        min-width: 160px;
-        font-family: Arial, sans-serif;
-        display: none; /* Caché par défaut */
-      }
-
-      .context-menu-items {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-      }
-
-      .context-menu-items li {
-        padding: 8px 15px;
-        font-size: 14px;
-        color: #333;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        /* Espace entre l'icône et le texte */
-      }
-
-      .context-menu-items li:hover {
-        background-color: #f0f0f0;
-      }
-
-      .context-menu-items li i {
-        color: #555;
-        /* Couleur des icônes */
-      }
-
-      /* --- FIN DES STYLES POUR LE MENU CONTEXTUEL --- */
-
-      .edit-actions-container {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        /* Trois colonnes de largeur égale */
-        gap: 8px;
-        /* Espace entre les boutons */
-        margin-top: 10px;
-      }
-
-      .edit-actions-container button {
-        font-size: 12px;
-        margin: 0;
-        /* Annule la marge par défaut des boutons */
-        width: 100%;
-        /* Fait en sorte que chaque bouton remplisse sa colonne */
-        padding: 10px 5px;
-        /* Ajuste le padding pour les textes plus courts */
-      }
-
-      .section.collapsible .section-header {
-        cursor: pointer;
-        position: relative;
-      }
-
-      .section.collapsible.collapsed .section-content {
-        display: none;
-      }
-
-      .section.collapsible .section-header::after {
-        content: "▲";
-        font-size: 12px;
-        color: #666;
-        position: absolute;
-        right: 10px;
-        top: 50%;
-        transform: translateY(-50%);
-        transition: transform 0.3s ease;
-      }
-
-      .section.collapsible.collapsed .section-header::after {
-        transform: translateY(-50%) rotate(180deg);
-      }
-
-      /* --- FIN DE L'AJOUT --- */
-
-      @media (max-width: 768px) {
-        /* Le panneau prend toute la largeur et hauteur de l'écran */
-        #panel {
-          position: absolute;
-          top: 20px;
-          left: 20px;
-          background: rgba(255, 255, 255, 0.95);
-          padding: 65px 20px 20px 20px;
-          border-radius: 8px;
-          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-          max-height: 90vh;
-          overflow-y: auto;
-
-          /* --- MODIFICATIONS PRINCIPALES --- */
-          width: fit-content; /* Le panneau s'adapte à son contenu */
-          min-width: 280px; /* On garde une largeur minimale pour une bonne lisibilité */
-          /* --- FIN DES MODIFICATIONS --- */
-
-          transition: transform 0.3s ease;
-          z-index: 999;
-        }
-
-        /* Ajuste la position du panneau une fois caché */
-        #panel.hidden {
-          transform: translateX(calc(-100% - 20px));
-        }
-
-        /* On s'assure que le bouton "Ouvrir" est bien visible */
-        #openBtn {
-          top: 15px;
-          left: 15px;
-        }
-
-        .camera-btn svg {
-          width: 20px;
-          height: 20px;
-          pointer-events: none;
-        }
-      }
-      /* --- STYLES POUR LE SPLASH SCREEN (NOTIFICATION) --- */
-      #splashScreen {
-        position: fixed; /* Reste en place même si on fait défiler la page */
-        top: 50px; /* Un peu en dessous du haut de la page */
-        left: 50%; /* Centré horizontalement */
-        transform: translateX(-50%); /* Ajustement final pour un centrage parfait */
-
-        background-color: rgba(40, 40, 40, 0.9); /* Fond sombre semi-transparent */
-        color: white;
-        padding: 12px 25px;
-        border-radius: 25px; /* Bords bien arrondis */
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-
-        z-index: 10001; /* Doit être au-dessus de tout le reste (même le menu contextuel) */
-        font-size: 14px;
-        font-weight: bold;
-
-        /* Animation de transition douce */
-        transition: opacity 0.5s ease-in-out, top 0.5s ease-in-out;
-      }
-
-      /* Classe pour cacher le splash screen */
-      #splashScreen.splash-hidden {
-        opacity: 0;
-        top: -100px; /* Le fait "monter" hors de l'écran */
-        pointer-events: none; /* Empêche de cliquer dessus quand il est invisible */
-      }
-      #panel.no-transition {
-        transition: none;
-      }
-      /* --- NOUVEAU : Style unifié pour les boutons burger --- */
-      .burger-btn {
-        width: 40px;
-        height: 40px;
-        padding: 8px; /* Assure un espacement interne cohérent */
-        border-radius: 6px;
-        cursor: pointer;
-        border: none;
-
-        /* Utilisation de flexbox pour centrer parfaitement les lignes */
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        gap: 4px;
-      }
-
-      .burger-btn:hover {
-        background-color: rgba(0, 0, 0, 0.05) !important; /* Effet de survol unifié */
-      }
-    </style>
-  </head>
-
-  <body>
-    <div id="splashScreen" class="splash-hidden">
-      <span id="splashMessage"></span>
-    </div>
-    <button id="openBtn" class="burger-btn show" onclick="togglePanel()">
-      <span class="burger-line"></span>
-      <span class="burger-line"></span>
-      <span class="burger-line"></span>
-    </button>
-    <div id="container">
-      <div id="cameraControls">
-        <!-- Vue de dessus (XY) : La face supérieure du cube est noire -->
-        <div class="camera-btn" id="btnTop" onclick="setCameraView('top', this)" title="Vue de dessus (XY)">
-          <svg width="40" height="40" viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg">
-            <!-- Face du dessus (noire) -->
-            <polygon points="5,15 25,5 45,15 25,25" fill="#222222" />
-            <!-- Face de droite (claire) -->
-            <polygon points="45,15 45,35 25,45 25,25" fill="#e6e6e6" />
-            <!-- Face de gauche (moyenne) -->
-            <polygon points="5,15 5,35 25,45 25,25" fill="#cacaca" />
-          </svg>
-        </div>
-
-        <!-- Vue de face (XZ) : La face de "gauche" (qui représente l'avant) est noire -->
-        <div class="camera-btn" id="btnFront" onclick="setCameraView('front', this)" title="Vue de face (XZ)">
-          <svg width="40" height="40" viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg">
-            <!-- Face du dessus (moyenne) -->
-            <polygon points="5,15 25,5 45,15 25,25" fill="#cacaca" />
-            <!-- Face de droite (claire) -->
-            <polygon points="45,15 45,35 25,45 25,25" fill="#e6e6e6" />
-            <!-- Face de gauche/avant (noire) -->
-            <polygon points="5,15 5,35 25,45 25,25" fill="#222222" />
-          </svg>
-        </div>
-
-        <!-- Vue de côté (YZ) : La face de "droite" (qui représente le côté) est noire -->
-        <div class="camera-btn" id="btnSide" onclick="setCameraView('side', this)" title="Vue de côté (YZ)">
-          <svg width="40" height="40" viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg">
-            <!-- Face du dessus (moyenne) -->
-            <polygon points="5,15 25,5 45,15 25,25" fill="#cacaca" />
-            <!-- Face de droite/côté (noire) -->
-            <polygon points="45,15 45,35 25,45 25,25" fill="#222222" />
-            <!-- Face de gauche (claire) -->
-            <polygon points="5,15 5,35 25,45 25,25" fill="#e6e6e6" />
-          </svg>
-        </div>
-
-        <div class="camera-btn" id="btnReset" onclick="resetCamera(this)" title="Réinitialiser la vue (Isométrique)">
-          <i class="fas fa-sync-alt"></i>
-        </div>
+    }
+
+    /* --- STYLES POUR LE SPLASH SCREEN (NOTIFICATION) --- */
+    #splashScreen {
+      position: fixed;
+      /* Reste en place même si on fait défiler la page */
+      top: 50px;
+      /* Un peu en dessous du haut de la page */
+      left: 50%;
+      /* Centré horizontalement */
+      transform: translateX(-50%);
+      /* Ajustement final pour un centrage parfait */
+
+      background-color: rgba(40, 40, 40, 0.9);
+      /* Fond sombre semi-transparent */
+      color: white;
+      padding: 12px 25px;
+      border-radius: 25px;
+      /* Bords bien arrondis */
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+
+      z-index: 10001;
+      /* Doit être au-dessus de tout le reste (même le menu contextuel) */
+      font-size: 14px;
+      font-weight: bold;
+
+      /* Animation de transition douce */
+      transition: opacity 0.5s ease-in-out, top 0.5s ease-in-out;
+    }
+
+    /* Classe pour cacher le splash screen */
+    #splashScreen.splash-hidden {
+      opacity: 0;
+      top: -100px;
+      /* Le fait "monter" hors de l'écran */
+      pointer-events: none;
+      /* Empêche de cliquer dessus quand il est invisible */
+    }
+
+    #panel.no-transition {
+      transition: none;
+    }
+
+    /* --- NOUVEAU : Style unifié pour les boutons burger --- */
+    .burger-btn {
+      width: 40px;
+      height: 40px;
+      padding: 8px;
+      /* Assure un espacement interne cohérent */
+      border-radius: 6px;
+      cursor: pointer;
+      border: none;
+
+      /* Utilisation de flexbox pour centrer parfaitement les lignes */
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .burger-btn:hover {
+      background-color: rgba(0, 0, 0, 0.05) !important;
+      /* Effet de survol unifié */
+    }
+  </style>
+</head>
+
+<body>
+  <div id="splashScreen" class="splash-hidden">
+    <span id="splashMessage"></span>
+  </div>
+  <button id="openBtn" class="burger-btn show" onclick="togglePanel()">
+    <span class="burger-line"></span>
+    <span class="burger-line"></span>
+    <span class="burger-line"></span>
+  </button>
+  <div id="container">
+    <div id="cameraControls">
+
+      <!-- Vue de dessus (XY) : La face supérieure du cube est noire -->
+      <div class="camera-btn" id="btnTop" onclick="setCameraView('top', this)" title="Vue de dessus (XY)">
+        <svg width="40" height="40" viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg">
+          <!-- Face du dessus (noire) -->
+          <polygon points="5,15 25,5 45,15 25,25" fill="#222222" />
+          <!-- Face de droite (claire) -->
+          <polygon points="45,15 45,35 25,45 25,25" fill="#e6e6e6" />
+          <!-- Face de gauche (moyenne) -->
+          <polygon points="5,15 5,35 25,45 25,25" fill="#cacaca" />
+        </svg>
+
+      </div>
+
+      <!-- Vue de face (XZ) : La face de "gauche" (qui représente l'avant) est noire -->
+      <div class="camera-btn" id="btnFront" onclick="setCameraView('front', this)" title="Vue de face (XZ)">
+        <svg width="40" height="40" viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg">
+          <!-- Face du dessus (moyenne) -->
+          <polygon points="5,15 25,5 45,15 25,25" fill="#cacaca" />
+          <!-- Face de droite (claire) -->
+          <polygon points="45,15 45,35 25,45 25,25" fill="#e6e6e6" />
+          <!-- Face de gauche/avant (noire) -->
+          <polygon points="5,15 5,35 25,45 25,25" fill="#222222" />
+        </svg>
+      </div>
+
+      <!-- Vue de côté (YZ) : La face de "droite" (qui représente le côté) est noire -->
+      <div class="camera-btn" id="btnSide" onclick="setCameraView('side', this)" title="Vue de côté (YZ)">
+        <svg width="40" height="40" viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg">
+          <!-- Face du dessus (moyenne) -->
+          <polygon points="5,15 25,5 45,15 25,25" fill="#cacaca" />
+          <!-- Face de droite/côté (noire) -->
+          <polygon points="45,15 45,35 25,45 25,25" fill="#222222" />
+          <!-- Face de gauche (claire) -->
+          <polygon points="5,15 5,35 25,45 25,25" fill="#e6e6e6" />
+        </svg>
+      </div>
+
+      <div class="camera-btn" id="btnReset" onclick="resetCamera(this)" title="Réinitialiser la vue (Isométrique)">
+        <i class="fas fa-sync-alt"></i>
+      </div>
+      <div class="camera-btn" id="btnUndo" onclick="undo()" title="Annuler (Ctrl+Z)"
+        style="opacity: 0.5; pointer-events: none;">
+        <i class="fas fa-undo"></i>
       </div>
 
       <!-- FIN NOUVEAU -->
@@ -689,7 +741,8 @@
           <!-- NOUVEAU : Conteneur pour les boutons d'action d'édition -->
           <div id="vectorEditActions" class="edit-actions-container" style="display: none">
             <button id="updateVectorBtn" class="btn-secondary" onclick="updateVector()">💾 Mettre à jour</button>
-            <button id="deleteEditingVectorBtn" class="btn-danger" onclick="deleteEditingVector()">🗑️ Supprimer</button>
+            <button id="deleteEditingVectorBtn" class="btn-danger" onclick="deleteEditingVector()">🗑️
+              Supprimer</button>
             <button id="cancelVectorEditBtn" class="btn-warning" onclick="cancelVectorEdit()">❌ Annuler</button>
           </div>
 
@@ -715,12 +768,8 @@
           <label>Nom de la droite :</label>
           <input type="text" id="lineNameFromEquation" placeholder="Ex: D1, MaDroite..." />
           <label>Équations (une par ligne) :</label>
-          <textarea
-            id="lineEquationInput"
-            rows="3"
-            placeholder="x = 1 + 2t&#10;y = -3 + t&#10;z = 4 - 5t"
-            style="font-family: monospace"
-          ></textarea>
+          <textarea id="lineEquationInput" rows="3" placeholder="x = 1 + 2t&#10;y = -3 + t&#10;z = 4 - 5t"
+            style="font-family: monospace"></textarea>
           <button class="btn-secondary" onclick="addLineFromEquation()">➕ Créer la droite</button>
 
           <h4 class="sub-section-title">Droites existantes :</h4>
@@ -801,12 +850,8 @@
           <button class="btn-warning" onclick="constructChaslesSum()">📐 Construire la somme (Chasles)</button>
 
           <!-- NOUVEAU: Bouton pour nettoyer la construction, caché par défaut -->
-          <button
-            class="btn-danger"
-            onclick="clearChaslesConstruction()"
-            style="display: none; margin-top: 5px"
-            id="clearChaslesBtn"
-          >
+          <button class="btn-danger" onclick="clearChaslesConstruction()" style="display: none; margin-top: 5px"
+            id="clearChaslesBtn">
             🗑️ Effacer la construction
           </button>
 
@@ -1542,6 +1587,7 @@
         updateCameraPosition();
         animate();
         updateAllUI();
+        saveState();
       }
 
       function formatNumber(value, decimalPlaces = 2) {
@@ -1577,6 +1623,8 @@
         document.addEventListener("touchend", handleTouchEnd);
 
         window.addEventListener("resize", onWindowResize);
+
+
         window.addEventListener("keydown", (event) => {
           if (event.key === "Escape") {
             hideContextMenu();
@@ -1586,6 +1634,15 @@
               cancelEdit();
               cancelVectorEdit();
             }
+          }
+          if ((event.ctrlKey || event.metaKey) && event.key === 'z') {
+            event.preventDefault();
+            undo();
+          }
+          // Ctrl+Y (ou Ctrl+Shift+Z) pour Rétablir (Redo) - Optionnel
+          if ((event.ctrlKey || event.metaKey) && event.key === 'y') {
+            event.preventDefault();
+            redo();
           }
         });
 
@@ -1619,15 +1676,25 @@
         performRaycastSelection(event.clientX, event.clientY);
       }
 
-      function handleTouchStart(e) {
+function handleTouchStart(e) {
         wasDragged = false;
         // wasPanningOrZooming = false;
         clearTimeout(longPressTimer);
         longPressTimer = null;
+
+        // --- DÉBUT CORRECTION ---
+        // Si on touche le bouton d'ouverture, on laisse le "click" standard faire son travail
+        // et on empêche la logique de swipe de prendre le dessus.
+        if (e.target.closest("#openBtn")) {
+            return;
+        }
+        // --- FIN CORRECTION ---
+
         const touch = e.touches[0];
 
         const canStartOpening = !panelOpen && touch.clientX < SWIPE_EDGE_ZONE;
         const canStartClosing = panelOpen && e.target.closest("#panel");
+
         if (canStartOpening || canStartClosing) {
           swipeState.isSwiping = true;
           swipeState.lock = null;
@@ -1664,7 +1731,6 @@
           };
         }
       }
-
       function handleTouchMove(e) {
         if (swipeState.isSwiping) {
           const touch = e.touches[0];
@@ -2109,9 +2175,8 @@
                 <span class="geometry-details">Vect. dir: ${vText}</span>
             </div>
             <div class="geometry-actions">
-                <button class="btn-secondary" onclick="toggleStraightLineVisibility(${line.id})" title="${
-            line.isVisible ? "Masquer" : "Afficher"
-          }">${line.isVisible ? "👁️" : "🙈"}</button>
+                <button class="btn-secondary" onclick="toggleStraightLineVisibility(${line.id})" title="${line.isVisible ? "Masquer" : "Afficher"
+            }">${line.isVisible ? "👁️" : "🙈"}</button>
                 <button class="btn-danger" onclick="removeStraightLineById(${line.id})" title="Supprimer">🗑️</button>
             </div>
         </div>`;
@@ -2155,9 +2220,8 @@
             <!-- Colonne de droite pour les boutons -->
             <div class="geometry-actions">
                 ${normalBtnHtml}
-                <button class="btn-secondary" onclick="togglePlaneVisibility(${plane.id})" title="${
-            plane.isVisible ? "Masquer" : "Afficher"
-          }">${plane.isVisible ? "👁️" : "🙈"}</button>
+                <button class="btn-secondary" onclick="togglePlaneVisibility(${plane.id})" title="${plane.isVisible ? "Masquer" : "Afficher"
+            }">${plane.isVisible ? "👁️" : "🙈"}</button>
                 <button class="btn-danger" onclick="removePlaneById(${plane.id})" title="Supprimer">🗑️</button>
             </div>
         </div>`;
@@ -2189,13 +2253,11 @@
             <button class="btn-secondary" onclick="editVector(${vector.id})" title="Modifier">✏️</button>
 
             <!-- NOUVEAU BOUTON POUR L'ÉTIQUETTE -->
-            <button class="btn-violet-light" onclick="toggleVectorLabelVisibility(${vector.id})" title="${
-            vector.isLabelVisible ? "Masquer le nom" : "Afficher le nom"
-          }">${vector.isLabelVisible ? "👁️" : "🙈"}</button>
+            <button class="btn-violet-light" onclick="toggleVectorLabelVisibility(${vector.id})" title="${vector.isLabelVisible ? "Masquer le nom" : "Afficher le nom"
+            }">${vector.isLabelVisible ? "👁️" : "🙈"}</button>
 
-            <button class="btn-secondary" onclick="toggleVectorVisibility(${vector.id})" title="${
-            vector.isVisible ? "Masquer" : "Afficher"
-          }">${vector.isVisible ? "👁️" : "🙈"}</button>
+            <button class="btn-secondary" onclick="toggleVectorVisibility(${vector.id})" title="${vector.isVisible ? "Masquer" : "Afficher"
+            }">${vector.isVisible ? "👁️" : "🙈"}</button>
             <button class="btn-danger" onclick="removeVectorById(${vector.id})" title="Supprimer">🗑️</button>
         </div>
     </div>
@@ -2242,12 +2304,12 @@
           // On stocke des informations pour le retrouver
           normalVector.isNormalVector = true;
           normalVector.parentPlaneId = plane.id;
-
           geometryManager.addVector(normalVector);
         }
 
         // Mettre à jour l'UI pour refléter le changement de bouton et la liste des vecteurs
         updateAllUI();
+        saveState();
       }
 
       function updateSelects() {
@@ -2318,8 +2380,11 @@
         }
         // Le constructeur Point attend un nom et un Vector3, pas des coordonnées séparées
         geometryManager.addPoint(new Point(n, x, z_from_ui, y_from_ui));
+
         cancelEdit();
+
         updateAllUI();
+        saveState();
       }
 
       function editPoint(index) {
@@ -2386,6 +2451,7 @@
 
         updateAllUI();
         cancelEdit();
+        saveState();
       }
 
       function cancelEdit() {
@@ -2422,6 +2488,7 @@
         if (p && confirm(`Supprimer "${p.name}" ?`)) {
           geometryManager.removePoint(p);
           updateAllUI();
+          saveState();
         }
       }
 
@@ -2442,6 +2509,7 @@
 
           // 4. Mettre à jour l'interface utilisateur pour refléter la suppression.
           updateAllUI();
+          saveState();
         }
       }
 
@@ -2462,12 +2530,14 @@
         const uniqueName = geometryManager.generateUniqueName(baseName, "line"); // On passe 'line'
         geometryManager.addLine(new Line3D(uniqueName, p1.position, d));
         updateAllUI();
+        saveState();
       }
       function removeStraightLineById(id) {
         const l = geometryManager.findLineById(id);
         if (l && confirm(`Supprimer "${l.name}" ?`)) {
           geometryManager.removeLine(l);
           updateAllUI();
+          saveState();
         }
       }
 
@@ -2496,7 +2566,7 @@
           const cleanLine = line.substring(line.indexOf("=") + 1);
 
           // 1. Extraire le coefficient de 't' (composante du vecteur)
-          let tMatch = cleanLine.match(/[+\-]?\s*[\d\.]*t/);
+          let tMatch = cleanLine.match(/[+-]?\s*[\d.]*t/);
           let vectorComp = 0;
           let lineWithoutT = cleanLine;
 
@@ -2545,6 +2615,7 @@
 
         geometryManager.addLine(new Line3D(name, startPoint, directorVector));
         updateAllUI();
+        saveState();
       }
 
       function toggleStraightLineVisibility(lineId) {
@@ -2561,6 +2632,7 @@
         if (l && confirm(`Supprimer "${l.name}" ?`)) {
           geometryManager.removeLine(l);
           updateAllUI();
+          saveState();
         }
       }
 
@@ -2569,6 +2641,7 @@
           geometryManager.lines.forEach((line) => line.removeFromScene(scene));
           geometryManager.lines = [];
           updateAllUI();
+          saveState();
         }
       }
 
@@ -2611,13 +2684,9 @@
 
         const newPlane = new Plane(n, p1, norm);
         geometryManager.addPlane(newPlane);
-
+        saveState();
         updateAllUI();
-
-        // --- DÉBUT DE LA CORRECTION ---
-        // On vide le champ de saisie du nom pour la prochaine création.
         document.getElementById("planeName").value = "";
-        // --- FIN DE LA CORRECTION ---
       }
 
       function addPlaneFromEquation() {
@@ -2633,7 +2702,8 @@
         }
 
         const getCoefficient = (variable) => {
-          const regex = new RegExp(`([+\-]?[\\d\\.]*)\\s*\\*?\\s*${variable}`, "gi");
+          // CORRECTION: suppression du \ devant le - dans le RegExp
+          const regex = new RegExp(`([+-]?[\\d\\.]*)\\s*\\*?\\s*${variable}`, "gi");
           let totalCoeff = 0;
           let match;
           while ((match = regex.exec(equationStr)) !== null) {
@@ -2650,7 +2720,8 @@
         const c = getCoefficient("z"); // Coefficient 'c' de l'équation (hauteur)
 
         let constantStr = equationStr
-          .replace(/[+\-]?[\d\\.]*\s*\*?\s*[xyz]/gi, "")
+          // CORRECTION: suppression du \ devant le - ici aussi
+          .replace(/[+-]?[\d\\.]*\s*\*?\s*[xyz]/gi, "")
           .replace(/--/g, "+")
           .trim();
 
@@ -2696,6 +2767,7 @@
 
         geometryManager.addPlane(newPlane);
         updateAllUI();
+        saveState();
       }
 
       function removePlaneById(id) {
@@ -2710,6 +2782,7 @@
           // Supprimer le plan lui-même
           geometryManager.removePlane(p);
           updateAllUI();
+          saveState();
         }
       }
 
@@ -2723,6 +2796,7 @@
           geometryManager.planes.forEach((plane) => plane.removeFromScene(scene));
           geometryManager.planes = [];
           updateAllUI();
+          saveState();
         }
       }
 
@@ -2750,6 +2824,7 @@
         const uniqueName = geometryManager.generateUniqueName(baseName, "vector");
         geometryManager.addVector(new Vector(uniqueName, pS.position, c));
         updateAllUI();
+        saveState();
       }
 
       function addVectorFromCoords() {
@@ -2776,10 +2851,10 @@
         let o = new THREE.Vector3(0, 0, 0);
         const oSel = document.getElementById("vectorOriginPoint").value;
         if (oSel !== "origin" && oSel !== "") o = geometryManager.points[oSel].position;
-
         geometryManager.addVector(new Vector(n, o, comps));
         cancelVectorEdit();
         updateAllUI();
+        saveState();
       }
 
       function editVector(id) {
@@ -3060,6 +3135,7 @@
 
         // 6. Mettre à jour la scène et afficher le bouton de nettoyage
         updateAllUI();
+        saveState();
         document.getElementById("clearChaslesBtn").style.display = "block";
       }
 
@@ -3233,6 +3309,7 @@
                      Norme ≈ <strong>${normText}</strong>`;
 
         updateAllUI();
+        saveState();
       }
 
       function calculateScalarProduct() {
@@ -3285,6 +3362,7 @@
         // --- FIN DE LA MODIFICATION ---
 
         updateAllUI();
+        saveState();
       }
 
       function calculatePointPointDistance() {
@@ -3524,6 +3602,7 @@
         const newLine = new Line3D(lineName, linePoint, lineDirection, 0xff1493);
         geometryManager.addLine(newLine);
         r.textContent = `Droite d'intersection "${lineName}" créée.`;
+        saveState();
         updateAllUI();
       }
 
@@ -3576,6 +3655,7 @@
           geometryManager.addPoint(newPoint);
           r.innerHTML = `Droites sécantes.<br>Point "${pointName}" créé.`;
           updateAllUI();
+          saveState();
         } else {
           const distance = Math.abs(mixedProduct) / v1_cross_v2.length();
           r.innerHTML = `Droites non-coplanaires.<br>Distance min ≈ <strong>${distance.toFixed(3)}</strong>.`;
@@ -3633,6 +3713,7 @@
             geometryManager.addPoint(new Point(p.n, p.x, p.y, p.z));
         });
         updateAllUI();
+        saveState();
       }
 
       function toggleAutoLoadTestPoints() {
@@ -3802,6 +3883,7 @@
 
         // 4. Mise à jour de l'interface (notamment les coordonnées dans la liste)
         updateAllUI();
+        saveState();
       }
 
       function applyRotation() {
@@ -3896,6 +3978,7 @@
         }
 
         updateAllUI();
+        saveState();
       }
 
       function updateSymmetryUI() {
@@ -4268,6 +4351,145 @@
           menu.style.display = "none";
         }
       }
+      // --- GESTIONNAIRE D'HISTORIQUE ---
+      const historyStack = []; // Stocke les états (snapshots)
+      let historyIndex = -1;   // Position actuelle dans l'historique
+      const MAX_HISTORY = 20;  // Limite pour ne pas saturer la mémoire
+
+      function saveState() {
+        // 1. Si on est au milieu de l'historique et qu'on fait une action, on coupe le futur
+        if (historyIndex < historyStack.length - 1) {
+          historyStack.splice(historyIndex + 1);
+        }
+
+        // 2. Création du Snapshot (On réutilise la logique de saveScene mais en mémoire)
+        const currentState = serializeSceneData();
+
+        // 3. Ajout à la pile
+        historyStack.push(currentState);
+        historyIndex++;
+
+        // 4. Gestion de la limite
+        if (historyStack.length > MAX_HISTORY) {
+          historyStack.shift(); // On supprime le plus vieux
+          historyIndex--;
+        }
+
+        console.log("État sauvegardé. Historique : " + (historyIndex + 1) + "/" + historyStack.length);
+        updateUndoButton();
+      }
+
+      function undo() {
+        if (historyIndex > 0) {
+          historyIndex--;
+          const previousState = historyStack[historyIndex];
+          restoreSceneData(previousState);
+          showSplashScreen("Action annulée ↩️");
+        } else {
+          showSplashScreen("Rien à annuler.");
+        }
+        updateUndoButton();
+      }
+
+      // Optionnel : Redo
+      function redo() {
+        if (historyIndex < historyStack.length - 1) {
+          historyIndex++;
+          const nextState = historyStack[historyIndex];
+          restoreSceneData(nextState);
+          showSplashScreen("Action rétablie ↪️");
+        }
+        updateUndoButton();
+      }
+      function serializeSceneData() {
+        return JSON.stringify({
+          points: geometryManager.points.map(p => ({
+            name: p.name,
+            position: { x: p.position.x, y: p.position.y, z: p.position.z }
+          })),
+          vectors: geometryManager.vectors.map(v => ({
+            id: v.id,
+            name: v.name,
+            origin: { x: v.origin.x, y: v.origin.y, z: v.origin.z },
+            components: { x: v.components.x, y: v.components.y, z: v.components.z },
+            isLabelVisible: v.isLabelVisible,
+            isVisible: v.isVisible,
+            // Sauvegarde des props spécifiques (normale de plan, etc)
+            isNormalVector: v.isNormalVector || false,
+            parentPlaneId: v.parentPlaneId || null
+          })),
+          lines: geometryManager.lines.map(l => ({
+            id: l.id,
+            name: l.name,
+            startPoint: { x: l.startPoint.x, y: l.startPoint.y, z: l.startPoint.z },
+            directorVector: { x: l.directorVector.x, y: l.directorVector.y, z: l.directorVector.z },
+            isVisible: l.isVisible
+          })),
+          planes: geometryManager.planes.map(p => ({
+            id: p.id,
+            name: p.name,
+            pointOnPlane: { x: p.pointOnPlane.x, y: p.pointOnPlane.y, z: p.pointOnPlane.z },
+            displayNormal: { x: p.displayNormal.x, y: p.displayNormal.y, z: p.displayNormal.z },
+            isVisible: p.isVisible
+          }))
+        });
+      }
+
+      function restoreSceneData(jsonString) {
+        const data = JSON.parse(jsonString);
+
+        // 1. Nettoyage complet
+        geometryManager.clearAll();
+
+        // 2. Reconstruction
+        data.points.forEach(p => geometryManager.addPoint(new Point(p.name, p.position.x, p.position.y, p.position.z)));
+
+        data.vectors.forEach(v => {
+          const vec = new Vector(v.name, new THREE.Vector3(v.origin.x, v.origin.y, v.origin.z), new THREE.Vector3(v.components.x, v.components.y, v.components.z));
+          vec.id = v.id;
+          vec.isVisible = v.isVisible !== undefined ? v.isVisible : true;
+          vec.isLabelVisible = v.isLabelVisible !== undefined ? v.isLabelVisible : true;
+          vec.isNormalVector = v.isNormalVector;
+          vec.parentPlaneId = v.parentPlaneId;
+          nextVectorId = Math.max(nextVectorId, v.id + 1);
+          geometryManager.addVector(vec);
+        });
+
+        data.lines.forEach(l => {
+          const line = new Line3D(l.name, new THREE.Vector3(l.startPoint.x, l.startPoint.y, l.startPoint.z), new THREE.Vector3(l.directorVector.x, l.directorVector.y, l.directorVector.z));
+          line.id = l.id;
+          line.isVisible = l.isVisible !== undefined ? l.isVisible : true;
+          nextStraightLineId = Math.max(nextStraightLineId, l.id + 1);
+          geometryManager.addLine(line);
+        });
+
+        data.planes.forEach(p => {
+          const plane = new Plane(p.name, new THREE.Vector3(p.pointOnPlane.x, p.pointOnPlane.y, p.pointOnPlane.z), new THREE.Vector3(p.displayNormal.x, p.displayNormal.y, p.displayNormal.z));
+          plane.id = p.id;
+          plane.isVisible = p.isVisible !== undefined ? p.isVisible : true;
+          nextPlaneId = Math.max(nextPlaneId, p.id + 1);
+          geometryManager.addPlane(plane);
+        });
+
+        updateAllUI();
+      }
+      function updateUndoButton() {
+        const btn = document.getElementById("btnUndo");
+        if (!btn) return;
+
+        // Si l'index est > 0, cela veut dire qu'on a au moins un état précédent (l'état initial)
+        // ET un état actuel sauvegardé juste avant l'action.
+        if (historyIndex > 0) {
+          btn.style.opacity = "1";
+          btn.style.pointerEvents = "auto"; // REND LE BOUTON CLIQUABLE
+          btn.style.cursor = "pointer";
+        } else {
+          btn.style.opacity = "0.5";
+          btn.style.pointerEvents = "none"; // EMPÊCHE LE CLIC
+          btn.style.cursor = "default";
+        }
+      }
     </script>
-  </body>
+</body>
+
 </html>
