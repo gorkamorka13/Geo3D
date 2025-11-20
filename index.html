@@ -7,6 +7,7 @@
   <title>Éditeur de Points 3D</title>
   <!-- IMPORTANT: La bibliothèque Three.js et OrbitControls seront chargées ici par votre JavaScript -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://unpkg.com/three@0.128.0/examples/js/controls/TransformControls.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
   <!-- Ajout de Font Awesome pour les icônes -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
@@ -323,7 +324,8 @@
       flex-direction: column;
       gap: 8px;
       z-index: 990;
-        pointer-events: auto; /* Force la détection des clics */
+      pointer-events: auto;
+      /* Force la détection des clics */
     }
 
     .camera-btn {
@@ -1556,6 +1558,8 @@
       let longPressTimer = null;
       const LONG_PRESS_DURATION = 500;
       let touchStartPosition = { x: 0, y: 0 };
+      let transformControl;
+      let isGizmoDragging = false;
       const TOUCH_MOVE_TOLERANCE = 10; // Tolérance en pixels pour différencier un tap d'un drag
       // let rightClickedObjectInstance = null;
 
@@ -1598,6 +1602,33 @@
         // On s'assure que le matériau du quadrillage ne cache pas les objets derrière
         gridHelper.material.depthTest = false;
         scene.add(gridHelper);
+
+        // Initialisation du Gizmo
+        transformControl = new THREE.TransformControls(camera, renderer.domElement);
+
+        // Écouteur : Quand on bouge le Gizmo, on bloque la caméra
+        transformControl.addEventListener('dragging-changed', function (event) {
+          isGizmoDragging = event.value;
+          // On désactive OrbitControls si vous l'utilisiez, mais ici on gère vos flags custom
+          if (isGizmoDragging) {
+            isDragging = false;
+            isPanning = false;
+          }
+        });
+
+        // Écouteur : Quand l'objet bouge, on met à jour les données et l'interface
+        transformControl.addEventListener('change', function () {
+          // On ne fait rien si aucun objet n'est sélectionné
+          if (!selectedObjectInstance) return;
+
+          syncDataFromGizmo(); // Fonction qu'on va créer plus bas
+        });
+
+        scene.add(transformControl);
+
+
+
+
         setupEventListeners();
         raycaster = new THREE.Raycaster();
         mouse = new THREE.Vector2();
@@ -1650,6 +1681,8 @@
 
 
         window.addEventListener("keydown", (event) => {
+          if (event.key.toLowerCase() === 't') transformControl.setMode('translate');
+          if (event.key.toLowerCase() === 'r') transformControl.setMode('rotate');
           if (event.key === "Escape") {
             hideContextMenu();
             if (panelOpen) togglePanel();
@@ -1704,15 +1737,37 @@
         wasDragged = false;
         clearTimeout(longPressTimer);
         longPressTimer = null;
+
+        // 1. Protection Boutons UI (Burger + Caméra)
         if (e.target.closest("#openBtn") || e.target.closest("#cameraControls")) {
           return;
         }
-        if (e.target.closest("#openBtn")) {
-          return;
+
+        // 2. Protection Gizmo (NOUVEAU)
+        // Si le gizmo est actif (un objet est sélectionné), on vérifie si on le touche
+        if (transformControl && selectedObjectInstance) {
+          const touch = e.touches[0];
+          // On prépare le rayon
+          mouse.x = (touch.clientX / window.innerWidth) * 2 - 1;
+          mouse.y = -(touch.clientY / window.innerHeight) * 2 + 1;
+          raycaster.setFromCamera(mouse, camera);
+
+          // On vérifie si le rayon touche les flèches du Gizmo
+          // (transformControl est un groupe d'objets, on vérifie ses enfants)
+          const gizmoIntersects = raycaster.intersectObjects(transformControl.children, true);
+
+          if (gizmoIntersects.length > 0) {
+            // On touche le Gizmo ! On arrête la logique caméra ici.
+            // Le TransformControls de Three.js prendra le relais automatiquement.
+            return;
+          }
         }
+
+        // --- Logique Caméra habituelle ---
 
         const touch = e.touches[0];
 
+        // Gestion du Swipe pour le panneau latéral
         const canStartOpening = !panelOpen && touch.clientX < SWIPE_EDGE_ZONE;
         const canStartClosing = panelOpen && e.target.closest("#panel");
 
@@ -1740,7 +1795,6 @@
           }, LONG_PRESS_DURATION);
         } else if (e.touches.length >= 2) {
           isPanning = true;
-          // wasPanningOrZooming = true;
           clearTimeout(longPressTimer);
           longPressTimer = null;
           const dx = e.touches[0].clientX - e.touches[1].clientX;
@@ -1753,7 +1807,9 @@
         }
       }
 
+
       function handleTouchMove(e) {
+        if (isGizmoDragging) return;
         if (swipeState.isSwiping) {
           const touch = e.touches[0];
           const deltaX = touch.clientX - swipeState.startX;
@@ -3097,6 +3153,21 @@
         // 2. Enregistrer le nouvel objet comme étant sélectionné
         selectedObjectInstance = inst;
 
+        // --- AJOUT POUR GIZMO ---
+        // On attache le contrôleur au mesh de l'objet
+        // Note : Pour les vecteurs (ArrowHelper), on attache souvent au "line" ou on crée un groupe parent.
+        // Pour simplifier ici, si c'est un vecteur, on attache à la ligne de la flèche.
+        if (inst instanceof Vector) {
+          if (inst.arrowHelper) transformControl.attach(inst.arrowHelper); // On attache tout l'arrowHelper
+        } else {
+          transformControl.attach(mesh);
+        }
+
+        // On définit le mode : 'translate' (déplacement) par défaut
+        // On pourrait ajouter des touches R pour Rotate, S pour Scale
+        transformControl.setMode('translate');
+        // -----------------------
+
         // 3. --- CORRECTION DU BUG ---
         // AFFICHER EXPLICITEMENT LE PANNEAU DE TRANSFORMATIONS.
         // Cette étape est maintenant effectuée pour TOUS les types d'objets,
@@ -3118,6 +3189,9 @@
       }
 
       function deselectCurrentObject() {
+        if (transformControl) {
+          transformControl.detach();
+        }
         if (!selectedObjectInstance) return;
 
         const inst = selectedObjectInstance;
@@ -3817,6 +3891,7 @@
       }
 
       function onMouseDown(e) {
+        if (isGizmoDragging) return; // <--- AJOUT IMPORTANT
         wasDragged = false;
         if (e.target.closest("#cameraControls")) return;
         if (e.button === 0) isDragging = true;
@@ -3825,6 +3900,7 @@
       }
 
       function onMouseMove(e) {
+        if (isGizmoDragging) return; // <--- AJOUT IMPORTANT
         const dX = e.clientX - previousMousePosition.x,
           dY = e.clientY - previousMousePosition.y;
         if (isDragging || isPanning) if (Math.abs(dX) > 3 || Math.abs(dY) > 3) wasDragged = true;
@@ -4660,6 +4736,66 @@
         } else {
           tooltip.style.display = "none";
           document.body.style.cursor = "default";
+        }
+      }
+      function syncDataFromGizmo() {
+        const inst = selectedObjectInstance;
+        if (!inst) return;
+
+        // 1. Mise à jour du modèle de données (Classes JS)
+        // Selon le type, la logique est un peu différente
+        if (inst instanceof Point) {
+          // Le mesh a bougé, on met à jour la position de l'instance
+          inst.position.copy(inst.mesh.position);
+          inst.updateLabelPosition(); // Important : bouger le texte avec le point
+
+          // Mise à jour des inputs HTML (si le panneau est ouvert)
+          // Attention à l'inversion Z/Y pour l'UI
+          if (document.getElementById("editPointIndex").value == geometryManager.points.indexOf(inst)) {
+            document.getElementById("pointX").value = formatNumber(inst.position.x);
+            document.getElementById("pointY").value = formatNumber(inst.position.z); // Z ThreeJS -> Y UI
+            document.getElementById("pointZ").value = formatNumber(inst.position.y); // Y ThreeJS -> Z UI
+          }
+
+        } else if (inst instanceof Vector) {
+          // Pour un vecteur, le gizmo déplace son ORIGINE
+          // inst.arrowHelper.position est la nouvelle origine
+          inst.origin.copy(inst.arrowHelper.position);
+
+          // Mise à jour HTML (Optionnel : on n'affiche pas l'origine dans le panneau d'édition simple,
+          // mais si vous aviez un champ origine, il faudrait le mettre à jour).
+          inst.updateLabelPosition();
+
+        } else if (inst instanceof Line3D) {
+          // Déplacer une droite revient à déplacer son point de départ
+          // On calcule le delta (déplacement)
+          const newPos = inst.mesh.position; // Le mesh Line a bougé
+
+          // Note: Three.js TransformControls déplace l'objet directement.
+          // Pour une Line, geometry buffer est statique par défaut, donc TransformControls déplace le "Group" ou le Mesh entier.
+          // Il faut mettre à jour startPoint.
+
+          // Comme le mesh a une matrice de transformation locale maintenant,
+          // on doit appliquer cette transformation aux données mathématiques et resetter le mesh
+          // C'est complexe pour Line/Plane. 
+          // APPROCHE SIMPLIFIÉE : On lit la position du mesh et on met à jour startPoint
+
+          inst.startPoint.copy(inst.mesh.position);
+
+          // Attention : Pour les droites infinies visuelles, c'est mieux de regénérer la géométrie
+          // Mais TransformControls déplace tout le repère de l'objet.
+          // Pour l'instant, acceptons que le mesh bouge visuellement.
+
+        } else if (inst instanceof Plane) {
+          // Idem, le mesh du plan a bougé
+          inst.pointOnPlane.copy(inst.mesh.position);
+
+          // Si on est en mode Rotation, la normale change aussi !
+          const rotationMatrix = new THREE.Matrix4().extractRotation(inst.mesh.matrix);
+          const initialNormal = new THREE.Vector3(0, 0, 1); // Normale par défaut du PlaneGeometry
+          // On recalcule la normale en fonction de la rotation du mesh
+          inst.normal.copy(initialNormal).applyMatrix4(rotationMatrix).normalize();
+          inst.displayNormal.copy(inst.normal); // On simplifie pour l'instant
         }
       }
 
