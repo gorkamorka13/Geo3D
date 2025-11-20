@@ -323,6 +323,7 @@
       flex-direction: column;
       gap: 8px;
       z-index: 990;
+        pointer-events: auto; /* Force la détection des clics */
     }
 
     .camera-btn {
@@ -1701,17 +1702,14 @@
 
       function handleTouchStart(e) {
         wasDragged = false;
-        // wasPanningOrZooming = false;
         clearTimeout(longPressTimer);
         longPressTimer = null;
-
-        // --- DÉBUT CORRECTION ---
-        // Si on touche le bouton d'ouverture, on laisse le "click" standard faire son travail
-        // et on empêche la logique de swipe de prendre le dessus.
+        if (e.target.closest("#openBtn") || e.target.closest("#cameraControls")) {
+          return;
+        }
         if (e.target.closest("#openBtn")) {
           return;
         }
-        // --- FIN CORRECTION ---
 
         const touch = e.touches[0];
 
@@ -1754,6 +1752,7 @@
           };
         }
       }
+
       function handleTouchMove(e) {
         if (swipeState.isSwiping) {
           const touch = e.touches[0];
@@ -3819,6 +3818,7 @@
 
       function onMouseDown(e) {
         wasDragged = false;
+        if (e.target.closest("#cameraControls")) return;
         if (e.button === 0) isDragging = true;
         else if (e.button === 2) isPanning = true;
         previousMousePosition = { x: e.clientX, y: e.clientY };
@@ -4259,6 +4259,7 @@
 
         updateAllUI();
       }
+
       function saveScene() {
         const sceneName = document.getElementById("sceneNameInput").value.trim();
         if (!sceneName) {
@@ -4432,6 +4433,7 @@
           splashTimer = null; // Réinitialiser le timer
         }, duration);
       }
+
       function hideContextMenu() {
         console.log("hideContextMenu");
         const menu = document.getElementById("contextMenu");
@@ -4489,6 +4491,7 @@
         }
         updateUndoButton();
       }
+
       function serializeSceneData() {
         return JSON.stringify({
           points: geometryManager.points.map(p => ({
@@ -4561,6 +4564,7 @@
 
         updateAllUI();
       }
+
       function updateUndoButton() {
         const btn = document.getElementById("btnUndo");
         if (!btn) return;
@@ -4579,85 +4583,85 @@
       }
 
       function handleHover(clientX, clientY) {
-  const tooltip = document.getElementById("tooltip");
+        const tooltip = document.getElementById("tooltip");
 
-  // Si on bouge la caméra, on cache tout pour ne pas gêner la vue
-  if (isDragging || isPanning) {
-    tooltip.style.display = "none";
-    document.body.style.cursor = "default";
-    return;
-  }
+        // Si on bouge la caméra, on cache tout pour ne pas gêner la vue
+        if (isDragging || isPanning) {
+          tooltip.style.display = "none";
+          document.body.style.cursor = "default";
+          return;
+        }
 
-  const intersection = getIntersectionResult(clientX, clientY);
+        const intersection = getIntersectionResult(clientX, clientY);
 
-  if (intersection && intersection.object.userData.instance) {
-    const instance = intersection.object.userData.instance;
-    let content = "";
+        if (intersection && intersection.object.userData.instance) {
+          const instance = intersection.object.userData.instance;
+          let content = "";
 
-    // Style CSS inline pour les détails (gris clair, un peu plus petit)
-    // display: block permet de forcer le retour à la ligne proprement
-    const detailStyle = 'style="color: #ddd; font-size: 0.9em; display: block; margin-top: 2px;"';
+          // Style CSS inline pour les détails (gris clair, un peu plus petit)
+          // display: block permet de forcer le retour à la ligne proprement
+          const detailStyle = 'style="color: #ddd; font-size: 0.9em; display: block; margin-top: 2px;"';
 
-    // --- 1. POINT (Coordonnées) ---
-    if (instance instanceof Point) {
-        const x = formatNumber(instance.position.x);
-        const y_ui = formatNumber(instance.position.z); // ThreeJS Z = UI Y (Profondeur)
-        const z_ui = formatNumber(instance.position.y); // ThreeJS Y = UI Z (Hauteur)
+          // --- 1. POINT (Coordonnées) ---
+          if (instance instanceof Point) {
+            const x = formatNumber(instance.position.x);
+            const y_ui = formatNumber(instance.position.z); // ThreeJS Z = UI Y (Profondeur)
+            const z_ui = formatNumber(instance.position.y); // ThreeJS Y = UI Z (Hauteur)
 
-        content = `📍 <strong>${instance.name}</strong>
+            content = `📍 <strong>${instance.name}</strong>
                    <span ${detailStyle}>Coord : (${x}, ${y_ui}, ${z_ui})</span>`;
 
-    // --- 2. VECTEUR (Composantes + Norme) ---
-    } else if (instance instanceof Vector) {
-        const v = instance.components;
-        const x = formatNumber(v.x);
-        const y_ui = formatNumber(v.z); // Inversion
-        const z_ui = formatNumber(v.y); // Inversion
-        const norm = formatNumber(v.length());
+            // --- 2. VECTEUR (Composantes + Norme) ---
+          } else if (instance instanceof Vector) {
+            const v = instance.components;
+            const x = formatNumber(v.x);
+            const y_ui = formatNumber(v.z); // Inversion
+            const z_ui = formatNumber(v.y); // Inversion
+            const norm = formatNumber(v.length());
 
-        content = `↗️ <strong>${instance.name}</strong>
+            content = `↗️ <strong>${instance.name}</strong>
                    <span ${detailStyle}>Coord : (${x}, ${y_ui}, ${z_ui})</span>
                    <span ${detailStyle}>Norme : ${norm}</span>`;
 
-    // --- 3. DROITE (Vecteur Directeur) ---
-    } else if (instance instanceof Line3D) {
-        const u = instance.directorVector;
-        const x = formatNumber(u.x);
-        const y_ui = formatNumber(u.z); // Inversion
-        const z_ui = formatNumber(u.y); // Inversion
+            // --- 3. DROITE (Vecteur Directeur) ---
+          } else if (instance instanceof Line3D) {
+            const u = instance.directorVector;
+            const x = formatNumber(u.x);
+            const y_ui = formatNumber(u.z); // Inversion
+            const z_ui = formatNumber(u.y); // Inversion
 
-        content = `📏 <strong>${instance.name}</strong>
+            content = `📏 <strong>${instance.name}</strong>
                    <span ${detailStyle}>Vect. dir. : (${x}, ${y_ui}, ${z_ui})</span>`;
 
-    // --- 4. PLAN (Vecteur Normal) ---
-    } else if (instance instanceof Plane) {
-        // On utilise displayNormal pour garder les valeurs "brutes" (ex: entiers) si possible
-        const n = instance.displayNormal;
-        const x = formatNumber(n.x);
-        const y_ui = formatNumber(n.z); // Inversion
-        const z_ui = formatNumber(n.y); // Inversion
+            // --- 4. PLAN (Vecteur Normal) ---
+          } else if (instance instanceof Plane) {
+            // On utilise displayNormal pour garder les valeurs "brutes" (ex: entiers) si possible
+            const n = instance.displayNormal;
+            const x = formatNumber(n.x);
+            const y_ui = formatNumber(n.z); // Inversion
+            const z_ui = formatNumber(n.y); // Inversion
 
-        content = `🔷 <strong>${instance.name}</strong>
+            content = `🔷 <strong>${instance.name}</strong>
                    <span ${detailStyle}>Normale : (${x}, ${y_ui}, ${z_ui})</span>`;
 
-    // --- CAS PAR DÉFAUT ---
-    } else {
-        content = instance.name;
-    }
+            // --- CAS PAR DÉFAUT ---
+          } else {
+            content = instance.name;
+          }
 
-    tooltip.innerHTML = content;
+          tooltip.innerHTML = content;
 
-    // Positionnement avec un décalage de 15px
-    tooltip.style.left = (clientX + 15) + "px";
-    tooltip.style.top = (clientY + 15) + "px";
-    tooltip.style.display = "block";
+          // Positionnement avec un décalage de 15px
+          tooltip.style.left = (clientX + 15) + "px";
+          tooltip.style.top = (clientY + 15) + "px";
+          tooltip.style.display = "block";
 
-    document.body.style.cursor = "pointer";
-  } else {
-    tooltip.style.display = "none";
-    document.body.style.cursor = "default";
-  }
-}
+          document.body.style.cursor = "pointer";
+        } else {
+          tooltip.style.display = "none";
+          document.body.style.cursor = "default";
+        }
+      }
 
     </script>
 </body>
