@@ -858,6 +858,22 @@
           <select id="lineEnd"></select>
           <button class="btn-secondary" onclick="addStraightLine()">➕ Tracer la droite</button>
 
+          <h4 class="sub-section-title">Droite par Point et Vecteur :</h4>
+          <label>Nom de la droite :</label>
+          <input type="text" id="lineNamePV" placeholder="Ex: D1, Delta..." />
+
+          <div class="coord-inputs" style="grid-template-columns: 1fr 1fr; gap: 8px;">
+            <div>
+              <label style="font-size: 11px;">Point de passage :</label>
+              <select id="linePointPVSelect"></select>
+            </div>
+            <div>
+              <label style="font-size: 11px;">Vecteur directeur :</label>
+              <select id="lineVectorPVSelect"></select>
+            </div>
+          </div>
+
+          <button class="btn-secondary" onclick="addLineFromPointVector()">➕ Tracer la droite (Point + Vecteur)</button>
 
           <!-- DÉBUT MODIFICATION ÉTAPE 1 : UI pour Droite par équation -->
           <h4 class="sub-section-title">Droite par équation paramétrique :</h4>
@@ -6041,6 +6057,55 @@
           updateAllUI();
           saveState();
         }
+      }
+      function addLineFromPointVector() {
+        // 1. Récupération des valeurs
+        const nameInput = document.getElementById("lineNamePV");
+        const pSelect = document.getElementById("linePointPVSelect");
+        const vSelect = document.getElementById("lineVectorPVSelect");
+
+        const pId = pSelect.value;
+        const vId = vSelect.value;
+
+        // 2. Validation
+        if (pId === "" || vId === "") {
+          showSplashScreen("Veuillez sélectionner un Point ET un Vecteur.");
+          return;
+        }
+
+        // 3. Récupération des objets géométriques
+        const pointObj = geometryManager.points[parseInt(pId)];
+        const vectorObj = geometryManager.findVectorById(parseInt(vId));
+
+        if (!pointObj || !vectorObj) return;
+
+        // 4. Gestion du nom (automatique si vide)
+        let lineName = nameInput.value.trim();
+        if (!lineName) {
+          lineName = `D(${pointObj.name}, u_${vectorObj.name})`;
+        }
+
+        // 5. Création de la droite
+        // On clone les vecteurs pour éviter que modifier le point plus tard ne casse la droite
+        const uniqueName = geometryManager.generateUniqueName(lineName, "line");
+        const newLine = new Line3D(
+          uniqueName,
+          pointObj.position,          // Point de passage
+          vectorObj.components        // Vecteur directeur
+        );
+
+        // 6. Ajout et Sauvegarde
+        geometryManager.addLine(newLine);
+
+        updateAllUI();
+        saveState();
+
+        // 7. Nettoyage des champs
+        nameInput.value = "";
+        pSelect.value = "";
+        vSelect.value = "";
+
+        showSplashScreen(`✅ Droite "${uniqueName}" créée !`);
       }
 
     </script>
