@@ -1107,6 +1107,15 @@
           </div>
           <button class="btn-warning" onclick="calculateLineLineIntersection()">🖩 Analyser l'intersection</button>
           <div id="calcResultDisplay4" class="equation-display" style="margin-top: 10px; min-height: 50px"></div>
+
+          <h4 class="sub-section-title" style="margin-top: 20px">Perpendiculaire commune (Droites)</h4>
+          <div class="coord-inputs" style="grid-template-columns: 1fr 1fr; margin-bottom: 8px">
+            <select id="perpLine1"></select>
+            <select id="perpLine2"></select>
+          </div>
+          <button class="btn-warning" onclick="calculateCommonPerpendicular()">🖩 Tracer la perpendiculaire</button>
+          <div id="perpResult" class="equation-display"></div>
+
         </div>
       </div>
 
@@ -2738,6 +2747,7 @@
           }
           // B. Les Droites (inclut 'equationLineSelect')
           else if (id.includes("Line")) {
+            // Ajout des droites (fonctionne pour "lineSelect" ET "perpLine1")
             select.add(new Option("-- Droite --", ""));
             geometryManager.lines.forEach((l) => select.add(new Option(l.name, l.id)));
           }
@@ -5850,6 +5860,187 @@
           v.updateLabelPosition();
           if (v.isVisible && v.isLabelVisible) scene.add(v.label);
         });
+      }
+
+      // =====================================================================================
+      // SECTION : CALCULS GÉOMÉTRIQUES AVANCÉS
+      // =====================================================================================
+
+      /**
+       * Calcule le segment le plus court entre deux droites (distance et points d'ancrage).
+       * Gère les droites non coplanaires et parallèles.
+       * @param {Line3D} line1
+       * @param {Line3D} line2
+       * @returns {Object} { distance: Number, p1: THREE.Vector3, p2: THREE.Vector3, type: "skew"|"parallel" }
+       */
+      function getShortestSegmentBetweenLines(line1, line2) {
+        const P1 = line1.startPoint;
+        const u = line1.directorVector.clone().normalize();
+        const P2 = line2.startPoint;
+        const v = line2.directorVector.clone().normalize();
+
+        const w0 = new THREE.Vector3().subVectors(P1, P2);
+        const a = u.dot(u); // Toujours 1 si normalisé
+        const b = u.dot(v);
+        const c = v.dot(v); // Toujours 1 si normalisé
+        const d = u.dot(w0);
+        const e = v.dot(w0);
+
+        const det = a * c - b * b;
+        let sc, tc;
+
+        // Si le déterminant est proche de 0, les droites sont parallèles
+        if (Math.abs(det) < 1e-8) {
+          // Droites parallèles
+          sc = 0;
+          tc = (b > c ? d / b : e / c); // On projette P1 sur la droite 2
+
+          // Point sur la droite 1 (fixe)
+          const p1_res = P1.clone();
+          // Point projeté sur la droite 2
+          const p2_res = new THREE.Vector3().addVectors(P2, v.multiplyScalar(tc));
+
+          return {
+            distance: p1_res.distanceTo(p2_res),
+            p1: p1_res,
+            p2: p2_res,
+            type: "parallel"
+          };
+        } else {
+          // Droites non coplanaires (gauches)
+          sc = (b * e - c * d) / det;
+          tc = (a * e - b * d) / det;
+
+          const p1_res = new THREE.Vector3().addVectors(P1, u.multiplyScalar(sc));
+          const p2_res = new THREE.Vector3().addVectors(P2, v.multiplyScalar(tc));
+
+          return {
+            distance: p1_res.distanceTo(p2_res),
+            p1: p1_res,
+            p2: p2_res,
+            type: "skew"
+          };
+        }
+      }
+
+      /**
+       * Calcule l'angle entre un vecteur et un plan.
+       * @param {Vector} vectorInstance Votre instance de classe Vector
+       * @param {Plane} planeInstance Votre instance de classe Plane
+       * @returns {Number} Angle en degrés
+       */
+      function getVectorPlaneAngle(vectorInstance, planeInstance) {
+        // Mathématiquement : arcsin( |u . n| / (||u|| * ||n||) )
+        // Ou 90° - angle(vecteur, normale)
+
+        const u = vectorInstance.components.clone().normalize();
+        const n = planeInstance.normal.clone().normalize();
+
+        // Produit scalaire
+        const dot = u.dot(n);
+
+        // On prend la valeur absolue car l'angle géométrique est entre la droite portée par le vecteur et le plan
+        // Math.asin renvoie des radians
+        const angleRad = Math.asin(Math.abs(dot));
+        const angleDeg = THREE.MathUtils.radToDeg(angleRad);
+
+        return angleDeg;
+      }
+
+      /**
+       * Projette un point sur une droite.
+       * @param {Point} pointInstance
+       * @param {Line3D} lineInstance
+       * @returns {Object} { projectedPoint: THREE.Vector3, distance: Number }
+       */
+      function projectPointOnLine(pointInstance, lineInstance) {
+        const P = pointInstance.position;
+        const A = lineInstance.startPoint;
+        const u = lineInstance.directorVector.clone().normalize();
+
+        // Vecteur AP
+        const AP = new THREE.Vector3().subVectors(P, A);
+
+        // Projection scalaire t = AP . u
+        const t = AP.dot(u);
+
+        // Point H = A + t*u
+        const H = new THREE.Vector3().copy(A).add(u.multiplyScalar(t));
+
+        return {
+          projectedPoint: H,
+          distance: P.distanceTo(H)
+        };
+      }
+
+      /**
+       * Calcule le barycentre de N points avec pondération.
+       * @param {Array<Point>} pointsArray Tableau d'instances de Point
+       * @param {Array<Number>} weightsArray Tableau de poids (optionnel, défaut 1)
+       * @returns {THREE.Vector3} Position du barycentre
+       */
+      function computeBarycenter(pointsArray, weightsArray = null) {
+        if (!pointsArray || pointsArray.length === 0) return new THREE.Vector3(0, 0, 0);
+
+        let sumX = 0, sumY = 0, sumZ = 0;
+        let totalWeight = 0;
+
+        for (let i = 0; i < pointsArray.length; i++) {
+          const p = pointsArray[i].position;
+          // Si pas de poids fourni, on utilise 1 (isobarycentre)
+          const w = (weightsArray && weightsArray[i] !== undefined) ? parseFloat(weightsArray[i]) : 1;
+
+          sumX += p.x * w;
+          sumY += p.y * w;
+          sumZ += p.z * w;
+          totalWeight += w;
+        }
+
+        if (totalWeight === 0) {
+          console.warn("Somme des poids nulle, calcul impossible.");
+          return new THREE.Vector3(0, 0, 0);
+        }
+
+        return new THREE.Vector3(sumX / totalWeight, sumY / totalWeight, sumZ / totalWeight);
+      }
+
+      function calculateCommonPerpendicular() {
+        const l1Id = parseInt(document.getElementById("perpLine1").value);
+        const l2Id = parseInt(document.getElementById("perpLine2").value);
+        const r = document.getElementById("perpResult");
+
+        const line1 = geometryManager.findLineById(l1Id);
+        const line2 = geometryManager.findLineById(l2Id);
+
+        if (!line1 || !line2) {
+          r.textContent = "Sélectionnez deux droites.";
+          return;
+        }
+
+        // Appel de la fonction mathématique
+        const result = getShortestSegmentBetweenLines(line1, line2);
+
+        if (result.type === "parallel") {
+          r.innerHTML = `Droites parallèles.<br>Distance = <strong>${formatNumber(result.distance)}</strong>`;
+        } else {
+          // Création visuelle du segment (Vecteur)
+          const baseName = `Perp(${line1.name},${line2.name})`;
+          const uniqueName = geometryManager.generateUniqueName(baseName, "vector");
+
+          // Création du vecteur représentant le segment le plus court
+          const segmentVector = new THREE.Vector3().subVectors(result.p2, result.p1);
+          const newVector = new Vector(uniqueName, result.p1, segmentVector, 0xff00ff); // Magenta
+          geometryManager.addVector(newVector);
+
+          // Création des points d'intersection H1 et H2
+          geometryManager.addPoint(new Point(uniqueName + "_H1", result.p1.x, result.p1.y, result.p1.z)); // Attention inversion Y/Z selon votre logique UI
+          geometryManager.addPoint(new Point(uniqueName + "_H2", result.p2.x, result.p2.y, result.p2.z));
+
+          r.innerHTML = `Distance min = <strong>${formatNumber(result.distance)}</strong><br>Segment tracé.`;
+
+          updateAllUI();
+          saveState();
+        }
       }
 
     </script>
