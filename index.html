@@ -1,1512 +1,1596 @@
 <!DOCTYPE html>
 <html lang="fr">
-
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <title>Éditeur de Points 3D</title>
-  <!-- IMPORTANT: La bibliothèque Three.js et OrbitControls seront chargées ici par votre JavaScript -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="https://unpkg.com/three@0.128.0/examples/js/controls/TransformControls.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-  <!-- Ajout de Font Awesome pour les icônes -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
-  <style>
-    /* =========================================
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <title>Éditeur de Points 3D</title>
+    <!-- IMPORTANT: La bibliothèque Three.js et OrbitControls seront chargées ici par votre JavaScript -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/controls/TransformControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <!-- Ajout de Font Awesome pour les icônes -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+    <style>
+      /* =========================================
        1. VARIABLES & THÈME (Clair / Sombre)
        ========================================= */
-    :root {
-      /* --- THÈME CLAIR (Défaut) --- */
-      --bg-color: #f0f0f0;
-      --panel-bg: #ffffff;
-      --text-color: #333333;
-      --text-secondary: #666666;
-      --input-bg: #ffffff;
-      --input-border: #cccccc;
-      --input-focus: #4caf50;
-      --item-bg: #ffffff;
-      --item-border: #eeeeee;
-      --hover-bg: #f9f9f9;
-      --button-text: #ffffff;
-      --shadow-color: rgba(0, 0, 0, 0.15);
-      --burger-color: #333333;
-      --camera-btn-bg: #f0f0f0;
-      --camera-btn-hover: #e0e0e0;
-      --section-border: #ddd;
-    }
+      :root {
+        /* --- THÈME CLAIR (Défaut) --- */
+        --bg-color: #f0f0f0;
+        --panel-bg: #ffffff;
+        --text-color: #333333;
+        --text-secondary: #666666;
+        --input-bg: #ffffff;
+        --input-border: #cccccc;
+        --input-focus: #4caf50;
+        --item-bg: #ffffff;
+        --item-border: #eeeeee;
+        --hover-bg: #f9f9f9;
+        --button-text: #ffffff;
+        --shadow-color: rgba(0, 0, 0, 0.15);
+        --burger-color: #333333;
+        --camera-btn-bg: #f0f0f0;
+        --camera-btn-hover: #e0e0e0;
+        --section-border: #ddd;
+      }
 
-    [data-theme="dark"] {
-      /* --- THÈME SOMBRE --- */
-      --bg-color: #121212;
-      --panel-bg: #2c2c2c;
-      --text-color: #e0e0e0;
-      --text-secondary: #aaaaaa;
-      --input-bg: #383838;
-      --input-border: #555555;
-      --input-focus: #81c784;
-      --item-bg: #333333;
-      --item-border: #444444;
-      --hover-bg: #404040;
-      --button-text: #ffffff;
-      --shadow-color: rgba(0, 0, 0, 0.5);
-      --burger-color: #ffffff;
-      --camera-btn-bg: #333333;
-      --camera-btn-hover: #444444;
-      --section-border: #444;
-    }
+      [data-theme="dark"] {
+        /* --- THÈME SOMBRE --- */
+        --bg-color: #121212;
+        --panel-bg: #2c2c2c;
+        --text-color: #e0e0e0;
+        --text-secondary: #aaaaaa;
+        --input-bg: #383838;
+        --input-border: #555555;
+        --input-focus: #81c784;
+        --item-bg: #333333;
+        --item-border: #444444;
+        --hover-bg: #404040;
+        --button-text: #ffffff;
+        --shadow-color: rgba(0, 0, 0, 0.5);
+        --burger-color: #ffffff;
+        --camera-btn-bg: #333333;
+        --camera-btn-hover: #444444;
+        --section-border: #444;
+      }
 
-    /* =========================================
+      /* =========================================
        2. CONFIGURATION GÉNÉRALE
        ========================================= */
-    body {
-      margin: 0;
-      overflow: hidden;
-      font-family: Arial, sans-serif;
-      background-color: var(--bg-color);
-      color: var(--text-color);
-      transition: background-color 0.3s ease, color 0.3s ease;
-    }
+      body {
+        margin: 0;
+        overflow: hidden;
+        font-family: Arial, sans-serif;
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        transition: background-color 0.3s ease, color 0.3s ease;
+      }
 
-    #container {
-      width: 100vw;
-      height: 100vh;
-      position: relative;
-      touch-action: none;
-    }
+      #container {
+        width: 100vw;
+        height: 100vh;
+        position: relative;
+        touch-action: none;
+      }
 
-    /* =========================================
+      /* =========================================
        3. PANNEAU LATÉRAL
        ========================================= */
-    #panel {
-      position: absolute;
-      top: 20px;
-      left: 20px;
-      background: var(--panel-bg);
-      padding: 65px 20px 20px 20px;
-      /* Padding haut pour les boutons */
-      border-radius: 8px;
-      box-shadow: 0 2px 10px var(--shadow-color);
-      max-height: 90vh;
-      overflow-y: auto;
-      width: 320px;
-      transition: transform 0.3s ease, background-color 0.3s ease;
-      z-index: 999;
-      scrollbar-width: thin;
-      scrollbar-color: var(--text-secondary) var(--panel-bg);
-    }
+      #panel {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        background: var(--panel-bg);
+        padding: 65px 20px 20px 20px;
+        /* Padding haut pour les boutons */
+        border-radius: 8px;
+        box-shadow: 0 2px 10px var(--shadow-color);
+        max-height: 90vh;
+        overflow-y: auto;
+        width: 320px;
+        transition: transform 0.3s ease, background-color 0.3s ease;
+        z-index: 999;
+        scrollbar-width: thin;
+        scrollbar-color: var(--text-secondary) var(--panel-bg);
+      }
 
-    #panel.hidden {
-      transform: translateX(calc(-100% - 20px));
-    }
+      #panel.hidden {
+        transform: translateX(calc(-100% - 20px));
+      }
 
-    /* Scrollbar Webkit */
-    #panel::-webkit-scrollbar {
-      width: 8px;
-    }
+      /* Scrollbar Webkit */
+      #panel::-webkit-scrollbar {
+        width: 8px;
+      }
 
-    #panel::-webkit-scrollbar-track {
-      background: var(--panel-bg);
-    }
+      #panel::-webkit-scrollbar-track {
+        background: var(--panel-bg);
+      }
 
-    #panel::-webkit-scrollbar-thumb {
-      background-color: var(--text-secondary);
-      border-radius: 4px;
-      border: 2px solid var(--panel-bg);
-    }
+      #panel::-webkit-scrollbar-thumb {
+        background-color: var(--text-secondary);
+        border-radius: 4px;
+        border: 2px solid var(--panel-bg);
+      }
 
-    /* =========================================
+      /* =========================================
        4. BOUTONS DE NAVIGATION (Burger & Thème)
        ========================================= */
-    /* Bouton Burger (Fermer) dans le panneau */
-    #toggleBtn {
-      position: absolute;
-      top: 15px;
-      left: 15px;
-      background: transparent;
-      z-index: 1001;
-    }
-
-    /* Bouton Thème (Lune/Soleil) dans le panneau */
-    #themeToggleBtn {
-      position: absolute;
-      top: 15px;
-      right: 15px;
-      background: transparent;
-      border: none;
-      cursor: pointer;
-      font-size: 18px;
-      color: var(--text-color);
-      padding: 8px;
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      transition: background-color 0.2s;
-    }
-
-    #themeToggleBtn:hover {
-      background-color: var(--hover-bg);
-    }
-
-    /* Bouton Burger (Ouvrir) flottant */
-    #openBtn {
-      position: fixed;
-      top: 20px;
-      left: 20px;
-      background: var(--panel-bg);
-      box-shadow: 0 2px 10px var(--shadow-color);
-      z-index: 998;
-      display: none;
-    }
-
-    #openBtn.show {
-      display: flex;
-    }
-
-    /* Lignes du Burger */
-    .burger-btn {
-      width: 40px;
-      height: 40px;
-      padding: 8px;
-      border-radius: 6px;
-      cursor: pointer;
-      border: none;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      gap: 4px;
-      background-color: transparent;
-    }
-
-    .burger-btn:hover {
-      background-color: var(--hover-bg) !important;
-    }
-
-    .burger-line {
-      width: 20px;
-      height: 2px;
-      background-color: var(--burger-color);
-      transition: all 0.3s ease;
-    }
-
-    /* =========================================
-       5. TYPOGRAPHIE & SECTIONS
-       ========================================= */
-    h3 {
-      margin: 0;
-      font-size: 18px;
-      color: var(--text-color);
-    }
-
-    .section-header {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      cursor: pointer;
-      position: relative;
-    }
-
-    .section-header h3 {
-      font-size: 16px;
-      font-weight: bold;
-      flex-grow: 1;
-    }
-
-    .header-icon {
-      font-size: 20px;
-      width: 24px;
-      text-align: center;
-      flex-shrink: 0;
-      color: var(--text-color);
-    }
-
-    .section {
-      margin-bottom: 10px;
-      padding-bottom: 10px;
-      border-bottom: 1px solid var(--section-border);
-    }
-
-    .section:last-of-type {
-      border-bottom: none;
-      margin-bottom: 0;
-    }
-
-    /* Flèche dépliante */
-    .section.collapsible .section-header::after {
-      content: "▲";
-      font-size: 12px;
-      color: var(--text-secondary);
-      position: absolute;
-      right: 10px;
-      top: 50%;
-      transform: translateY(-50%);
-      transition: transform 0.3s ease;
-    }
-
-    .section.collapsible.collapsed .section-header::after {
-      transform: translateY(-50%) rotate(180deg);
-    }
-
-    .section.collapsible.collapsed .section-content {
-      display: none;
-    }
-
-    .sub-section-title {
-      font-size: 13px;
-      margin-top: 10px;
-      margin-bottom: 10px;
-      color: var(--text-color);
-      opacity: 0.9;
-    }
-
-    /* =========================================
-       6. FORMULAIRES & INPUTS
-       ========================================= */
-    .input-group {
-      margin-bottom: 10px;
-    }
-
-    label {
-      display: block;
-      margin-bottom: 5px;
-      font-size: 13px;
-      font-weight: bold;
-      color: var(--text-secondary);
-    }
-
-    input,
-    select,
-    textarea {
-      width: 100%;
-      padding: 8px;
-      border: 1px solid var(--input-border);
-      background-color: var(--input-bg);
-      color: var(--text-color);
-      border-radius: 4px;
-      font-size: 13px;
-      box-sizing: border-box;
-    }
-
-    input:focus,
-    select:focus,
-    textarea:focus {
-      outline: none;
-      border-color: var(--input-focus);
-    }
-
-    .coord-inputs {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 8px;
-    }
-
-    .checkbox-group {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin: 8px 0;
-    }
-
-    .checkbox-group input {
-      width: auto;
-    }
-
-    .checkbox-group label {
-      margin: 0;
-      cursor: pointer;
-    }
-
-    .equation-display {
-      background: var(--hover-bg);
-      padding: 10px;
-      border-radius: 4px;
-      font-family: "Courier New", monospace;
-      font-size: 13px;
-      color: var(--text-color);
-      min-height: 20px;
-      display: block;
-      text-align: left;
-      word-break: break-all;
-      border: 1px solid var(--item-border);
-    }
-
-    /* =========================================
-       7. BOUTONS D'ACTION
-       ========================================= */
-    button {
-      width: 100%;
-      margin: 8px 0;
-      padding: 10px;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 14px;
-      font-weight: bold;
-      transition: background-color 0.2s;
-    }
-
-    /* Bouton Principal (Vert) */
-    button:not([class]) {
-      background: #4caf50;
-    }
-
-    button:not([class]):hover {
-      background: #45a049;
-    }
-
-    #addPointBtn {
-      background: #4caf50;
-    }
-
-    #addPointBtn:hover {
-      background: #45a049;
-    }
-
-    /* Classes spécifiques */
-    .btn-secondary {
-      background: #2196f3;
-    }
-
-    .btn-secondary:hover {
-      background: #0b7dda;
-    }
-
-    .btn-danger {
-      background: #f44336;
-    }
-
-    .btn-danger:hover {
-      background: #da190b;
-    }
-
-    .btn-warning {
-      background: #ff9800;
-    }
-
-    .btn-warning:hover {
-      background: #e68900;
-    }
-
-    .btn-violet {
-      background: #8a2be2;
-    }
-
-    .btn-violet:hover {
-      background: #7a25c4;
-    }
-
-    .btn-violet-light {
-      background: #9370db;
-    }
-
-    .btn-violet-light:hover {
-      background: #825fbc;
-    }
-
-    .edit-actions-container {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-      margin-top: 10px;
-    }
-
-    .edit-actions-container button {
-      font-size: 12px;
-      margin: 0;
-      padding: 10px 5px;
-    }
-
-    /* =========================================
-       8. LISTES (Items Géométriques)
-       ========================================= */
-    .point-list,
-    .geometry-list {
-      max-height: 200px;
-      overflow-y: auto;
-      border: 1px solid var(--input-border);
-      border-radius: 4px;
-      padding: 5px;
-      background: var(--hover-bg);
-      /* Fond légèrement différent du panel */
-    }
-
-    .point-item,
-    .geometry-item {
-      padding: 8px;
-      margin: 5px 0;
-      background: var(--item-bg);
-      border-radius: 4px;
-      display: flex;
-      flex-direction: column;
-      align-items: stretch;
-      font-size: 13px;
-      border: 1px solid var(--item-border);
-      color: var(--text-color);
-    }
-
-    .geometry-item-main {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      width: 100%;
-      gap: 10px;
-    }
-
-    .geometry-info {
-      flex-grow: 1;
-      display: flex;
-      flex-direction: row;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .point-name,
-    .geometry-name {
-      font-weight: bold;
-      color: var(--text-color);
-      font-size: 13px;
-      word-break: break-word;
-    }
-
-    .geometry-coords,
-    .geometry-details {
-      font-size: 12px;
-      color: var(--text-secondary);
-      word-break: break-word;
-    }
-
-    .geometry-details-secondary {
-      font-size: 11px;
-      color: var(--text-secondary);
-      margin-top: 4px;
-      padding-left: 2px;
-    }
-
-    /* Force la couleur des spans générés dynamiquement si nécessaire */
-    .geometry-details-secondary span {
-      color: var(--text-secondary) !important;
-    }
-
-    .geometry-actions {
-      display: flex;
-      gap: 5px;
-      flex-shrink: 0;
-    }
-
-    .geometry-actions button {
-      width: auto;
-      padding: 5px 8px;
-      font-size: 11px;
-      margin: 0;
-    }
-
-    /* =========================================
-       9. CONTRÔLES CAMÉRA
-       ========================================= */
-    #cameraControls {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      z-index: 990;
-      pointer-events: auto;
-    }
-
-    .camera-btn {
-      width: 40px;
-      height: 40px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background-color: var(--camera-btn-bg);
-      border: 1px solid var(--input-border);
-      border-radius: 5px;
-      cursor: pointer;
-      transition: background-color 0.2s, border-color 0.2s;
-      color: var(--text-color);
-      font-size: 18px;
-      box-shadow: 0 2px 4px var(--shadow-color);
-    }
-
-    .camera-btn:hover {
-      background-color: var(--camera-btn-hover);
-    }
-
-    .camera-btn.active {
-      background-color: #2196f3;
-      color: white;
-      border-color: #2196f3;
-    }
-
-    /* Adaptation des SVG caméra pour le mode sombre (optionnel,
-       les polygones ont des fills hardcodés mais le cadre changera) */
-
-    /* =========================================
-       10. MENU CONTEXTUEL & TOOLS
-       ========================================= */
-    .context-menu {
-      position: fixed;
-      z-index: 2147483647;
-      background-color: var(--panel-bg);
-      border: 1px solid var(--input-border);
-      box-shadow: 2px 2px 10px var(--shadow-color);
-      border-radius: 4px;
-      padding: 5px 0;
-      min-width: 160px;
-      display: none;
-    }
-
-    .context-menu-items {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-    }
-
-    .context-menu-items li {
-      padding: 8px 15px;
-      font-size: 14px;
-      color: var(--text-color);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      border-bottom: 1px solid var(--item-border);
-    }
-
-    .context-menu-items li:last-child {
-      border-bottom: none;
-    }
-
-    .context-menu-items li:hover {
-      background-color: var(--hover-bg);
-    }
-
-    #splashScreen {
-      position: fixed;
-      top: 50px;
-      left: 50%;
-      transform: translateX(-50%);
-      background-color: rgba(40, 40, 40, 0.95);
-      /* Toujours sombre pour contraste */
-      color: white;
-      padding: 12px 25px;
-      border-radius: 25px;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-      z-index: 10001;
-      font-size: 14px;
-      font-weight: bold;
-      transition: opacity 0.5s ease-in-out, top 0.5s ease-in-out;
-    }
-
-    #splashScreen.splash-hidden {
-      opacity: 0;
-      top: -100px;
-      pointer-events: none;
-    }
-
-    #tooltip {
-      position: fixed;
-      background-color: rgba(0, 0, 0, 0.85);
-      /* Toujours sombre */
-      color: #fff;
-      padding: 8px 12px;
-      border-radius: 4px;
-      font-size: 12px;
-      pointer-events: none;
-      display: none;
-      z-index: 500;
-      white-space: nowrap;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
-      transform: translate(15px, 15px);
-    }
-
-    /* =========================================
-       11. RESPONSIVE (MOBILE)
-       ========================================= */
-    @media (max-width: 768px) {
-      #panel {
-        background: var(--panel-bg);
-        width: fit-content;
-        min-width: 280px;
-        opacity: 0.98;
-        /* Légèrement plus opaque sur mobile */
-      }
-
-      #openBtn {
+      /* Bouton Burger (Fermer) dans le panneau */
+      #toggleBtn {
+        position: absolute;
         top: 15px;
         left: 15px;
+        background: transparent;
+        z-index: 1001;
       }
 
-      .camera-btn svg {
+      /* Bouton Thème (Lune/Soleil) dans le panneau */
+      #themeToggleBtn {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        font-size: 18px;
+        color: var(--text-color);
+        padding: 8px;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        transition: background-color 0.2s;
+      }
+
+      #themeToggleBtn:hover {
+        background-color: var(--hover-bg);
+      }
+
+      /* Bouton Burger (Ouvrir) flottant */
+      #openBtn {
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        background: var(--panel-bg);
+        box-shadow: 0 2px 10px var(--shadow-color);
+        z-index: 998;
+        display: none;
+      }
+
+      #openBtn.show {
+        display: flex;
+      }
+
+      /* Lignes du Burger */
+      .burger-btn {
+        width: 40px;
+        height: 40px;
+        padding: 8px;
+        border-radius: 6px;
+        cursor: pointer;
+        border: none;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: 4px;
+        background-color: transparent;
+      }
+
+      .burger-btn:hover {
+        background-color: var(--hover-bg) !important;
+      }
+
+      .burger-line {
+        width: 20px;
+        height: 2px;
+        background-color: var(--burger-color);
+        transition: all 0.3s ease;
+      }
+
+      /* =========================================
+       5. TYPOGRAPHIE & SECTIONS
+       ========================================= */
+      h3 {
+        margin: 0;
+        font-size: 18px;
+        color: var(--text-color);
+      }
+
+      .section-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        cursor: pointer;
+        position: relative;
+      }
+
+      .section-header h3 {
+        font-size: 16px;
+        font-weight: bold;
+        flex-grow: 1;
+      }
+
+      .header-icon {
+        font-size: 20px;
+        width: 24px;
+        text-align: center;
+        flex-shrink: 0;
+        color: var(--text-color);
+      }
+
+      .section {
+        margin-bottom: 10px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid var(--section-border);
+      }
+
+      .section:last-of-type {
+        border-bottom: none;
+        margin-bottom: 0;
+      }
+
+      /* Flèche dépliante */
+      .section.collapsible .section-header::after {
+        content: "▲";
+        font-size: 12px;
+        color: var(--text-secondary);
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        transition: transform 0.3s ease;
+      }
+
+      .section.collapsible.collapsed .section-header::after {
+        transform: translateY(-50%) rotate(180deg);
+      }
+
+      .section.collapsible.collapsed .section-content {
+        display: none;
+      }
+
+      .sub-section-title {
+        font-size: 13px;
+        margin-top: 10px;
+        margin-bottom: 10px;
+        color: var(--text-color);
+        opacity: 0.9;
+      }
+
+      /* =========================================
+       6. FORMULAIRES & INPUTS
+       ========================================= */
+      .input-group {
+        margin-bottom: 10px;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-size: 13px;
+        font-weight: bold;
+        color: var(--text-secondary);
+      }
+
+      input,
+      select,
+      textarea {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid var(--input-border);
+        background-color: var(--input-bg);
+        color: var(--text-color);
+        border-radius: 4px;
+        font-size: 13px;
+        box-sizing: border-box;
+      }
+
+      input:focus,
+      select:focus,
+      textarea:focus {
+        outline: none;
+        border-color: var(--input-focus);
+      }
+
+      .coord-inputs {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 8px;
+      }
+
+      .checkbox-group {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 8px 0;
+      }
+
+      .checkbox-group input {
+        width: auto;
+      }
+
+      .checkbox-group label {
+        margin: 0;
+        cursor: pointer;
+      }
+
+      .equation-display {
+        background: var(--hover-bg);
+        padding: 10px;
+        border-radius: 4px;
+        font-family: "Courier New", monospace;
+        font-size: 13px;
+        color: var(--text-color);
+        min-height: 20px;
+        display: block;
+        text-align: left;
+        word-break: break-all;
+        border: 1px solid var(--item-border);
+      }
+
+      /* =========================================
+       7. BOUTONS D'ACTION
+       ========================================= */
+      button {
+        width: 100%;
+        margin: 8px 0;
+        padding: 10px;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: bold;
+        transition: background-color 0.2s;
+      }
+
+      /* Bouton Principal (Vert) */
+      button:not([class]) {
+        background: #4caf50;
+      }
+
+      button:not([class]):hover {
+        background: #45a049;
+      }
+
+      #addPointBtn {
+        background: #4caf50;
+      }
+
+      #addPointBtn:hover {
+        background: #45a049;
+      }
+
+      /* Classes spécifiques */
+      .btn-secondary {
+        background: #2196f3;
+      }
+
+      .btn-secondary:hover {
+        background: #0b7dda;
+      }
+
+      .btn-danger {
+        background: #f44336;
+      }
+
+      .btn-danger:hover {
+        background: #da190b;
+      }
+
+      .btn-warning {
+        background: #ff9800;
+      }
+
+      .btn-warning:hover {
+        background: #e68900;
+      }
+
+      .btn-violet {
+        background: #8a2be2;
+      }
+
+      .btn-violet:hover {
+        background: #7a25c4;
+      }
+
+      .btn-violet-light {
+        background: #9370db;
+      }
+
+      .btn-violet-light:hover {
+        background: #825fbc;
+      }
+
+      .edit-actions-container {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      .edit-actions-container button {
+        font-size: 12px;
+        margin: 0;
+        padding: 10px 5px;
+      }
+
+      /* =========================================
+       8. LISTES (Items Géométriques)
+       ========================================= */
+      .point-list,
+      .geometry-list {
+        max-height: 200px;
+        overflow-y: auto;
+        border: 1px solid var(--input-border);
+        border-radius: 4px;
+        padding: 5px;
+        background: var(--hover-bg);
+        /* Fond légèrement différent du panel */
+      }
+
+      .point-item,
+      .geometry-item {
+        padding: 8px;
+        margin: 5px 0;
+        background: var(--item-bg);
+        border-radius: 4px;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        font-size: 13px;
+        border: 1px solid var(--item-border);
+        color: var(--text-color);
+      }
+
+      .geometry-item-main {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        width: 100%;
+        gap: 10px;
+      }
+
+      .geometry-info {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .point-name,
+      .geometry-name {
+        font-weight: bold;
+        color: var(--text-color);
+        font-size: 13px;
+        word-break: break-word;
+      }
+
+      .geometry-coords,
+      .geometry-details {
+        font-size: 12px;
+        color: var(--text-secondary);
+        word-break: break-word;
+      }
+
+      .geometry-details-secondary {
+        font-size: 11px;
+        color: var(--text-secondary);
+        margin-top: 4px;
+        padding-left: 2px;
+      }
+
+      /* Force la couleur des spans générés dynamiquement si nécessaire */
+      .geometry-details-secondary span {
+        color: var(--text-secondary) !important;
+      }
+
+      .geometry-actions {
+        display: flex;
+        gap: 5px;
+        flex-shrink: 0;
+      }
+
+      .geometry-actions button {
+        width: auto;
+        padding: 5px 8px;
+        font-size: 11px;
+        margin: 0;
+      }
+
+      /* =========================================
+       9. CONTRÔLES CAMÉRA
+       ========================================= */
+      #cameraControls {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        z-index: 990;
+        pointer-events: auto;
+      }
+
+      .camera-btn {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background-color: var(--camera-btn-bg);
+        border: 1px solid var(--input-border);
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.2s, border-color 0.2s;
+        color: var(--text-color);
+        font-size: 18px;
+        box-shadow: 0 2px 4px var(--shadow-color);
+      }
+
+      .camera-btn:hover {
+        background-color: var(--camera-btn-hover);
+      }
+
+      .camera-btn.active {
+        background-color: #2196f3;
+        color: white;
+        border-color: #2196f3;
+      }
+
+      /* Adaptation des SVG caméra pour le mode sombre (optionnel,
+       les polygones ont des fills hardcodés mais le cadre changera) */
+
+      /* =========================================
+       10. MENU CONTEXTUEL & TOOLS
+       ========================================= */
+      .context-menu {
+        position: fixed;
+        z-index: 2147483647;
+        background-color: var(--panel-bg);
+        border: 1px solid var(--input-border);
+        box-shadow: 2px 2px 10px var(--shadow-color);
+        border-radius: 4px;
+        padding: 5px 0;
+        min-width: 160px;
+        display: none;
+      }
+
+      .context-menu-items {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      .context-menu-items li {
+        padding: 8px 15px;
+        font-size: 14px;
+        color: var(--text-color);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        border-bottom: 1px solid var(--item-border);
+      }
+
+      .context-menu-items li:last-child {
+        border-bottom: none;
+      }
+
+      .context-menu-items li:hover {
+        background-color: var(--hover-bg);
+      }
+
+      #splashScreen {
+        position: fixed;
+        top: 50px;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: rgba(40, 40, 40, 0.95);
+        /* Toujours sombre pour contraste */
+        color: white;
+        padding: 12px 25px;
+        border-radius: 25px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        z-index: 10001;
+        font-size: 14px;
+        font-weight: bold;
+        transition: opacity 0.5s ease-in-out, top 0.5s ease-in-out;
+      }
+
+      #splashScreen.splash-hidden {
+        opacity: 0;
+        top: -100px;
         pointer-events: none;
       }
-    }
 
-    #panel.no-transition {
-      transition: none;
-    }
+      #tooltip {
+        position: fixed;
+        background-color: rgba(0, 0, 0, 0.85);
+        /* Toujours sombre */
+        color: #fff;
+        padding: 8px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        pointer-events: none;
+        display: none;
+        z-index: 500;
+        white-space: nowrap;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        transform: translate(15px, 15px);
+      }
 
-    /* =========================================
+      /* =========================================
+       11. RESPONSIVE (MOBILE)
+       ========================================= */
+      @media (max-width: 768px) {
+        #panel {
+          background: var(--panel-bg);
+          width: fit-content;
+          min-width: 280px;
+          opacity: 0.98;
+          /* Légèrement plus opaque sur mobile */
+        }
+
+        #openBtn {
+          top: 15px;
+          left: 15px;
+        }
+
+        .camera-btn svg {
+          pointer-events: none;
+        }
+      }
+
+      #panel.no-transition {
+        transition: none;
+      }
+
+      /* =========================================
    STYLE DU TABLEUR (SPREADSHEET)
    ========================================= */
-    #openSpreadsheetBtn {
-      position: fixed;
-      bottom: 10px;
-      left: 20px;
-      /* Aligné avec le menu gauche */
-      width: auto;
-      padding: 8px 15px;
-      background-color: var(--panel-bg);
-      color: var(--text-color);
-      border: 1px solid var(--input-border);
-      border-radius: 4px;
-      box-shadow: 0 2px 5px var(--shadow-color);
-      z-index: 995;
-      cursor: pointer;
-      font-weight: bold;
-      font-size: 13px;
-    }
+      #openSpreadsheetBtn {
+        position: fixed;
+        bottom: 10px;
+        left: 20px;
+        /* Aligné avec le menu gauche */
+        width: auto;
+        padding: 8px 15px;
+        background-color: var(--panel-bg);
+        color: var(--text-color);
+        border: 1px solid var(--input-border);
+        border-radius: 4px;
+        box-shadow: 0 2px 5px var(--shadow-color);
+        z-index: 995;
+        cursor: pointer;
+        font-weight: bold;
+        font-size: 13px;
+      }
 
-    #spreadsheetContainer {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      width: 100vw;
-      height: 300px;
-      /* Hauteur du panneau */
-      background-color: var(--panel-bg);
-      border-top: 1px solid var(--section-border);
-      box-shadow: 0 -2px 10px var(--shadow-color);
-      z-index: 10000;
-      /* Au-dessus de tout sauf context menu */
-      display: flex;
-      flex-direction: column;
-      transition: transform 0.3s ease;
-    }
+      #spreadsheetContainer {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100vw;
+        height: 300px;
+        /* Hauteur du panneau */
+        background-color: var(--panel-bg);
+        border-top: 1px solid var(--section-border);
+        box-shadow: 0 -2px 10px var(--shadow-color);
+        z-index: 10000;
+        /* Au-dessus de tout sauf context menu */
+        display: flex;
+        flex-direction: column;
+        transition: transform 0.3s ease;
+      }
 
-    #spreadsheetContainer.spreadsheet-hidden {
-      transform: translateY(100%);
-      /* Caché en bas */
-    }
+      #spreadsheetContainer.spreadsheet-hidden {
+        transform: translateY(100%);
+        /* Caché en bas */
+      }
 
-    .spreadsheet-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 5px 10px;
-      background-color: var(--hover-bg);
-      border-bottom: 1px solid var(--section-border);
-    }
+      .spreadsheet-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 5px 10px;
+        background-color: var(--hover-bg);
+        border-bottom: 1px solid var(--section-border);
+      }
 
-    .spreadsheet-tabs {
-      display: flex;
-      gap: 5px;
-    }
+      .spreadsheet-tabs {
+        display: flex;
+        gap: 5px;
+      }
 
-    .tab-btn {
-      background: transparent;
-      border: none;
-      color: var(--text-secondary);
-      padding: 6px 12px;
-      cursor: pointer;
-      border-radius: 4px 4px 0 0;
-      font-weight: bold;
-      font-size: 13px;
-      width: auto;
-      /* Override du style global button */
-      margin: 0;
-    }
+      .tab-btn {
+        background: transparent;
+        border: none;
+        color: var(--text-secondary);
+        padding: 6px 12px;
+        cursor: pointer;
+        border-radius: 4px 4px 0 0;
+        font-weight: bold;
+        font-size: 13px;
+        width: auto;
+        /* Override du style global button */
+        margin: 0;
+      }
 
-    .tab-btn:hover {
-      background-color: var(--item-bg);
-      color: var(--text-color);
-    }
+      .tab-btn:hover {
+        background-color: var(--item-bg);
+        color: var(--text-color);
+      }
 
-    .tab-btn.active {
-      background-color: var(--panel-bg);
-      color: var(--input-focus);
-      border-bottom: 2px solid var(--input-focus);
-    }
+      .tab-btn.active {
+        background-color: var(--panel-bg);
+        color: var(--input-focus);
+        border-bottom: 2px solid var(--input-focus);
+      }
 
-    .close-spreadsheet-btn {
-      background: transparent;
-      color: var(--text-secondary);
-      border: none;
-      font-size: 12px;
-      cursor: pointer;
-      width: auto;
-      margin: 0;
-    }
+      .close-spreadsheet-btn {
+        background: transparent;
+        color: var(--text-secondary);
+        border: none;
+        font-size: 12px;
+        cursor: pointer;
+        width: auto;
+        margin: 0;
+      }
 
-    .spreadsheet-body {
-      flex-grow: 1;
-      overflow: auto;
-      padding: 0;
-    }
+      .spreadsheet-body {
+        flex-grow: 1;
+        overflow: auto;
+        padding: 0;
+      }
 
-    #spreadsheetTable {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
-      color: var(--text-color);
-    }
+      #spreadsheetTable {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+        color: var(--text-color);
+      }
 
-    #spreadsheetTable th,
-    #spreadsheetTable td {
-      border: 1px solid var(--item-border);
-      padding: 4px 8px;
-      text-align: center;
-    }
+      #spreadsheetTable th,
+      #spreadsheetTable td {
+        border: 1px solid var(--item-border);
+        padding: 4px 8px;
+        text-align: center;
+      }
 
-    #spreadsheetTable th {
-      background-color: var(--hover-bg);
-      position: sticky;
-      top: 0;
-      z-index: 1;
-      font-weight: bold;
-    }
+      #spreadsheetTable th {
+        background-color: var(--hover-bg);
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        font-weight: bold;
+      }
 
-    /* Inputs dans le tableau */
-    #spreadsheetTable input {
-      width: 100%;
-      border: none;
-      background: transparent;
-      text-align: center;
-      color: var(--text-color);
-      padding: 4px;
-      font-family: monospace;
-    }
+      /* Inputs dans le tableau */
+      #spreadsheetTable input {
+        width: 100%;
+        border: none;
+        background: transparent;
+        text-align: center;
+        color: var(--text-color);
+        padding: 4px;
+        font-family: monospace;
+      }
 
-    #spreadsheetTable input:focus {
-      background-color: var(--input-bg);
-      outline: 1px solid var(--input-focus);
-    }
+      #spreadsheetTable input:focus {
+        background-color: var(--input-bg);
+        outline: 1px solid var(--input-focus);
+      }
 
-    /* Couleurs spécifiques pour X, Y, Z */
-    .col-x input {
-      color: #ff5252;
-      font-weight: bold;
-    }
+      /* Couleurs spécifiques pour X, Y, Z */
+      .col-x input {
+        color: #ff5252;
+        font-weight: bold;
+      }
 
-    .col-y input {
-      color: #448aff;
-      font-weight: bold;
-    }
+      .col-y input {
+        color: #448aff;
+        font-weight: bold;
+      }
 
-    /* Z ThreeJS = Y UI (Bleu) */
-    .col-z input {
-      color: #69f0ae;
-      font-weight: bold;
-    }
+      /* Z ThreeJS = Y UI (Bleu) */
+      .col-z input {
+        color: #69f0ae;
+        font-weight: bold;
+      }
 
-    /* Y ThreeJS = Z UI (Vert) */
+      /* Y ThreeJS = Z UI (Vert) */
 
-    /* Mode sombre ajustement */
-    [data-theme="dark"] .col-x input {
-      color: #ff8a80;
-    }
+      /* Mode sombre ajustement */
+      [data-theme="dark"] .col-x input {
+        color: #ff8a80;
+      }
 
-    [data-theme="dark"] .col-y input {
-      color: #82b1ff;
-    }
+      [data-theme="dark"] .col-y input {
+        color: #82b1ff;
+      }
 
-    [data-theme="dark"] .col-z input {
-      color: #b9f6ca;
-    }
+      [data-theme="dark"] .col-z input {
+        color: #b9f6ca;
+      }
 
-    /* Style pour l'icône de l'aimant */
-    #snapIcon {
-      display: inline-block;
-      position: relative;
-      transition: all 0.3s ease;
-      font-size: 16px;
-      margin-right: 5px;
-    }
+      /* Style pour l'icône de l'aimant */
+      #snapIcon {
+        display: inline-block;
+        position: relative;
+        transition: all 0.3s ease;
+        font-size: 16px;
+        margin-right: 5px;
+      }
 
-    /* Quand l'aimant est désactivé (barré) */
-    #snapIcon.icon-disabled {
-      opacity: 0.6;
-      /* Rend l'icône un peu transparente */
-      filter: grayscale(100%);
-      /* (Optionnel) Rend l'icône grise */
-    }
+      /* Quand l'aimant est désactivé (barré) */
+      #snapIcon.icon-disabled {
+        opacity: 0.6;
+        /* Rend l'icône un peu transparente */
+        filter: grayscale(100%);
+        /* (Optionnel) Rend l'icône grise */
+      }
 
-    /* La ligne rouge qui barre l'icône */
-    #snapIcon.icon-disabled::after {
-      content: '';
-      position: absolute;
-      top: 50%;
-      left: 0;
-      width: 100%;
-      height: 2px;
-      /* Épaisseur de la barre */
-      background-color: #ff4444;
-      /* Couleur rouge */
-      transform: translateY(-50%) rotate(-45deg);
-      /* Rotation diagonale */
-      pointer-events: none;
-      /* Ne gêne pas le clic */
-    }
-  </style>
-</head>
+      /* La ligne rouge qui barre l'icône */
+      #snapIcon.icon-disabled::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 0;
+        width: 100%;
+        height: 2px;
+        /* Épaisseur de la barre */
+        background-color: #ff4444;
+        /* Couleur rouge */
+        transform: translateY(-50%) rotate(-45deg);
+        /* Rotation diagonale */
+        pointer-events: none;
+        /* Ne gêne pas le clic */
+      }
 
-<body>
-  <div id="splashScreen" class="splash-hidden">
-    <span id="splashMessage"></span>
-  </div>
+      /* --- CORRECTION LISTE DÉROULANTE AIMANT --- */
+      #snapSizeSelect {
+        color: var(--text-color) !important;
+        background-color: var(--panel-bg);
+        /* On force la couleur de fond du panneau */
+      }
 
-  <div id="tooltip"></div>
+      /* Cible spécifiquement les options quand la liste est ouverte */
+      #snapSizeSelect option {
+        background-color: var(--panel-bg);
+        color: var(--text-color);
+      }
 
-  <button id="openBtn" class="burger-btn show" onclick="togglePanel()">
-    <span class="burger-line"></span>
-    <span class="burger-line"></span>
-    <span class="burger-line"></span>
-  </button>
-  <div id="container">
-    <div id="cameraControls">
+      /* Renforcement spécifique pour le mode sombre */
+      [data-theme="dark"] #snapSizeSelect {
+        color: #ffffff !important;
+        /* Force le blanc pur */
+        background-color: #2c2c2c;
+        /* Force le fond gris foncé */
+      }
+    </style>
+  </head>
 
-
-      <div id="snapControl"
-        style="position: absolute; top: 20px; right: 70px; z-index: 990; background: var(--panel-bg); padding: 5px 10px; border-radius: 4px; border: 1px solid var(--input-border); display: flex; align-items: center; gap: 5px; box-shadow: 0 2px 5px var(--shadow-color);">
-
-        <input type="checkbox" id="snapToggle" onchange="toggleSnapping()" style="display:none;">
-        <!-- Input caché, on clique sur le label -->
-
-        <label for="snapToggle"
-          style="font-size: 13px; margin: 0; cursor: pointer; color: var(--text-color); display: flex; align-items: center;">
-          <!-- L'icône isolée avec la classe 'icon-disabled' par défaut -->
-          <span id="snapIcon" class="icon-disabled">🧲</span>
-          <span>Aimant (1.0)</span>
-        </label>
-
-      </div>
-
-
-
-      <!-- Vue de dessus (XY) : La face supérieure du cube est noire -->
-      <div class="camera-btn" id="btnTop" onclick="setCameraView('top', this)" title="Vue de dessus (XY)">
-        <svg width="40" height="40" viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg">
-          <!-- Face du dessus (noire) -->
-          <polygon points="5,15 25,5 45,15 25,25" fill="#222222" />
-          <!-- Face de droite (claire) -->
-          <polygon points="45,15 45,35 25,45 25,25" fill="#e6e6e6" />
-          <!-- Face de gauche (moyenne) -->
-          <polygon points="5,15 5,35 25,45 25,25" fill="#cacaca" />
-        </svg>
-
-      </div>
-
-      <!-- Vue de face (XZ) : La face de "gauche" (qui représente l'avant) est noire -->
-      <div class="camera-btn" id="btnFront" onclick="setCameraView('front', this)" title="Vue de face (XZ)">
-        <svg width="40" height="40" viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg">
-          <!-- Face du dessus (moyenne) -->
-          <polygon points="5,15 25,5 45,15 25,25" fill="#cacaca" />
-          <!-- Face de droite (claire) -->
-          <polygon points="45,15 45,35 25,45 25,25" fill="#e6e6e6" />
-          <!-- Face de gauche/avant (noire) -->
-          <polygon points="5,15 5,35 25,45 25,25" fill="#222222" />
-        </svg>
-      </div>
-
-      <!-- Vue de côté (YZ) : La face de "droite" (qui représente le côté) est noire -->
-      <div class="camera-btn" id="btnSide" onclick="setCameraView('side', this)" title="Vue de côté (YZ)">
-        <svg width="40" height="40" viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg">
-          <!-- Face du dessus (moyenne) -->
-          <polygon points="5,15 25,5 45,15 25,25" fill="#cacaca" />
-          <!-- Face de droite/côté (noire) -->
-          <polygon points="45,15 45,35 25,45 25,25" fill="#222222" />
-          <!-- Face de gauche (claire) -->
-          <polygon points="5,15 5,35 25,45 25,25" fill="#e6e6e6" />
-        </svg>
-      </div>
-
-      <div class="camera-btn" id="btnReset" onclick="resetCamera(this)" title="Réinitialiser la vue (Isométrique)">
-        <i class="fas fa-sync-alt"></i>
-      </div>
-      <div class="camera-btn" id="btnUndo" onclick="undo()" title="Annuler (Ctrl+Z)"
-        style="opacity: 0.5; pointer-events: none;">
-        <i class="fas fa-undo"></i>
-      </div>
-      <div class="camera-btn" id="btnRedo" onclick="redo()" title="Rétablir (Ctrl+Y)"
-        style="opacity: 0.5; pointer-events: none;">
-        <i class="fas fa-redo"></i>
-      </div>
-
+  <body>
+    <div id="splashScreen" class="splash-hidden">
+      <span id="splashMessage"></span>
     </div>
-    <div id="panel" class="hidden">
-      <button id="toggleBtn" class="burger-btn" onclick="togglePanel()">
-        <span class="burger-line"></span>
-        <span class="burger-line"></span>
-        <span class="burger-line"></span>
-      </button>
-      <button id="themeToggleBtn" onclick="toggleTheme()" title="Changer le thème">
-        <i class="fas fa-moon"></i>
-      </button>
-      <div class="section collapsible collapsed">
-        <div class="section-header">
-          <h3 style="font-size: 16px">💾 Gestion des Scènes</h3>
-        </div>
-        <div class="section-content">
-          <label>Nom de la scène :</label>
-          <input type="text" id="sceneNameInput" placeholder="Ex: Ma Scène 1" />
-          <button class="btn-secondary" onclick="saveScene()">💾 Enregistrer la scène</button>
 
-          <h4 class="sub-section-title" style="margin-top: 20px">Charger une scène :</h4>
-          <label>Scènes sauvegardées :</label>
-          <select id="savedScenesSelect" style="margin-bottom: 8px"></select>
+    <div id="tooltip"></div>
 
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px">
-            <button class="btn-violet" onclick="loadScene()">🔄 Charger</button>
-            <button class="btn-danger" onclick="deleteScene()">🗑️ Supprimer</button>
-          </div>
-          <button class="btn-warning" style="margin-top: 15px; background-color: #607d8b;"
-            onclick="downloadDebugJSON()">
-            🐞 Exporter JSON (Debug)</button>
-          <div style="margin-top: 15px; border-top: 1px solid #ddd; padding-top: 10px;">
-            <h4 class="sub-section-title">Fichiers de sauvegarde (.json) :</h4>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-              <!-- Bouton Exporter -->
-              <button class="btn-secondary" style="background-color: #009688;" onclick="exportSceneToJSON()">
-                📤 Exporter
-              </button>
+    <button id="openBtn" class="burger-btn show" onclick="togglePanel()">
+      <span class="burger-line"></span>
+      <span class="burger-line"></span>
+      <span class="burger-line"></span>
+    </button>
+    <div id="container">
+      <div id="cameraControls">
+        <div
+          id="snapControl"
+          style="
+            position: absolute;
+            top: 20px;
+            right: 70px;
+            z-index: 990;
+            background: var(--panel-bg);
+            padding: 5px 5px 5px 10px;
+            border-radius: 4px;
+            border: 1px solid var(--input-border);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 2px 5px var(--shadow-color);
+          "
+        >
+          <!-- Checkbox cachée pour le toggle ON/OFF -->
+          <input type="checkbox" id="snapToggle" onchange="toggleSnapping()" style="display: none" />
 
-              <!-- Bouton Importer (déclenche l'input caché) -->
-              <button class="btn-violet" onclick="document.getElementById('importFileInput').click()">
-                📥 Importer
-              </button>
-            </div>
+          <!-- Label cliquable pour activer/désactiver -->
+          <label
+            for="snapToggle"
+            style="
+              font-size: 13px;
+              margin: 0;
+              cursor: pointer;
+              color: var(--text-color);
+              display: flex;
+              align-items: center;
+            "
+            title="Activer/Désactiver l'aimant"
+          >
+            <span id="snapIcon" class="icon-disabled">🧲</span>
+            <span style="margin-left: 5px; font-weight: bold">Aimant</span>
+          </label>
 
-            <!-- Input fichier caché pour l'import -->
-            <input type="file" id="importFileInput" accept=".json" style="display: none;"
-              onchange="importSceneFromJSON(this)" />
-          </div>
-        </div>
-      </div>
+          <!-- Séparateur visuel -->
+          <div style="width: 1px; height: 20px; background-color: var(--input-border)"></div>
 
-      <div class="section collapsible collapsed">
-        <div class="section-header">
-          <h3 style="font-size: 16px">📍 Tracer des points</h3>
-        </div>
-        <div class="section-content">
-          <label>Nom du point :</label>
-          <input type="text" id="pointName" placeholder="Ex: A, Point1..." />
-
-          <label style="margin-top: 10px">Coordonnées (X, Y, Z) :</label>
-          <div class="coord-inputs">
-            <input type="number" id="pointX" placeholder="X" step="1" />
-            <input type="number" id="pointY" placeholder="Y (Profondeur)" step="1" />
-            <input type="number" id="pointZ" placeholder="Z (Hauteur)" step="1" />
-          </div>
-
-          <!-- Bouton d'ajout de point, visible par défaut -->
-          <button id="addPointBtn" onclick="addPoint()">➕ Ajouter le point</button>
-
-          <!-- NOUVEAU : Conteneur pour les boutons d'action d'édition des points -->
-          <input type="hidden" id="editPointIndex" />
-          <div id="pointEditActions" class="edit-actions-container" style="display: none">
-            <button id="updatePointBtn" class="btn-secondary" onclick="updatePoint()">💾 Mettre à jour</button>
-            <button id="deleteEditingPointBtn" class="btn-danger" onclick="deleteEditingPoint()">🗑️ Supprimer</button>
-            <button id="cancelEditBtn" class="btn-warning" onclick="cancelEdit()">❌ Annuler</button>
-          </div>
-        </div>
-        <div class="section-content">
-          <div id="pointList" class="point-list"></div>
-          <button class="btn-danger" onclick="clearAllPoints()">🗑️ Effacer tous les points</button>
-        </div>
-        <div class="section-content">
-          <div class="checkbox-group">
-            <input type="checkbox" id="autoLoadTestPointsCheckbox" onchange="toggleAutoLoadTestPoints()" />
-            <label for="autoLoadTestPointsCheckbox">Charger A, B, C au démarrage</label>
-          </div>
-          <button class="btn-secondary" onclick="loadTestPointsOnce()">➕ Charger points A, B, C maintenant</button>
-          <p style="font-size: 11px; color: #666; margin-top: 5px"></p>
-        </div>
-      </div>
-
-      <div class="section collapsible collapsed">
-        <div class="section-header">
-          <h3 style="font-size: 16px">↗️ Tracer des vecteurs</h3>
-        </div>
-        <div class="section-content">
-          <h4 class="sub-section-title">Vecteur entre deux points :</h4>
-          <label>Point de départ :</label>
-          <select id="vectorStartPoint"></select>
-
-          <label style="margin-top: 10px">Point d'arrivée :</label>
-          <select id="vectorEndPoint"></select>
-
-          <button id="addVectorFromPointsBtn" class="btn-secondary" onclick="addVectorFromPoints()">
-            ➕ Tracer le vecteur
-          </button>
-
-          <h4 class="sub-section-title">Vecteur par coordonnées :</h4>
-          <label>Nom du vecteur :</label>
-          <input type="text" id="vectorNameCoords" placeholder="Ex: V1, Direction..." />
-          <label style="margin-top: 10px; color: #2196f3;">Origine du vecteur (Ox, Oy, Oz) :</label>
-          <div class="coord-inputs">
-            <input type="number" id="vectorOriginX" placeholder="Ox" step="1" />
-            <input type="number" id="vectorOriginY" placeholder="Oy (Prof.)" step="1" />
-            <input type="number" id="vectorOriginZ" placeholder="Oz (Haut.)" step="1" />
-          </div>
-          <label style="margin-top: 10px">Coordonnées (Vx, Vy, Vz) :</label>
-          <div class="coord-inputs">
-            <input type="number" id="vectorCoordX" placeholder="Vx" step="1" />
-            <input type="number" id="vectorCoordY" placeholder="Vy" step="1" />
-            <input type="number" id="vectorCoordZ" placeholder="Vz" step="1" />
-          </div>
-
-          <label style="margin-top: 10px">Origine du vecteur :</label>
-          <select id="vectorOriginPoint"></select>
-          <button id="addVectorFromCoordsBtn" class="btn-secondary" onclick="addVectorFromCoords()">
-            ➕ Tracer le vecteur
-          </button>
-
-          <input type="hidden" id="editVectorId" />
-
-          <!-- NOUVEAU : Conteneur pour les boutons d'action d'édition -->
-          <div id="vectorEditActions" class="edit-actions-container" style="display: none">
-            <button id="updateVectorBtn" class="btn-secondary" onclick="updateVector()">💾 Mettre à jour</button>
-            <button id="deleteEditingVectorBtn" class="btn-danger" onclick="deleteEditingVector()">🗑️
-              Supprimer</button>
-            <button id="cancelVectorEditBtn" class="btn-warning" onclick="cancelVectorEdit()">❌ Annuler</button>
-          </div>
-
-          <h4 class="sub-section-title">Vecteurs existants :</h4>
-          <div id="vectorList" class="geometry-list"></div>
-          <button class="btn-danger" onclick="clearAllVectors()">🗑️ Effacer tous les vecteurs</button>
-        </div>
-      </div>
-
-      <div class="section collapsible collapsed">
-        <div class="section-header">
-          <h3 style="font-size: 16px">📏 Tracer des droites</h3>
-        </div>
-        <div class="section-content">
-          <h4 class="sub-section-title">Droite par deux points :</h4>
-          <label>Premier point :</label>
-          <select id="lineStart"></select>
-          <label style="margin-top: 10px">Deuxième point :</label>
-          <select id="lineEnd"></select>
-          <button class="btn-secondary" onclick="addStraightLine()">➕ Tracer la droite</button>
-
-          <h4 class="sub-section-title">Droite par Point et Vecteur :</h4>
-          <label>Nom de la droite :</label>
-          <input type="text" id="lineNamePV" placeholder="Ex: D1, Delta..." />
-
-          <div class="coord-inputs" style="grid-template-columns: 1fr 1fr; gap: 8px;">
-            <div>
-              <label style="font-size: 11px;">Point de passage :</label>
-              <select id="linePointPVSelect"></select>
-            </div>
-            <div>
-              <label style="font-size: 11px;">Vecteur directeur :</label>
-              <select id="lineVectorPVSelect"></select>
-            </div>
-          </div>
-
-          <button class="btn-secondary" onclick="addLineFromPointVector()">➕ Tracer la droite (Point + Vecteur)</button>
-
-          <!-- DÉBUT MODIFICATION ÉTAPE 1 : UI pour Droite par équation -->
-          <h4 class="sub-section-title">Droite par équation paramétrique :</h4>
-          <label>Nom de la droite :</label>
-          <input type="text" id="lineNameFromEquation" placeholder="Ex: D1, MaDroite..." />
-
-          <label style="margin-top: 10px; color: #2196f3;">Point de passage (Optionnel) :</label>
-          <select id="lineEquationPointSelect" onchange="onLineEquationPointChange()">
-            <!-- Sera rempli par JS -->
+          <!-- Liste déroulante pour la taille -->
+          <select
+            id="snapSizeSelect"
+            onchange="updateSnapSize()"
+            style="
+              width: auto;
+              padding: 2px 5px;
+              margin: 0;
+              height: 26px;
+              border: none;
+              background: transparent;
+              color: var(--text-color);
+              font-size: 13px;
+              cursor: pointer;
+              outline: none;
+              font-weight: bold;
+            "
+          >
+            <option value="1">1.0</option>
+            <option value="0.5">0.5</option>
+            <option value="0.1">0.1</option>
           </select>
-
-          <label style="font-size:11px; color:#666;">Ou coordonnées manuelles du point ($P_0$) :</label>
-          <div class="coord-inputs">
-            <input type="number" id="lineEqPointX" placeholder="Px" step="1" />
-            <input type="number" id="lineEqPointY" placeholder="Py (Prof.)" step="1" />
-            <input type="number" id="lineEqPointZ" placeholder="Pz (Haut.)" step="1" />
-          </div>
-
-          <label style="margin-top: 10px">Équations (pour le vecteur directeur) :</label>
-          <textarea id="lineEquationInput" rows="3" placeholder="x = 2t&#10;y = t&#10;z = -5t"
-            style="font-family: monospace"></textarea>
-
-          <input type="hidden" id="editLineId" />
-
-          <!-- Bouton d'ajout existant (ajoutez-lui une ID pour pouvoir le cacher) -->
-          <button id="addLineFromEquationBtn" class="btn-secondary" onclick="addLineFromEquation()">➕ Créer la
-            droite</button>
-
-          <!-- Nouveaux boutons pour l'édition (cachés par défaut) -->
-          <div id="lineEquationActions" class="edit-actions-container" style="display: none">
-            <button id="updateLineBtn" class="btn-secondary" onclick="updateLine()">💾 Mettre à jour</button>
-            <button id="deleteEditingLineBtn" class="btn-danger" onclick="deleteEditingLine()">🗑️ Supprimer</button>
-            <button id="cancelLineEditBtn" class="btn-warning" onclick="cancelLineEdit()">❌ Annuler</button>
-          </div>
-
-          <h4 class="sub-section-title">Droites existantes :</h4>
-          <div id="lineList" class="geometry-list"></div>
-          <button class="btn-danger" onclick="clearStraightLines()">🗑️ Effacer les droites</button>
-
         </div>
 
+        <!-- Vue de dessus (XY) : La face supérieure du cube est noire -->
+        <div class="camera-btn" id="btnTop" onclick="setCameraView('top', this)" title="Vue de dessus (XY)">
+          <svg width="40" height="40" viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg">
+            <!-- Face du dessus (noire) -->
+            <polygon points="5,15 25,5 45,15 25,25" fill="#222222" />
+            <!-- Face de droite (claire) -->
+            <polygon points="45,15 45,35 25,45 25,25" fill="#e6e6e6" />
+            <!-- Face de gauche (moyenne) -->
+            <polygon points="5,15 5,35 25,45 25,25" fill="#cacaca" />
+          </svg>
+        </div>
 
+        <!-- Vue de face (XZ) : La face de "gauche" (qui représente l'avant) est noire -->
+        <div class="camera-btn" id="btnFront" onclick="setCameraView('front', this)" title="Vue de face (XZ)">
+          <svg width="40" height="40" viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg">
+            <!-- Face du dessus (moyenne) -->
+            <polygon points="5,15 25,5 45,15 25,25" fill="#cacaca" />
+            <!-- Face de droite (claire) -->
+            <polygon points="45,15 45,35 25,45 25,25" fill="#e6e6e6" />
+            <!-- Face de gauche/avant (noire) -->
+            <polygon points="5,15 5,35 25,45 25,25" fill="#222222" />
+          </svg>
+        </div>
 
+        <!-- Vue de côté (YZ) : La face de "droite" (qui représente le côté) est noire -->
+        <div class="camera-btn" id="btnSide" onclick="setCameraView('side', this)" title="Vue de côté (YZ)">
+          <svg width="40" height="40" viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg">
+            <!-- Face du dessus (moyenne) -->
+            <polygon points="5,15 25,5 45,15 25,25" fill="#cacaca" />
+            <!-- Face de droite/côté (noire) -->
+            <polygon points="45,15 45,35 25,45 25,25" fill="#222222" />
+            <!-- Face de gauche (claire) -->
+            <polygon points="5,15 5,35 25,45 25,25" fill="#e6e6e6" />
+          </svg>
+        </div>
 
-
-
-
+        <div class="camera-btn" id="btnReset" onclick="resetCamera(this)" title="Réinitialiser la vue (Isométrique)">
+          <i class="fas fa-sync-alt"></i>
+        </div>
+        <div
+          class="camera-btn"
+          id="btnUndo"
+          onclick="undo()"
+          title="Annuler (Ctrl+Z)"
+          style="opacity: 0.5; pointer-events: none"
+        >
+          <i class="fas fa-undo"></i>
+        </div>
+        <div
+          class="camera-btn"
+          id="btnRedo"
+          onclick="redo()"
+          title="Rétablir (Ctrl+Y)"
+          style="opacity: 0.5; pointer-events: none"
+        >
+          <i class="fas fa-redo"></i>
+        </div>
       </div>
-
-      <div class="section collapsible collapsed">
-        <div class="section-header">
-          <h3 style="font-size: 16px">🔷 Tracer des plans</h3>
-        </div>
-        <div class="section-content">
-          <h4 class="sub-section-title">Plan par 3 points :</h4>
-          <label>Nom du plan :</label>
-          <input type="text" id="planeName" placeholder="Ex: P1, MonPlan..." />
-
-          <label style="margin-top: 10px">Premier point :</label>
-          <select id="planeSelectP1"></select>
-
-          <label style="margin-top: 10px">Deuxième point :</label>
-          <select id="planeSelectP2"></select>
-
-          <label style="margin-top: 10px">Troisième point :</label>
-          <select id="planeSelectP3"></select>
-
-          <button class="btn-warning" onclick="addPlane()">➕ Ajouter ce plan</button>
-
-          <h4 class="sub-section-title">Plan par vecteur normal (équation) :</h4>
-
-          <label style="color: #2196f3;">Point de passage (Optionnel) :</label>
-          <select id="planeEquationPointSelect" onchange="onPlaneEquationPointChange()">
-            <!-- Sera rempli par JS -->
-          </select>
-
-          <label style="font-size:11px; color:#666;">Ou coordonnées manuelles ($P_0$) :</label>
-          <div class="coord-inputs">
-            <input type="number" id="planeEqPointX" placeholder="Px" step="1" />
-            <input type="number" id="planeEqPointY" placeholder="Py (Prof.)" step="1" />
-            <input type="number" id="planeEqPointZ" placeholder="Pz (Haut.)" step="1" />
+      <div id="panel" class="hidden">
+        <button id="toggleBtn" class="burger-btn" onclick="togglePanel()">
+          <span class="burger-line"></span>
+          <span class="burger-line"></span>
+          <span class="burger-line"></span>
+        </button>
+        <button id="themeToggleBtn" onclick="toggleTheme()" title="Changer le thème">
+          <i class="fas fa-moon"></i>
+        </button>
+        <div class="section collapsible collapsed">
+          <div class="section-header">
+            <h3 style="font-size: 16px">💾 Gestion des Scènes</h3>
           </div>
+          <div class="section-content">
+            <label>Nom de la scène :</label>
+            <input type="text" id="sceneNameInput" placeholder="Ex: Ma Scène 1" />
+            <button class="btn-secondary" onclick="saveScene()">💾 Enregistrer la scène</button>
 
-          <!-- <label style="margin-top: 10px">Équation (pour le vecteur normal a,b,c) :</label>
+            <h4 class="sub-section-title" style="margin-top: 20px">Charger une scène :</h4>
+            <label>Scènes sauvegardées :</label>
+            <select id="savedScenesSelect" style="margin-bottom: 8px"></select>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px">
+              <button class="btn-violet" onclick="loadScene()">🔄 Charger</button>
+              <button class="btn-danger" onclick="deleteScene()">🗑️ Supprimer</button>
+            </div>
+            <button
+              class="btn-warning"
+              style="margin-top: 15px; background-color: #607d8b"
+              onclick="downloadDebugJSON()"
+            >
+              🐞 Exporter JSON (Debug)
+            </button>
+            <div style="margin-top: 15px; border-top: 1px solid #ddd; padding-top: 10px">
+              <h4 class="sub-section-title">Fichiers de sauvegarde (.json) :</h4>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px">
+                <!-- Bouton Exporter -->
+                <button class="btn-secondary" style="background-color: #009688" onclick="exportSceneToJSON()">
+                  📤 Exporter
+                </button>
+
+                <!-- Bouton Importer (déclenche l'input caché) -->
+                <button class="btn-violet" onclick="document.getElementById('importFileInput').click()">
+                  📥 Importer
+                </button>
+              </div>
+
+              <!-- Input fichier caché pour l'import -->
+              <input
+                type="file"
+                id="importFileInput"
+                accept=".json"
+                style="display: none"
+                onchange="importSceneFromJSON(this)"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div class="section collapsible collapsed">
+          <div class="section-header">
+            <h3 style="font-size: 16px">📍 Tracer des points</h3>
+          </div>
+          <div class="section-content">
+            <label>Nom du point :</label>
+            <input type="text" id="pointName" placeholder="Ex: A, Point1..." />
+
+            <label style="margin-top: 10px">Coordonnées (X, Y, Z) :</label>
+            <div class="coord-inputs">
+              <input type="number" id="pointX" placeholder="X" step="1" />
+              <input type="number" id="pointY" placeholder="Y (Profondeur)" step="1" />
+              <input type="number" id="pointZ" placeholder="Z (Hauteur)" step="1" />
+            </div>
+
+            <!-- Bouton d'ajout de point, visible par défaut -->
+            <button id="addPointBtn" onclick="addPoint()">➕ Ajouter le point</button>
+
+            <!-- NOUVEAU : Conteneur pour les boutons d'action d'édition des points -->
+            <input type="hidden" id="editPointIndex" />
+            <div id="pointEditActions" class="edit-actions-container" style="display: none">
+              <button id="updatePointBtn" class="btn-secondary" onclick="updatePoint()">💾 Mettre à jour</button>
+              <button id="deleteEditingPointBtn" class="btn-danger" onclick="deleteEditingPoint()">🗑️ Supprimer</button>
+              <button id="cancelEditBtn" class="btn-warning" onclick="cancelEdit()">❌ Annuler</button>
+            </div>
+          </div>
+          <div class="section-content">
+            <div id="pointList" class="point-list"></div>
+            <button class="btn-danger" onclick="clearAllPoints()">🗑️ Effacer tous les points</button>
+          </div>
+          <div class="section-content">
+            <div class="checkbox-group">
+              <input type="checkbox" id="autoLoadTestPointsCheckbox" onchange="toggleAutoLoadTestPoints()" />
+              <label for="autoLoadTestPointsCheckbox">Charger A, B, C au démarrage</label>
+            </div>
+            <button class="btn-secondary" onclick="loadTestPointsOnce()">➕ Charger points A, B, C maintenant</button>
+            <p style="font-size: 11px; color: #666; margin-top: 5px"></p>
+          </div>
+        </div>
+
+        <div class="section collapsible collapsed">
+          <div class="section-header">
+            <h3 style="font-size: 16px">↗️ Tracer des vecteurs</h3>
+          </div>
+          <div class="section-content">
+            <h4 class="sub-section-title">Vecteur entre deux points :</h4>
+            <label>Point de départ :</label>
+            <select id="vectorStartPoint"></select>
+
+            <label style="margin-top: 10px">Point d'arrivée :</label>
+            <select id="vectorEndPoint"></select>
+
+            <button id="addVectorFromPointsBtn" class="btn-secondary" onclick="addVectorFromPoints()">
+              ➕ Tracer le vecteur
+            </button>
+
+            <h4 class="sub-section-title">Vecteur par coordonnées :</h4>
+            <label>Nom du vecteur :</label>
+            <input type="text" id="vectorNameCoords" placeholder="Ex: V1, Direction..." />
+            <label style="margin-top: 10px; color: #2196f3">Origine du vecteur (Ox, Oy, Oz) :</label>
+            <div class="coord-inputs">
+              <input type="number" id="vectorOriginX" placeholder="Ox" step="1" />
+              <input type="number" id="vectorOriginY" placeholder="Oy (Prof.)" step="1" />
+              <input type="number" id="vectorOriginZ" placeholder="Oz (Haut.)" step="1" />
+            </div>
+            <label style="margin-top: 10px">Coordonnées (Vx, Vy, Vz) :</label>
+            <div class="coord-inputs">
+              <input type="number" id="vectorCoordX" placeholder="Vx" step="1" />
+              <input type="number" id="vectorCoordY" placeholder="Vy" step="1" />
+              <input type="number" id="vectorCoordZ" placeholder="Vz" step="1" />
+            </div>
+
+            <label style="margin-top: 10px">Origine du vecteur :</label>
+            <select id="vectorOriginPoint"></select>
+            <button id="addVectorFromCoordsBtn" class="btn-secondary" onclick="addVectorFromCoords()">
+              ➕ Tracer le vecteur
+            </button>
+
+            <input type="hidden" id="editVectorId" />
+
+            <!-- NOUVEAU : Conteneur pour les boutons d'action d'édition -->
+            <div id="vectorEditActions" class="edit-actions-container" style="display: none">
+              <button id="updateVectorBtn" class="btn-secondary" onclick="updateVector()">💾 Mettre à jour</button>
+              <button id="deleteEditingVectorBtn" class="btn-danger" onclick="deleteEditingVector()">
+                🗑️ Supprimer
+              </button>
+              <button id="cancelVectorEditBtn" class="btn-warning" onclick="cancelVectorEdit()">❌ Annuler</button>
+            </div>
+
+            <h4 class="sub-section-title">Vecteurs existants :</h4>
+            <div id="vectorList" class="geometry-list"></div>
+            <button class="btn-danger" onclick="clearAllVectors()">🗑️ Effacer tous les vecteurs</button>
+          </div>
+        </div>
+
+        <div class="section collapsible collapsed">
+          <div class="section-header">
+            <h3 style="font-size: 16px">📏 Tracer des droites</h3>
+          </div>
+          <div class="section-content">
+            <h4 class="sub-section-title">Droite par deux points :</h4>
+            <label>Premier point :</label>
+            <select id="lineStart"></select>
+            <label style="margin-top: 10px">Deuxième point :</label>
+            <select id="lineEnd"></select>
+            <button class="btn-secondary" onclick="addStraightLine()">➕ Tracer la droite</button>
+
+            <h4 class="sub-section-title">Droite par Point et Vecteur :</h4>
+            <label>Nom de la droite :</label>
+            <input type="text" id="lineNamePV" placeholder="Ex: D1, Delta..." />
+
+            <div class="coord-inputs" style="grid-template-columns: 1fr 1fr; gap: 8px">
+              <div>
+                <label style="font-size: 11px">Point de passage :</label>
+                <select id="linePointPVSelect"></select>
+              </div>
+              <div>
+                <label style="font-size: 11px">Vecteur directeur :</label>
+                <select id="lineVectorPVSelect"></select>
+              </div>
+            </div>
+
+            <button class="btn-secondary" onclick="addLineFromPointVector()">
+              ➕ Tracer la droite (Point + Vecteur)
+            </button>
+
+            <!-- DÉBUT MODIFICATION ÉTAPE 1 : UI pour Droite par équation -->
+            <h4 class="sub-section-title">Droite par équation paramétrique :</h4>
+            <label>Nom de la droite :</label>
+            <input type="text" id="lineNameFromEquation" placeholder="Ex: D1, MaDroite..." />
+
+            <label style="margin-top: 10px; color: #2196f3">Point de passage (Optionnel) :</label>
+            <select id="lineEquationPointSelect" onchange="onLineEquationPointChange()">
+              <!-- Sera rempli par JS -->
+            </select>
+
+            <label style="font-size: 11px; color: #666">Ou coordonnées manuelles du point ($P_0$) :</label>
+            <div class="coord-inputs">
+              <input type="number" id="lineEqPointX" placeholder="Px" step="1" />
+              <input type="number" id="lineEqPointY" placeholder="Py (Prof.)" step="1" />
+              <input type="number" id="lineEqPointZ" placeholder="Pz (Haut.)" step="1" />
+            </div>
+
+            <label style="margin-top: 10px">Équations (pour le vecteur directeur) :</label>
+            <textarea
+              id="lineEquationInput"
+              rows="3"
+              placeholder="x = 2t&#10;y = t&#10;z = -5t"
+              style="font-family: monospace"
+            ></textarea>
+
+            <input type="hidden" id="editLineId" />
+
+            <!-- Bouton d'ajout existant (ajoutez-lui une ID pour pouvoir le cacher) -->
+            <button id="addLineFromEquationBtn" class="btn-secondary" onclick="addLineFromEquation()">
+              ➕ Créer la droite
+            </button>
+
+            <!-- Nouveaux boutons pour l'édition (cachés par défaut) -->
+            <div id="lineEquationActions" class="edit-actions-container" style="display: none">
+              <button id="updateLineBtn" class="btn-secondary" onclick="updateLine()">💾 Mettre à jour</button>
+              <button id="deleteEditingLineBtn" class="btn-danger" onclick="deleteEditingLine()">🗑️ Supprimer</button>
+              <button id="cancelLineEditBtn" class="btn-warning" onclick="cancelLineEdit()">❌ Annuler</button>
+            </div>
+
+            <h4 class="sub-section-title">Droites existantes :</h4>
+            <div id="lineList" class="geometry-list"></div>
+            <button class="btn-danger" onclick="clearStraightLines()">🗑️ Effacer les droites</button>
+          </div>
+        </div>
+
+        <div class="section collapsible collapsed">
+          <div class="section-header">
+            <h3 style="font-size: 16px">🔷 Tracer des plans</h3>
+          </div>
+          <div class="section-content">
+            <h4 class="sub-section-title">Plan par 3 points :</h4>
+            <label>Nom du plan :</label>
+            <input type="text" id="planeName" placeholder="Ex: P1, MonPlan..." />
+
+            <label style="margin-top: 10px">Premier point :</label>
+            <select id="planeSelectP1"></select>
+
+            <label style="margin-top: 10px">Deuxième point :</label>
+            <select id="planeSelectP2"></select>
+
+            <label style="margin-top: 10px">Troisième point :</label>
+            <select id="planeSelectP3"></select>
+
+            <button class="btn-warning" onclick="addPlane()">➕ Ajouter ce plan</button>
+
+            <h4 class="sub-section-title">Plan par vecteur normal (équation) :</h4>
+
+            <label style="color: #2196f3">Point de passage (Optionnel) :</label>
+            <select id="planeEquationPointSelect" onchange="onPlaneEquationPointChange()">
+              <!-- Sera rempli par JS -->
+            </select>
+
+            <label style="font-size: 11px; color: #666">Ou coordonnées manuelles ($P_0$) :</label>
+            <div class="coord-inputs">
+              <input type="number" id="planeEqPointX" placeholder="Px" step="1" />
+              <input type="number" id="planeEqPointY" placeholder="Py (Prof.)" step="1" />
+              <input type="number" id="planeEqPointZ" placeholder="Pz (Haut.)" step="1" />
+            </div>
+
+            <!-- <label style="margin-top: 10px">Équation (pour le vecteur normal a,b,c) :</label>
           <input type="text" id="planeEquationInput" placeholder="Ex: 2x - y + 3z = 0" />
           <button class="btn-warning" onclick="addPlaneFromEquation()">➕ Créer le plan</button> -->
 
-          <h4 class="sub-section-title">Plan par équation :</h4>
-          <label>Équation cartésienne (ax+by+cz+d=0) :</label>
-          <input type="text" id="planeEquationInput" placeholder="Ex: 2x - y + 3z - 6 = 0" />
-          <button id="addPlaneFromEquationBtn" class="btn-warning" onclick="addPlaneFromEquation()">➕ Créer le plan
-            depuis l'équation</button>
-
-          <input type="hidden" id="editPlaneId" />
-          <div id="planeEquationActions" class="edit-actions-container" style="display: none">
-            <button id="updatePlaneBtn" class="btn-secondary" onclick="updatePlane()">💾 Mettre à jour</button>
-            <button id="deleteEditingPlaneBtn" class="btn-danger" onclick="deleteEditingPlane()">🗑️ Supprimer</button>
-            <button id="cancelPlaneEditBtn" class="btn-warning" onclick="cancelPlaneEdit()">❌ Annuler</button>
-          </div>
-          <h4 class="sub-section-title">Plans existants :</h4>
-          <div id="planeList" class="geometry-list"></div>
-          <button class="btn-danger" onclick="clearAllPlanes()">🗑️ Effacer tous les plans</button>
-        </div>
-      </div>
-
-      <div class="section collapsible collapsed">
-        <div class="section-header">
-          <h3 style="font-size: 16px">📈 Équations géométriques</h3>
-        </div>
-        <div class="section-content">
-          <h4 class="sub-section-title">Équation de plan :</h4>
-          <label>Sélectionner un plan pour voir son équation :</label>
-          <select id="equationPlaneSelect" onchange="displayPlaneEquation()"></select>
-          <div id="planeEquationDisplay" class="equation-display"></div>
-
-          <h4 class="sub-section-title" style="margin-top: 20px">Équation paramétrique de droite :</h4>
-          <label>Sélectionner une droite pour voir son équation :</label>
-          <select id="equationLineSelect" onchange="displayLineEquation()"></select>
-
-          <div id="lineEquationDisplay" class="equation-display"></div>
-        </div>
-      </div>
-
-      <div class="section collapsible collapsed">
-        <div class="section-header">
-          <h3 style="font-size: 16px">🧮 Calculs</h3>
-        </div>
-        <div class="section-content">
-          <!-- Outils de Mesure -->
-          <h4 class="sub-section-title" style="margin-top: 20px">Opérations sur les Vecteurs</h4>
-
-          <!-- Somme de vecteurs -->
-          <label>Somme de deux vecteurs \(\vec{u} + \vec{v}\) :</label>
-          <div class="coord-inputs" style="grid-template-columns: 1fr 1fr; margin-bottom: 8px">
-            <select id="sumVectorSelect1"></select>
-            <select id="sumVectorSelect2"></select>
-          </div>
-
-          <label>Point de départ (pour la construction ou le vecteur libre) :</label>
-          <select id="sumVectorOrigin" style="margin-bottom: 8px"></select>
-
-          <!-- MODIFICATION: Boutons pour des actions distinctes -->
-          <button class="btn-violet" onclick="calculateVectorSumFree()">🖩 Créer le vecteur somme (libre)</button>
-          <button class="btn-warning" onclick="constructChaslesSum()">📐 Construire la somme (Chasles)</button>
-
-          <!-- NOUVEAU: Bouton pour nettoyer la construction, caché par défaut -->
-          <button class="btn-danger" onclick="clearChaslesConstruction()" style="display: none; margin-top: 5px"
-            id="clearChaslesBtn">
-            🗑️ Effacer la construction
-          </button>
-
-          <div id="vectorSumResult" class="equation-display"></div>
-
-          <!-- Produit Scalaire -->
-          <label style="margin-top: 15px">Produit scalaire de deux vecteurs \( \vec{u} \cdot \vec{v} \) :</label>
-          <div class="coord-inputs" style="grid-template-columns: 1fr 1fr; margin-bottom: 8px">
-            <select id="dotVectorSelect1"></select>
-            <select id="dotVectorSelect2"></select>
-          </div>
-          <button class="btn-warning" onclick="calculateScalarProduct()">🖩 Calculer</button>
-          <div id="scalarProductResult" class="equation-display"></div>
-
-          <!-- Produit Vectoriel -->
-          <label style="margin-top: 15px">Produit vectoriel de deux vecteurs \( \vec{u} \wedge \vec{v} \) :</label>
-          <div class="coord-inputs" style="grid-template-columns: 1fr 1fr; margin-bottom: 8px">
-            <select id="crossVectorSelect1"></select>
-            <select id="crossVectorSelect2"></select>
-          </div>
-          <label>Origine du vecteur produit :</label>
-          <select id="crossVectorOrigin" style="margin-bottom: 8px"></select>
-          <button class="btn-warning" onclick="calculateVectorProduct()">🖩 Créer le vecteur produit</button>
-          <div id="vectorProductResult" class="equation-display"></div>
-          <h4 class="sub-section-title" style="margin-top:20px;">Projection Orthogonale</h4>
-          <label>Projeter le point :</label>
-          <select id="projPointSelect"></select>
-          <label>Sur le plan :</label>
-          <select id="projPlaneSelect"></select>
-          <button class="btn-violet" onclick="projectPointOnPlane()">📐 Projeter</button>
-
-        </div>
-      </div>
-
-      <div class="section collapsible collapsed">
-        <div class="section-header">
-          <h3 style="font-size: 16px">📐 Mesures et Intersections</h3>
-        </div>
-        <div class="section-content">
-          <!-- Outils de Mesure -->
-          <h4 class="sub-section-title">Mesure de Distances</h4>
-
-          <!-- Distance Point-Point -->
-          <label>Distance entre deux points :</label>
-          <div class="coord-inputs" style="grid-template-columns: 1fr 1fr; margin-bottom: 8px">
-            <select id="distPointSelect1"></select>
-            <select id="distPointSelect2"></select>
-          </div>
-          <button class="btn-warning" onclick="calculatePointPointDistance()">🖩 Mesurer</button>
-          <div id="distResult1" class="equation-display"></div>
-
-          <!-- Distance Point-Droite -->
-          <label style="margin-top: 15px">Distance d'un point à une droite :</label>
-          <div class="coord-inputs" style="grid-template-columns: 1fr 1fr; margin-bottom: 8px">
-            <select id="distPointSelect3"></select>
-            <select id="distLineSelect1"></select>
-          </div>
-          <button class="btn-warning" onclick="calculatePointLineDistance()">🖩 Mesurer</button>
-          <div id="distResult2" class="equation-display"></div>
-
-          <!-- Distance Point-Plan -->
-          <label style="margin-top: 15px">Distance d'un point à un plan :</label>
-          <div class="coord-inputs" style="grid-template-columns: 1fr 1fr; margin-bottom: 8px">
-            <select id="calcPointSelect"></select>
-            <select id="calcPlaneSelect1"></select>
-          </div>
-          <button class="btn-warning" onclick="calculatePointPlaneDistance()">🖩 Mesurer et projeter</button>
-          <div id="calcResultDisplay1" class="equation-display" style="min-height: 50px"></div>
-
-          <!-- Outils d'Angle -->
-          <h4 class="sub-section-title" style="margin-top: 20px">Mesure d'Angles</h4>
-
-          <!-- Angle Droite-Droite -->
-          <label>Angle entre deux droites :</label>
-          <div class="coord-inputs" style="grid-template-columns: 1fr 1fr; margin-bottom: 8px">
-            <select id="angleLineSelect1"></select>
-            <select id="angleLineSelect2"></select>
-          </div>
-          <button class="btn-warning" onclick="calculateLineLineAngle()">🖩 Mesurer</button>
-          <div id="angleResult1" class="equation-display"></div>
-
-          <!-- Angle Plan-Plan -->
-          <label style="margin-top: 15px">Angle entre deux plans :</label>
-          <div class="coord-inputs" style="grid-template-columns: 1fr 1fr; margin-bottom: 8px">
-            <select id="anglePlaneSelect1"></select>
-            <select id="anglePlaneSelect2"></select>
-          </div>
-          <button class="btn-warning" onclick="calculatePlanePlaneAngle()">🖩 Mesurer</button>
-          <div id="angleResult2" class="equation-display"></div>
-
-          <!-- Angle Droite-Plan -->
-          <label style="margin-top: 15px">Angle entre une droite et un plan :</label>
-          <div class="coord-inputs" style="grid-template-columns: 1fr 1fr; margin-bottom: 8px">
-            <select id="angleLineSelect3"></select>
-            <select id="anglePlaneSelect3"></select>
-          </div>
-          <button class="btn-warning" onclick="calculateLinePlaneAngle()">🖩 Mesurer</button>
-          <div id="angleResult3" class="equation-display"></div>
-
-          <!-- Intersections -->
-          <h4 class="sub-section-title" style="margin-top: 20px">Calcul d'Intersections</h4>
-
-          <!-- Intersection Droite-Plan -->
-          <label>Intersection d'une droite et d'un plan :</label>
-          <div class="coord-inputs" style="grid-template-columns: 1fr 1fr; margin-bottom: 8px">
-            <select id="calcLineSelect"></select>
-            <select id="calcPlaneSelect2"></select>
-          </div>
-          <button class="btn-warning" onclick="calculateLinePlaneIntersection()">🖩 Calculer l'intersection</button>
-          <div id="calcResultDisplay2" class="equation-display"></div>
-
-          <!-- Intersection Plan-Plan -->
-          <label style="margin-top: 15px">Intersection de deux plans :</label>
-          <div class="coord-inputs" style="grid-template-columns: 1fr 1fr; margin-bottom: 8px">
-            <select id="calcPlaneSelect3"></select>
-            <select id="calcPlaneSelect4"></select>
-          </div>
-          <button class="btn-warning" onclick="calculatePlanePlaneIntersection()">🖩 Calculer l'intersection</button>
-          <div id="calcResultDisplay3" class="equation-display" style="min-height: 60px"></div>
-
-          <!-- Intersection Droite-Droite -->
-          <h4 class="sub-section-title" style="margin-top: 20px">Intersection de deux droites :</h4>
-          <label>Sélectionner les deux droites :</label>
-          <div class="coord-inputs" style="grid-template-columns: 1fr 1fr; margin-bottom: 8px">
-            <select id="calcLineSelect1"></select>
-            <select id="calcLineSelect2"></select>
-          </div>
-          <button class="btn-warning" onclick="calculateLineLineIntersection()">🖩 Analyser l'intersection</button>
-          <div id="calcResultDisplay4" class="equation-display" style="margin-top: 10px; min-height: 50px"></div>
-
-          <h4 class="sub-section-title" style="margin-top: 20px">Perpendiculaire commune (Droites)</h4>
-          <div class="coord-inputs" style="grid-template-columns: 1fr 1fr; margin-bottom: 8px">
-            <select id="perpLine1"></select>
-            <select id="perpLine2"></select>
-          </div>
-          <button class="btn-warning" onclick="calculateCommonPerpendicular()">🖩 Tracer la perpendiculaire</button>
-          <div id="perpResult" class="equation-display"></div>
-
-        </div>
-      </div>
-
-      <div class="section collapsible collapsed">
-        <div class="section-header">
-          <h3 style="font-size: 16px">🔄 Transformations</h3>
-        </div>
-        <div class="section-content">
-          <p id="transformations-hint" style="font-size: 12px; color: #888; text-align: center">
-            Veuillez sélectionner un objet dans la scène 3D pour appliquer une transformation.
-          </p>
-
-          <!-- Sous-section Translation -->
-          <div id="transformations-container" style="display: none">
-            <h4 class="sub-section-title">Translation</h4>
-            <label>Vecteur de translation (dX, dY, dZ) :</label>
-            <div class="coord-inputs">
-              <input type="number" id="transX" placeholder="dX" value="0" step="1" />
-              <input type="number" id="transY" placeholder="dY" value="0" step="1" />
-              <input type="number" id="transZ" placeholder="dZ" value="0" step="1" />
-            </div>
-            <button class="btn-secondary" onclick="applyTranslation()">➡️ Appliquer la Translation</button>
-
-            <!-- Sous-section Rotation -->
-            <h4 class="sub-section-title" style="margin-top: 20px">Rotation</h4>
-            <label>Centre de rotation :</label>
-            <select id="rotationCenterSelect">
-              <option value="origin">Origine du repère (0,0,0)</option>
-              <!-- Les points seront ajoutés dynamiquement ici -->
-            </select>
-            <label style="margin-top: 10px">Axe de rotation :</label>
-            <select id="rotationAxisSelect">
-              <option value="x">Axe X</option>
-              <option value="y">Axe Y</option>
-              <option value="z">Axe Z</option>
-            </select>
-            <label style="margin-top: 10px">Angle de rotation (en degrés) :</label>
-            <input type="number" id="rotationAngle" value="90" step="1" />
-            <button class="btn-secondary" onclick="applyRotation()">🔄 Appliquer la Rotation</button>
-
-            <!-- Sous-section Symétrie -->
-            <h4 class="sub-section-title" style="margin-top: 20px">Symétrie</h4>
-            <label>Symétrie par rapport à :</label>
-
-            <select id="symmetryTypeSelect" onchange="updateSymmetryUI()">
-              <option value="origin">Origine (0,0,0)</option>
-
-              <option value="axis_x">Axe X</option>
-              <option value="axis_y">Axe Y (Profondeur)</option>
-              <option value="axis_z">Axe Z (Hauteur)</option>
-
-              <option value="plane_xy">Plan XY (Sol)</option>
-              <option value="plane_xz">Plan XZ (Face)</option>
-              <option value="plane_yz">Plan YZ (Côté)</option>
-              <option value="">-- Choisir un type --</option>
-              <option value="point">Un Point</option>
-              <option value="line">Une Droite</option>
-              <option value="plane">Un Plan</option>
-            </select>
-            <div id="symmetryOptionsContainer" style="margin-top: 10px">
-              <!-- Les options (sélecteurs de point, droite, plan) apparaîtront ici -->
-            </div>
-            <button class="btn-secondary" id="applySymmetryBtn" style="display: none" onclick="applySymmetry()">
-              🔹 Appliquer la Symétrie
+            <h4 class="sub-section-title">Plan par équation :</h4>
+            <label>Équation cartésienne (ax+by+cz+d=0) :</label>
+            <input type="text" id="planeEquationInput" placeholder="Ex: 2x - y + 3z - 6 = 0" />
+            <button id="addPlaneFromEquationBtn" class="btn-warning" onclick="addPlaneFromEquation()">
+              ➕ Créer le plan depuis l'équation
             </button>
+
+            <input type="hidden" id="editPlaneId" />
+            <div id="planeEquationActions" class="edit-actions-container" style="display: none">
+              <button id="updatePlaneBtn" class="btn-secondary" onclick="updatePlane()">💾 Mettre à jour</button>
+              <button id="deleteEditingPlaneBtn" class="btn-danger" onclick="deleteEditingPlane()">🗑️ Supprimer</button>
+              <button id="cancelPlaneEditBtn" class="btn-warning" onclick="cancelPlaneEdit()">❌ Annuler</button>
+            </div>
+            <h4 class="sub-section-title">Plans existants :</h4>
+            <div id="planeList" class="geometry-list"></div>
+            <button class="btn-danger" onclick="clearAllPlanes()">🗑️ Effacer tous les plans</button>
           </div>
         </div>
-      </div>
-      <div style="text-align: center; font-size: 10px; color: #888; margin-top: 20px; padding-top: 5px">
-        Copyright Michel ESPARSA 15/11/2025
+
+        <div class="section collapsible collapsed">
+          <div class="section-header">
+            <h3 style="font-size: 16px">📈 Équations géométriques</h3>
+          </div>
+          <div class="section-content">
+            <h4 class="sub-section-title">Équation de plan :</h4>
+            <label>Sélectionner un plan pour voir son équation :</label>
+            <select id="equationPlaneSelect" onchange="displayPlaneEquation()"></select>
+            <div id="planeEquationDisplay" class="equation-display"></div>
+
+            <h4 class="sub-section-title" style="margin-top: 20px">Équation paramétrique de droite :</h4>
+            <label>Sélectionner une droite pour voir son équation :</label>
+            <select id="equationLineSelect" onchange="displayLineEquation()"></select>
+
+            <div id="lineEquationDisplay" class="equation-display"></div>
+          </div>
+        </div>
+
+        <div class="section collapsible collapsed">
+          <div class="section-header">
+            <h3 style="font-size: 16px">🧮 Calculs</h3>
+          </div>
+          <div class="section-content">
+            <!-- Outils de Mesure -->
+            <h4 class="sub-section-title" style="margin-top: 20px">Opérations sur les Vecteurs</h4>
+
+            <!-- Somme de vecteurs -->
+            <label>Somme de deux vecteurs \(\vec{u} + \vec{v}\) :</label>
+            <div class="coord-inputs" style="grid-template-columns: 1fr 1fr; margin-bottom: 8px">
+              <select id="sumVectorSelect1"></select>
+              <select id="sumVectorSelect2"></select>
+            </div>
+
+            <label>Point de départ (pour la construction ou le vecteur libre) :</label>
+            <select id="sumVectorOrigin" style="margin-bottom: 8px"></select>
+
+            <!-- MODIFICATION: Boutons pour des actions distinctes -->
+            <button class="btn-violet" onclick="calculateVectorSumFree()">🖩 Créer le vecteur somme (libre)</button>
+            <button class="btn-warning" onclick="constructChaslesSum()">📐 Construire la somme (Chasles)</button>
+
+            <!-- NOUVEAU: Bouton pour nettoyer la construction, caché par défaut -->
+            <button
+              class="btn-danger"
+              onclick="clearChaslesConstruction()"
+              style="display: none; margin-top: 5px"
+              id="clearChaslesBtn"
+            >
+              🗑️ Effacer la construction
+            </button>
+
+            <div id="vectorSumResult" class="equation-display"></div>
+
+            <!-- Produit Scalaire -->
+            <label style="margin-top: 15px">Produit scalaire de deux vecteurs \( \vec{u} \cdot \vec{v} \) :</label>
+            <div class="coord-inputs" style="grid-template-columns: 1fr 1fr; margin-bottom: 8px">
+              <select id="dotVectorSelect1"></select>
+              <select id="dotVectorSelect2"></select>
+            </div>
+            <button class="btn-warning" onclick="calculateScalarProduct()">🖩 Calculer</button>
+            <div id="scalarProductResult" class="equation-display"></div>
+
+            <!-- Produit Vectoriel -->
+            <label style="margin-top: 15px">Produit vectoriel de deux vecteurs \( \vec{u} \wedge \vec{v} \) :</label>
+            <div class="coord-inputs" style="grid-template-columns: 1fr 1fr; margin-bottom: 8px">
+              <select id="crossVectorSelect1"></select>
+              <select id="crossVectorSelect2"></select>
+            </div>
+            <label>Origine du vecteur produit :</label>
+            <select id="crossVectorOrigin" style="margin-bottom: 8px"></select>
+            <button class="btn-warning" onclick="calculateVectorProduct()">🖩 Créer le vecteur produit</button>
+            <div id="vectorProductResult" class="equation-display"></div>
+            <h4 class="sub-section-title" style="margin-top: 20px">Projection Orthogonale</h4>
+            <label>Projeter le point :</label>
+            <select id="projPointSelect"></select>
+            <label>Sur le plan :</label>
+            <select id="projPlaneSelect"></select>
+            <button class="btn-violet" onclick="projectPointOnPlane()">📐 Projeter</button>
+          </div>
+        </div>
+
+        <div class="section collapsible collapsed">
+          <div class="section-header">
+            <h3 style="font-size: 16px">📐 Mesures et Intersections</h3>
+          </div>
+          <div class="section-content">
+            <!-- Outils de Mesure -->
+            <h4 class="sub-section-title">Mesure de Distances</h4>
+
+            <!-- Distance Point-Point -->
+            <label>Distance entre deux points :</label>
+            <div class="coord-inputs" style="grid-template-columns: 1fr 1fr; margin-bottom: 8px">
+              <select id="distPointSelect1"></select>
+              <select id="distPointSelect2"></select>
+            </div>
+            <button class="btn-warning" onclick="calculatePointPointDistance()">🖩 Mesurer</button>
+            <div id="distResult1" class="equation-display"></div>
+
+            <!-- Distance Point-Droite -->
+            <label style="margin-top: 15px">Distance d'un point à une droite :</label>
+            <div class="coord-inputs" style="grid-template-columns: 1fr 1fr; margin-bottom: 8px">
+              <select id="distPointSelect3"></select>
+              <select id="distLineSelect1"></select>
+            </div>
+            <button class="btn-warning" onclick="calculatePointLineDistance()">🖩 Mesurer</button>
+            <div id="distResult2" class="equation-display"></div>
+
+            <!-- Distance Point-Plan -->
+            <label style="margin-top: 15px">Distance d'un point à un plan :</label>
+            <div class="coord-inputs" style="grid-template-columns: 1fr 1fr; margin-bottom: 8px">
+              <select id="calcPointSelect"></select>
+              <select id="calcPlaneSelect1"></select>
+            </div>
+            <button class="btn-warning" onclick="calculatePointPlaneDistance()">🖩 Mesurer et projeter</button>
+            <div id="calcResultDisplay1" class="equation-display" style="min-height: 50px"></div>
+
+            <!-- Outils d'Angle -->
+            <h4 class="sub-section-title" style="margin-top: 20px">Mesure d'Angles</h4>
+
+            <!-- Angle Droite-Droite -->
+            <label>Angle entre deux droites :</label>
+            <div class="coord-inputs" style="grid-template-columns: 1fr 1fr; margin-bottom: 8px">
+              <select id="angleLineSelect1"></select>
+              <select id="angleLineSelect2"></select>
+            </div>
+            <button class="btn-warning" onclick="calculateLineLineAngle()">🖩 Mesurer</button>
+            <div id="angleResult1" class="equation-display"></div>
+
+            <!-- Angle Plan-Plan -->
+            <label style="margin-top: 15px">Angle entre deux plans :</label>
+            <div class="coord-inputs" style="grid-template-columns: 1fr 1fr; margin-bottom: 8px">
+              <select id="anglePlaneSelect1"></select>
+              <select id="anglePlaneSelect2"></select>
+            </div>
+            <button class="btn-warning" onclick="calculatePlanePlaneAngle()">🖩 Mesurer</button>
+            <div id="angleResult2" class="equation-display"></div>
+
+            <!-- Angle Droite-Plan -->
+            <label style="margin-top: 15px">Angle entre une droite et un plan :</label>
+            <div class="coord-inputs" style="grid-template-columns: 1fr 1fr; margin-bottom: 8px">
+              <select id="angleLineSelect3"></select>
+              <select id="anglePlaneSelect3"></select>
+            </div>
+            <button class="btn-warning" onclick="calculateLinePlaneAngle()">🖩 Mesurer</button>
+            <div id="angleResult3" class="equation-display"></div>
+
+            <!-- Intersections -->
+            <h4 class="sub-section-title" style="margin-top: 20px">Calcul d'Intersections</h4>
+
+            <!-- Intersection Droite-Plan -->
+            <label>Intersection d'une droite et d'un plan :</label>
+            <div class="coord-inputs" style="grid-template-columns: 1fr 1fr; margin-bottom: 8px">
+              <select id="calcLineSelect"></select>
+              <select id="calcPlaneSelect2"></select>
+            </div>
+            <button class="btn-warning" onclick="calculateLinePlaneIntersection()">🖩 Calculer l'intersection</button>
+            <div id="calcResultDisplay2" class="equation-display"></div>
+
+            <!-- Intersection Plan-Plan -->
+            <label style="margin-top: 15px">Intersection de deux plans :</label>
+            <div class="coord-inputs" style="grid-template-columns: 1fr 1fr; margin-bottom: 8px">
+              <select id="calcPlaneSelect3"></select>
+              <select id="calcPlaneSelect4"></select>
+            </div>
+            <button class="btn-warning" onclick="calculatePlanePlaneIntersection()">🖩 Calculer l'intersection</button>
+            <div id="calcResultDisplay3" class="equation-display" style="min-height: 60px"></div>
+
+            <!-- Intersection Droite-Droite -->
+            <h4 class="sub-section-title" style="margin-top: 20px">Intersection de deux droites :</h4>
+            <label>Sélectionner les deux droites :</label>
+            <div class="coord-inputs" style="grid-template-columns: 1fr 1fr; margin-bottom: 8px">
+              <select id="calcLineSelect1"></select>
+              <select id="calcLineSelect2"></select>
+            </div>
+            <button class="btn-warning" onclick="calculateLineLineIntersection()">🖩 Analyser l'intersection</button>
+            <div id="calcResultDisplay4" class="equation-display" style="margin-top: 10px; min-height: 50px"></div>
+
+            <h4 class="sub-section-title" style="margin-top: 20px">Perpendiculaire commune (Droites)</h4>
+            <div class="coord-inputs" style="grid-template-columns: 1fr 1fr; margin-bottom: 8px">
+              <select id="perpLine1"></select>
+              <select id="perpLine2"></select>
+            </div>
+            <button class="btn-warning" onclick="calculateCommonPerpendicular()">🖩 Tracer la perpendiculaire</button>
+            <div id="perpResult" class="equation-display"></div>
+          </div>
+        </div>
+
+        <div class="section collapsible collapsed">
+          <div class="section-header">
+            <h3 style="font-size: 16px">🔄 Transformations</h3>
+          </div>
+          <div class="section-content">
+            <p id="transformations-hint" style="font-size: 12px; color: #888; text-align: center">
+              Veuillez sélectionner un objet dans la scène 3D pour appliquer une transformation.
+            </p>
+
+            <!-- Sous-section Translation -->
+            <div id="transformations-container" style="display: none">
+              <h4 class="sub-section-title">Translation</h4>
+              <label>Vecteur de translation (dX, dY, dZ) :</label>
+              <div class="coord-inputs">
+                <input type="number" id="transX" placeholder="dX" value="0" step="1" />
+                <input type="number" id="transY" placeholder="dY" value="0" step="1" />
+                <input type="number" id="transZ" placeholder="dZ" value="0" step="1" />
+              </div>
+              <button class="btn-secondary" onclick="applyTranslation()">➡️ Appliquer la Translation</button>
+
+              <!-- Sous-section Rotation -->
+              <h4 class="sub-section-title" style="margin-top: 20px">Rotation</h4>
+              <label>Centre de rotation :</label>
+              <select id="rotationCenterSelect">
+                <option value="origin">Origine du repère (0,0,0)</option>
+                <!-- Les points seront ajoutés dynamiquement ici -->
+              </select>
+              <label style="margin-top: 10px">Axe de rotation :</label>
+              <select id="rotationAxisSelect">
+                <option value="x">Axe X</option>
+                <option value="y">Axe Y</option>
+                <option value="z">Axe Z</option>
+              </select>
+              <label style="margin-top: 10px">Angle de rotation (en degrés) :</label>
+              <input type="number" id="rotationAngle" value="90" step="1" />
+              <button class="btn-secondary" onclick="applyRotation()">🔄 Appliquer la Rotation</button>
+
+              <!-- Sous-section Symétrie -->
+              <h4 class="sub-section-title" style="margin-top: 20px">Symétrie</h4>
+              <label>Symétrie par rapport à :</label>
+
+              <select id="symmetryTypeSelect" onchange="updateSymmetryUI()">
+                <option value="origin">Origine (0,0,0)</option>
+
+                <option value="axis_x">Axe X</option>
+                <option value="axis_y">Axe Y (Profondeur)</option>
+                <option value="axis_z">Axe Z (Hauteur)</option>
+
+                <option value="plane_xy">Plan XY (Sol)</option>
+                <option value="plane_xz">Plan XZ (Face)</option>
+                <option value="plane_yz">Plan YZ (Côté)</option>
+                <option value="">-- Choisir un type --</option>
+                <option value="point">Un Point</option>
+                <option value="line">Une Droite</option>
+                <option value="plane">Un Plan</option>
+              </select>
+              <div id="symmetryOptionsContainer" style="margin-top: 10px">
+                <!-- Les options (sélecteurs de point, droite, plan) apparaîtront ici -->
+              </div>
+              <button class="btn-secondary" id="applySymmetryBtn" style="display: none" onclick="applySymmetry()">
+                🔹 Appliquer la Symétrie
+              </button>
+            </div>
+          </div>
+        </div>
+        <div style="text-align: center; font-size: 10px; color: #888; margin-top: 20px; padding-top: 5px">
+          Copyright Michel ESPARSA 15/11/2025
+        </div>
+
+        <div id="contextMenu" class="context-menu" style="display: none">
+          <ul id="contextMenuItems" class="context-menu-items">
+            <!-- Les options du menu seront injectées ici par JavaScript -->
+          </ul>
+        </div>
       </div>
 
-      <div id="contextMenu" class="context-menu" style="display: none">
-        <ul id="contextMenuItems" class="context-menu-items">
-          <!-- Les options du menu seront injectées ici par JavaScript -->
-        </ul>
-      </div>
-    </div>
-
-    <!-- =========================================
+      <!-- =========================================
      NOUVEAU : PANNEAU TABLEUR (BAS)
      ========================================= -->
-    <div id="spreadsheetContainer" class="spreadsheet-hidden">
-      <div class="spreadsheet-header">
-        <div class="spreadsheet-tabs">
-          <button class="tab-btn active" onclick="switchSpreadsheetTab('points')">Points</button>
-          <button class="tab-btn" onclick="switchSpreadsheetTab('vectors')">Vecteurs</button>
-          <button class="tab-btn" onclick="switchSpreadsheetTab('lines')">Droites</button>
-          <button class="tab-btn" onclick="switchSpreadsheetTab('planes')">Plans</button>
+      <div id="spreadsheetContainer" class="spreadsheet-hidden">
+        <div class="spreadsheet-header">
+          <div class="spreadsheet-tabs">
+            <button class="tab-btn active" onclick="switchSpreadsheetTab('points')">Points</button>
+            <button class="tab-btn" onclick="switchSpreadsheetTab('vectors')">Vecteurs</button>
+            <button class="tab-btn" onclick="switchSpreadsheetTab('lines')">Droites</button>
+            <button class="tab-btn" onclick="switchSpreadsheetTab('planes')">Plans</button>
+          </div>
+          <div class="spreadsheet-controls">
+            <button class="close-spreadsheet-btn" onclick="toggleSpreadsheet()">▼ Fermer</button>
+          </div>
         </div>
-        <div class="spreadsheet-controls">
-          <button class="close-spreadsheet-btn" onclick="toggleSpreadsheet()">▼ Fermer</button>
+        <div class="spreadsheet-body">
+          <table id="spreadsheetTable">
+            <thead>
+              <!-- Les en-têtes seront générés par JS -->
+            </thead>
+            <tbody>
+              <!-- Le contenu sera généré par JS -->
+            </tbody>
+          </table>
         </div>
-      </div>
-      <div class="spreadsheet-body">
-        <table id="spreadsheetTable">
-          <thead>
-            <!-- Les en-têtes seront générés par JS -->
-          </thead>
-          <tbody>
-            <!-- Le contenu sera généré par JS -->
-          </tbody>
-        </table>
       </div>
     </div>
-
     <!-- Bouton flottant pour ouvrir le tableur (en bas à gauche) -->
     <button id="openSpreadsheetBtn" onclick="toggleSpreadsheet()">📅 Tableur de données</button>
-
 
     <script>
       // =====================================================================================
@@ -2040,7 +2124,7 @@
         transformControl = new THREE.TransformControls(camera, renderer.domElement);
 
         // A. Écouteur : Quand on commence ou finit de bouger le Gizmo
-        transformControl.addEventListener('dragging-changed', function (event) {
+        transformControl.addEventListener("dragging-changed", function (event) {
           isGizmoDragging = event.value;
 
           if (isGizmoDragging) {
@@ -2064,9 +2148,8 @@
           }
         });
 
-
         // B. Écouteur : Pendant que l'objet bouge (Mise à jour temps réel)
-        transformControl.addEventListener('change', function () {
+        transformControl.addEventListener("change", function () {
           // On ne fait rien si aucun objet n'est sélectionné
           if (!selectedObjectInstance) return;
 
@@ -2078,7 +2161,6 @@
 
         scene.add(transformControl);
         // ============================================================
-
 
         // 5. Reste de l'initialisation
         setupEventListeners();
@@ -2199,11 +2281,10 @@
 
         window.addEventListener("resize", onWindowResize);
 
-
         window.addEventListener("keydown", (event) => {
           // 1. Raccourcis existants (T, R, Echap, Ctrl+Z)
-          if (event.key.toLowerCase() === 't') transformControl.setMode('translate');
-          if (event.key.toLowerCase() === 'r') transformControl.setMode('rotate');
+          if (event.key.toLowerCase() === "t") transformControl.setMode("translate");
+          if (event.key.toLowerCase() === "r") transformControl.setMode("rotate");
 
           if (event.key === "Escape") {
             hideContextMenu();
@@ -2215,11 +2296,11 @@
             }
           }
 
-          if ((event.ctrlKey || event.metaKey) && event.key === 'z') {
+          if ((event.ctrlKey || event.metaKey) && event.key === "z") {
             event.preventDefault();
             undo();
           }
-          if ((event.ctrlKey || event.metaKey) && event.key === 'y') {
+          if ((event.ctrlKey || event.metaKey) && event.key === "y") {
             event.preventDefault();
             redo();
           }
@@ -2232,7 +2313,7 @@
           if (event.key === "Delete" || event.key === "Del") {
             // AJOUT DE LA SÉCURITÉ ICI :
             const tag = document.activeElement.tagName.toUpperCase();
-            if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') {
+            if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") {
               return; // On ne fait rien si l'utilisateur écrit
             }
 
@@ -2251,7 +2332,6 @@
               }
             }
           }
-
         });
 
         document.addEventListener("mousedown", (e) => {
@@ -2267,6 +2347,14 @@
         panel.addEventListener("mousedown", stopPropagation);
         panel.addEventListener("wheel", stopPropagation);
         panel.addEventListener("contextmenu", stopPropagation);
+
+        const snapCtrl = document.getElementById("snapControl");
+        if (snapCtrl) {
+          snapCtrl.addEventListener("mousedown", stopPropagation);
+          snapCtrl.addEventListener("touchstart", stopPropagation); // Important pour le tactile
+          snapCtrl.addEventListener("contextmenu", stopPropagation); // Bloque le menu contextuel
+          snapCtrl.addEventListener("wheel", stopPropagation);
+        }
       }
 
       function onRightClick(event) {
@@ -2328,7 +2416,7 @@
         // ============================================================
         // Maintenant, on est sûr que l'utilisateur ne touche pas l'interface 2D.
         // On peut vérifier s'il touche le Gizmo 3D.
-        if (typeof transformControl !== 'undefined' && transformControl && selectedObjectInstance) {
+        if (typeof transformControl !== "undefined" && transformControl && selectedObjectInstance) {
           mouse.x = (touch.clientX / window.innerWidth) * 2 - 1;
           mouse.y = -(touch.clientY / window.innerHeight) * 2 + 1;
           raycaster.setFromCamera(mouse, camera);
@@ -2368,7 +2456,7 @@
 
       function handleTouchMove(e) {
         // 1. Sécurités (Gizmo, Swipe...)
-        if (typeof isGizmoDragging !== 'undefined' && isGizmoDragging) return;
+        if (typeof isGizmoDragging !== "undefined" && isGizmoDragging) return;
         if (swipeState.isSwiping) {
           const touch = e.touches[0];
           const deltaX = touch.clientX - swipeState.startX;
@@ -2555,8 +2643,7 @@
         menuItemsContainer.innerHTML = "";
 
         // Helper pour créer les lignes (li)
-        const createAction = (action, text) =>
-          `<li onclick="${action}; hideContextMenu();">${text}</li>`;
+        const createAction = (action, text) => `<li onclick="${action}; hideContextMenu();">${text}</li>`;
 
         let htmlContent = "";
 
@@ -2568,7 +2655,6 @@
           htmlContent += createAction(`openTransformationPanel('point', ${index})`, "🔄 Transformations");
           // -------------
           htmlContent += createAction(`removePoint(${index})`, "🗑️ Supprimer le point");
-
         } else if (instance instanceof Vector) {
           htmlContent += createAction(`editVector(${instance.id})`, "✏️ Modifier le vecteur");
           // --- AJOUT ---
@@ -2579,7 +2665,6 @@
             instance.isVisible ? "🙈 Cacher" : "👁️ Afficher"
           );
           htmlContent += createAction(`removeVectorById(${instance.id})`, "🗑️ Supprimer");
-
         } else if (instance instanceof Line3D) {
           htmlContent += createAction(`editLine(${instance.id})`, "✏️ Modifier la droite");
           // --- AJOUT ---
@@ -2590,7 +2675,6 @@
             instance.isVisible ? "🙈 Cacher" : "👁️ Afficher"
           );
           htmlContent += createAction(`removeStraightLineById(${instance.id})`, "🗑️ Supprimer");
-
         } else if (instance instanceof Plane) {
           htmlContent += createAction(`editPlane(${instance.id})`, "✏️ Modifier le plan");
           // --- AJOUT ---
@@ -2753,7 +2837,9 @@
         requestAnimationFrame(animate);
 
         // Générer une signature simple de la position/rotation caméra
-        const currentCameraHash = `${camera.position.x.toFixed(3)},${camera.position.y.toFixed(3)},${camera.position.z.toFixed(3)},${camera.rotation.x.toFixed(3)},${camera.rotation.y.toFixed(3)}`;
+        const currentCameraHash = `${camera.position.x.toFixed(3)},${camera.position.y.toFixed(
+          3
+        )},${camera.position.z.toFixed(3)},${camera.rotation.x.toFixed(3)},${camera.rotation.y.toFixed(3)}`;
 
         // Optimisation : On ne met à jour les labels que si la caméra a bougé
         // OU si un gizmo est en cours d'utilisation (car les objets bougent)
@@ -2773,7 +2859,8 @@
           // Mise à jour labels Vecteurs
           for (let i = 0, l = geometryManager.vectors.length; i < l; i++) {
             const v = geometryManager.vectors[i];
-            if (v.label && v.label.visible) { // Vérif visibilité pour économiser calculs
+            if (v.label && v.label.visible) {
+              // Vérif visibilité pour économiser calculs
               const dist = camera.position.distanceTo(v.label.position);
               const desiredScale = dist * scaleFactor;
               v.label.scale.set(desiredScale, desiredScale * 0.5, 1);
@@ -2826,7 +2913,8 @@
 
       function updateStraightLineList() {
         const list = document.getElementById("lineList");
-        list.innerHTML = geometryManager.lines.length === 0 ? '<div class="point-item">Aucune droite tracée.</div>' : "";
+        list.innerHTML =
+          geometryManager.lines.length === 0 ? '<div class="point-item">Aucune droite tracée.</div>' : "";
 
         geometryManager.lines.forEach((line) => {
           const item = document.createElement("div");
@@ -2844,7 +2932,9 @@
           item.innerHTML = `
     <div class="geometry-item-main">
         <!-- AJOUT : onclick="editLine(...)" sur la zone de texte pour accès rapide -->
-        <div class="geometry-info" onclick="editLine(${line.id})" style="cursor: pointer;" title="Cliquer pour modifier">
+        <div class="geometry-info" onclick="editLine(${
+          line.id
+        })" style="cursor: pointer;" title="Cliquer pour modifier">
             <span class="geometry-name">${line.name}</span>
             <span class="geometry-details" id="line-vector-${line.id}">Vect: ${vText}</span>
         </div>
@@ -2855,7 +2945,9 @@
 
             <!-- Boutons existants -->
 
-            <button class="btn-secondary" onclick="toggleStraightLineVisibility(${line.id})" title="${line.isVisible ? "Masquer" : "Afficher"}">${line.isVisible ? "👁️" : "🙈"}</button>
+            <button class="btn-secondary" onclick="toggleStraightLineVisibility(${line.id})" title="${
+            line.isVisible ? "Masquer" : "Afficher"
+          }">${line.isVisible ? "👁️" : "🙈"}</button>
             <button class="btn-danger" onclick="removeStraightLineById(${line.id})" title="Supprimer">🗑️</button>
         </div>
     </div>
@@ -2897,7 +2989,9 @@
           // 3. HTML (Avec onclick sur le texte et bouton Crayon)
           item.innerHTML = `
   <div class="geometry-item-main">
-      <div class="geometry-info" onclick="editPlane(${plane.id})" style="cursor: pointer;" title="Cliquer pour modifier">
+      <div class="geometry-info" onclick="editPlane(${
+        plane.id
+      })" style="cursor: pointer;" title="Cliquer pour modifier">
           <span class="geometry-name">${plane.name}</span>
           <span class="geometry-details" id="plane-normal-${plane.id}">${normalText}</span>
       </div>
@@ -2907,7 +3001,9 @@
 
           ${normalBtnHtml}
 
-          <button class="btn-secondary" onclick="togglePlaneVisibility(${plane.id})" title="${plane.isVisible ? "Masquer" : "Afficher"}">${plane.isVisible ? "👁️" : "🙈"}</button>
+          <button class="btn-secondary" onclick="togglePlaneVisibility(${plane.id})" title="${
+            plane.isVisible ? "Masquer" : "Afficher"
+          }">${plane.isVisible ? "👁️" : "🙈"}</button>
           <button class="btn-danger" onclick="removePlaneById(${plane.id})" title="Supprimer">🗑️</button>
       </div>
   </div>
@@ -2923,7 +3019,8 @@
 
       function updateVectorList() {
         const list = document.getElementById("vectorList");
-        list.innerHTML = geometryManager.vectors.length === 0 ? '<div class="point-item">Aucun vecteur tracé.</div>' : "";
+        list.innerHTML =
+          geometryManager.vectors.length === 0 ? '<div class="point-item">Aucun vecteur tracé.</div>' : "";
 
         geometryManager.vectors.forEach((vector) => {
           const item = document.createElement("div");
@@ -2950,8 +3047,12 @@
         </div>
         <div class="geometry-actions">
             <button class="btn-secondary" onclick="editVector(${vector.id})" title="Modifier">✏️</button>
-            <button class="btn-violet-light" onclick="toggleVectorLabelVisibility(${vector.id})" title="${vector.isLabelVisible ? "Masquer le nom" : "Afficher le nom"}">${vector.isLabelVisible ? "👁️" : "🙈"}</button>
-            <button class="btn-secondary" onclick="toggleVectorVisibility(${vector.id})" title="${vector.isVisible ? "Masquer" : "Afficher"}">${vector.isVisible ? "👁️" : "🙈"}</button>
+            <button class="btn-violet-light" onclick="toggleVectorLabelVisibility(${vector.id})" title="${
+            vector.isLabelVisible ? "Masquer le nom" : "Afficher le nom"
+          }">${vector.isLabelVisible ? "👁️" : "🙈"}</button>
+            <button class="btn-secondary" onclick="toggleVectorVisibility(${vector.id})" title="${
+            vector.isVisible ? "Masquer" : "Afficher"
+          }">${vector.isVisible ? "👁️" : "🙈"}</button>
             <button class="btn-danger" onclick="removeVectorById(${vector.id})" title="Supprimer">🗑️</button>
         </div>
     </div>
@@ -3021,17 +3122,17 @@
           "crossVectorOrigin",
           "rotationCenterSelect",
           "planeEquationPointSelect",
-          "lineEquationPointSelect"
+          "lineEquationPointSelect",
         ];
 
         // CORRECTION : Liste des menus qui contiennent le mot "Vector" dans leur ID
         // mais qui doivent afficher des POINTS (et non des vecteurs)
         const pointInputIds = [
-          "sumVectorOrigin",    // Point de départ (Somme)
-          "crossVectorOrigin",  // Origine (Produit vectoriel)
-          "vectorOriginPoint",  // Origine (Tracer vecteur)
-          "vectorStartPoint",   // Point de départ (Tracer vecteur par 2 points)
-          "vectorEndPoint"      // Point d'arrivée (Tracer vecteur par 2 points)
+          "sumVectorOrigin", // Point de départ (Somme)
+          "crossVectorOrigin", // Origine (Produit vectoriel)
+          "vectorOriginPoint", // Origine (Tracer vecteur)
+          "vectorStartPoint", // Point de départ (Tracer vecteur par 2 points)
+          "vectorEndPoint", // Point d'arrivée (Tracer vecteur par 2 points)
         ];
 
         allSelects.forEach((select) => {
@@ -3039,7 +3140,15 @@
           const currentValue = select.value;
 
           // On ignore les menus spéciaux gérés ailleurs
-          if (["rotationAxisSelect", "symmetryTypeSelect", "savedScenesSelect", "symmetryRefSelect"].includes(id)) {
+          if (
+            [
+              "rotationAxisSelect",
+              "symmetryTypeSelect",
+              "savedScenesSelect",
+              "symmetryRefSelect",
+              "snapSizeSelect",
+            ].includes(id)
+          ) {
             return;
           }
 
@@ -3048,7 +3157,14 @@
 
           // --- CAS SPÉCIAUX (Plans / Droites par équation) ---
           if (id === "planeEquationPointSelect" || id === "lineEquationPointSelect") {
-            select.add(new Option(id === "planeEquationPointSelect" ? "-- Par défaut (selon constante d) --" : "-- Point de passage (défaut: équation) --", ""));
+            select.add(
+              new Option(
+                id === "planeEquationPointSelect"
+                  ? "-- Par défaut (selon constante d) --"
+                  : "-- Point de passage (défaut: équation) --",
+                ""
+              )
+            );
             select.add(new Option("Origine (0,0,0)", "origin"));
             geometryManager.points.forEach((p, i) => select.add(new Option(p.name, i)));
             select.value = currentValue;
@@ -3059,7 +3175,8 @@
 
           // 1. Est-ce un menu qui doit afficher des POINTS ?
           // (Soit il est dans la liste d'exceptions, soit il ne contient ni Vector/Line/Plane dans son nom)
-          const isPointMenu = pointInputIds.includes(id) || (!id.includes("Vector") && !id.includes("Line") && !id.includes("Plane"));
+          const isPointMenu =
+            pointInputIds.includes(id) || (!id.includes("Vector") && !id.includes("Line") && !id.includes("Plane"));
 
           if (isPointMenu) {
             select.add(new Option("-- Point --", ""));
@@ -3160,7 +3277,9 @@
         document.getElementById("vectorCoordY").value = formatNumber(v.components.z);
         document.getElementById("vectorCoordZ").value = formatNumber(v.components.y);
 
-        const ox = v.origin.x, oy = v.origin.z, oz = v.origin.y;
+        const ox = v.origin.x,
+          oy = v.origin.z,
+          oz = v.origin.y;
         document.getElementById("vectorOriginX").value = formatNumber(ox);
         document.getElementById("vectorOriginY").value = formatNumber(oy);
         document.getElementById("vectorOriginZ").value = formatNumber(oz);
@@ -3263,7 +3382,9 @@
         // Génération équation
         const n = plane.displayNormal;
         const p = plane.pointOnPlane;
-        const a = n.x, b = n.z, c = n.y;
+        const a = n.x,
+          b = n.z,
+          c = n.y;
         const d = -(a * p.x + b * p.z + c * p.y);
 
         const fmtCoef = (val, axisName) => {
@@ -3300,13 +3421,13 @@
 
         // 1. Retrouver l'instance de l'objet
         let instance = null;
-        if (type === 'point') {
+        if (type === "point") {
           instance = geometryManager.points[id];
-        } else if (type === 'line') {
+        } else if (type === "line") {
           instance = geometryManager.findLineById(id);
-        } else if (type === 'plane') {
+        } else if (type === "plane") {
           instance = geometryManager.findPlaneById(id);
-        } else if (type === 'vector') {
+        } else if (type === "vector") {
           instance = geometryManager.findVectorById(id);
         }
 
@@ -3501,7 +3622,9 @@
         const zInput = document.getElementById("lineEqPointZ");
 
         if (val === "origin") {
-          xInput.value = 0; yInput.value = 0; zInput.value = 0;
+          xInput.value = 0;
+          yInput.value = 0;
+          zInput.value = 0;
         } else if (val !== "") {
           const p = geometryManager.points[parseInt(val)];
           if (p) {
@@ -3589,7 +3712,7 @@
           finalStartPoint = new THREE.Vector3(
             parseFloat(xStr) || 0,
             parseFloat(zStr) || 0, // UI Z (Haut) -> 3JS Y
-            parseFloat(yStr) || 0  // UI Y (Prof) -> 3JS Z
+            parseFloat(yStr) || 0 // UI Y (Prof) -> 3JS Z
           );
         }
         // PRIORITÉ 2 : Le menu déroulant (si une option est choisie)
@@ -3800,7 +3923,7 @@
           // Extraction de la constante 'd'
           let constantStr = equationStr
             .replace(/[+-]?[\d\\.]*\s*\*?\s*[xyz]/gi, "") // Enlever tous les termes en x, y, z
-            .replace(/--/g, "+")                          // Nettoyer les doubles signes
+            .replace(/--/g, "+") // Nettoyer les doubles signes
             .trim();
 
           let d = 0;
@@ -3884,7 +4007,7 @@
       function clearAllPlanes() {
         if (confirm("Effacer tous les plans et leurs normales associées ?")) {
           // D'abord, trouver et supprimer tous les vecteurs normaux
-          deselectCurrentObject()
+          deselectCurrentObject();
           const normalVectors = geometryManager.vectors.filter((v) => v.isNormalVector);
           normalVectors.forEach((v) => geometryManager.removeVector(v));
 
@@ -3989,7 +4112,7 @@
         const oz_ui = parseFloat(document.getElementById("vectorOriginZ").value);
 
         // Vérification de validité
-        if ([vx, vy_ui, vz_ui, ox, oy_ui, oz_ui].some(val => isNaN(val))) {
+        if ([vx, vy_ui, vz_ui, ox, oy_ui, oz_ui].some((val) => isNaN(val))) {
           showSplashScreen("Toutes les coordonnées (Composantes et Origine) doivent être valides.");
           return;
         }
@@ -4059,7 +4182,6 @@
 
       function clearAllVectors() {
         if (confirm("Effacer tous les vecteurs ?")) {
-
           geometryManager.vectors.forEach((vector) => vector.removeFromScene(scene));
           geometryManager.vectors = [];
           updateAllUI();
@@ -4110,10 +4232,10 @@
         if (inst === selectedObjectInstance) {
           deselectCurrentObject();
           // On vide les formulaires pour être propre
-          if (typeof cancelEdit === 'function') cancelEdit();
-          if (typeof cancelVectorEdit === 'function') cancelVectorEdit();
-          if (typeof cancelLineEdit === 'function') cancelLineEdit();
-          if (typeof cancelPlaneEdit === 'function') cancelPlaneEdit();
+          if (typeof cancelEdit === "function") cancelEdit();
+          if (typeof cancelVectorEdit === "function") cancelVectorEdit();
+          if (typeof cancelLineEdit === "function") cancelLineEdit();
+          if (typeof cancelPlaneEdit === "function") cancelPlaneEdit();
           return;
         }
 
@@ -4140,7 +4262,7 @@
               if (inst instanceof Plane) mesh.material.opacity = 0.75;
             }
           }
-          transformControl.setMode('translate');
+          transformControl.setMode("translate");
         }
 
         // 4. Mise à jour du panneau latéral
@@ -5531,8 +5653,8 @@
       }
       // --- GESTIONNAIRE D'HISTORIQUE ---
       const historyStack = []; // Stocke les états (snapshots)
-      let historyIndex = -1;   // Position actuelle dans l'historique
-      const MAX_HISTORY = 20;  // Limite pour ne pas saturer la mémoire
+      let historyIndex = -1; // Position actuelle dans l'historique
+      const MAX_HISTORY = 20; // Limite pour ne pas saturer la mémoire
       // --- Fonction saveState corrigée (anti-doublons) ---
 
       function saveState() {
@@ -5593,11 +5715,11 @@
 
       function serializeSceneData() {
         return JSON.stringify({
-          points: geometryManager.points.map(p => ({
+          points: geometryManager.points.map((p) => ({
             name: p.name,
-            position: { x: p.position.x, y: p.position.y, z: p.position.z }
+            position: { x: p.position.x, y: p.position.y, z: p.position.z },
           })),
-          vectors: geometryManager.vectors.map(v => ({
+          vectors: geometryManager.vectors.map((v) => ({
             id: v.id,
             name: v.name,
             origin: { x: v.origin.x, y: v.origin.y, z: v.origin.z },
@@ -5606,22 +5728,22 @@
             isVisible: v.isVisible,
             // Sauvegarde des props spécifiques (normale de plan, etc)
             isNormalVector: v.isNormalVector || false,
-            parentPlaneId: v.parentPlaneId || null
+            parentPlaneId: v.parentPlaneId || null,
           })),
-          lines: geometryManager.lines.map(l => ({
+          lines: geometryManager.lines.map((l) => ({
             id: l.id,
             name: l.name,
             startPoint: { x: l.startPoint.x, y: l.startPoint.y, z: l.startPoint.z },
             directorVector: { x: l.directorVector.x, y: l.directorVector.y, z: l.directorVector.z },
-            isVisible: l.isVisible
+            isVisible: l.isVisible,
           })),
-          planes: geometryManager.planes.map(p => ({
+          planes: geometryManager.planes.map((p) => ({
             id: p.id,
             name: p.name,
             pointOnPlane: { x: p.pointOnPlane.x, y: p.pointOnPlane.y, z: p.pointOnPlane.z },
             displayNormal: { x: p.displayNormal.x, y: p.displayNormal.y, z: p.displayNormal.z },
-            isVisible: p.isVisible
-          }))
+            isVisible: p.isVisible,
+          })),
         });
       }
 
@@ -5633,10 +5755,16 @@
         geometryManager.clearAll();
 
         // 2. Reconstruction
-        data.points.forEach(p => geometryManager.addPoint(new Point(p.name, p.position.x, p.position.y, p.position.z)));
+        data.points.forEach((p) =>
+          geometryManager.addPoint(new Point(p.name, p.position.x, p.position.y, p.position.z))
+        );
 
-        data.vectors.forEach(v => {
-          const vec = new Vector(v.name, new THREE.Vector3(v.origin.x, v.origin.y, v.origin.z), new THREE.Vector3(v.components.x, v.components.y, v.components.z));
+        data.vectors.forEach((v) => {
+          const vec = new Vector(
+            v.name,
+            new THREE.Vector3(v.origin.x, v.origin.y, v.origin.z),
+            new THREE.Vector3(v.components.x, v.components.y, v.components.z)
+          );
           vec.id = v.id;
           vec.isVisible = v.isVisible !== undefined ? v.isVisible : true;
           vec.isLabelVisible = v.isLabelVisible !== undefined ? v.isLabelVisible : true;
@@ -5646,16 +5774,24 @@
           geometryManager.addVector(vec);
         });
 
-        data.lines.forEach(l => {
-          const line = new Line3D(l.name, new THREE.Vector3(l.startPoint.x, l.startPoint.y, l.startPoint.z), new THREE.Vector3(l.directorVector.x, l.directorVector.y, l.directorVector.z));
+        data.lines.forEach((l) => {
+          const line = new Line3D(
+            l.name,
+            new THREE.Vector3(l.startPoint.x, l.startPoint.y, l.startPoint.z),
+            new THREE.Vector3(l.directorVector.x, l.directorVector.y, l.directorVector.z)
+          );
           line.id = l.id;
           line.isVisible = l.isVisible !== undefined ? l.isVisible : true;
           nextStraightLineId = Math.max(nextStraightLineId, l.id + 1);
           geometryManager.addLine(line);
         });
 
-        data.planes.forEach(p => {
-          const plane = new Plane(p.name, new THREE.Vector3(p.pointOnPlane.x, p.pointOnPlane.y, p.pointOnPlane.z), new THREE.Vector3(p.displayNormal.x, p.displayNormal.y, p.displayNormal.z));
+        data.planes.forEach((p) => {
+          const plane = new Plane(
+            p.name,
+            new THREE.Vector3(p.pointOnPlane.x, p.pointOnPlane.y, p.pointOnPlane.z),
+            new THREE.Vector3(p.displayNormal.x, p.displayNormal.y, p.displayNormal.z)
+          );
           plane.id = p.id;
           plane.isVisible = p.isVisible !== undefined ? p.isVisible : true;
           nextPlaneId = Math.max(nextPlaneId, p.id + 1);
@@ -5705,11 +5841,12 @@
         const elementUnderMouse = document.elementFromPoint(clientX, clientY);
 
         // Si on survole le panneau, le bouton burger ou les contrôles caméra...
-        if (elementUnderMouse && (
-          elementUnderMouse.closest("#panel") ||
-          elementUnderMouse.closest("#openBtn") ||
-          elementUnderMouse.closest("#cameraControls")
-        )) {
+        if (
+          elementUnderMouse &&
+          (elementUnderMouse.closest("#panel") ||
+            elementUnderMouse.closest("#openBtn") ||
+            elementUnderMouse.closest("#cameraControls"))
+        ) {
           // ... On cache l'info-bulle et on arrête tout.
           tooltip.style.display = "none";
           document.body.style.cursor = "default";
@@ -5795,14 +5932,18 @@
           inst.position.copy(inst.mesh.position);
           inst.updateLabelPosition();
           const editIndexInput = document.getElementById("editPointIndex");
-          if (editIndexInput && editIndexInput.value != "" && parseInt(editIndexInput.value) === geometryManager.points.indexOf(inst)) {
+          if (
+            editIndexInput &&
+            editIndexInput.value != "" &&
+            parseInt(editIndexInput.value) === geometryManager.points.indexOf(inst)
+          ) {
             document.getElementById("pointX").value = formatNumber(inst.position.x);
             document.getElementById("pointY").value = formatNumber(inst.position.z);
             document.getElementById("pointZ").value = formatNumber(inst.position.y);
           }
 
           // AJOUT POUR LE TABLEUR (Mise à jour temps réel des inputs)
-          if (isSpreadsheetOpen && currentSpreadsheetTab === 'points') {
+          if (isSpreadsheetOpen && currentSpreadsheetTab === "points") {
             const idx = geometryManager.points.indexOf(inst);
             const inputX = document.getElementById(`sheet-p-${idx}-x`);
             const inputY = document.getElementById(`sheet-p-${idx}-y`);
@@ -5838,14 +5979,13 @@
           }
 
           // ... code existant ...
-          if (isSpreadsheetOpen && currentSpreadsheetTab === 'vectors') {
+          if (isSpreadsheetOpen && currentSpreadsheetTab === "vectors") {
             const o = inst.origin.clone().add(inst.arrowHelper.position);
             const oxInput = document.getElementById(`sheet-v-${inst.id}-ox`);
             if (oxInput) {
               oxInput.value = formatNumber(o.x);
               document.getElementById(`sheet-v-${inst.id}-oy`).value = formatNumber(o.z);
               document.getElementById(`sheet-v-${inst.id}-oz`).value = formatNumber(o.y);
-
             }
           }
         }
@@ -5869,7 +6009,7 @@
           if (eqSelect && parseInt(eqSelect.value) === inst.id) {
             const tempLine = {
               startPoint: currentP,
-              directorVector: inst.directorVector
+              directorVector: inst.directorVector,
             };
             displayLineEquation(tempLine);
           }
@@ -5945,8 +6085,7 @@
             const y_ui = formatNumber(inst.position.z);
             const z_ui = formatNumber(inst.position.y);
             content = `📍 <strong>${inst.name}</strong><span ${detailStyle}>Coord : (${x}, ${y_ui}, ${z_ui})</span>`;
-          }
-          else if (inst instanceof Vector) {
+          } else if (inst instanceof Vector) {
             // Pour le vecteur, on calcule la position visuelle absolue
             const o = inst.origin.clone().add(inst.arrowHelper.position);
             const v = inst.components;
@@ -6007,7 +6146,6 @@
 
           tooltip.innerHTML = content;
           positionTooltipSmartly(lastTooltipX, lastTooltipY);
-
         } catch (err) {
           tooltip.style.display = "none";
         }
@@ -6126,7 +6264,11 @@
             appName: "Éditeur Points 3D",
             date: new Date().toLocaleString(),
             timestamp: Date.now(),
-            totalObjects: geometryManager.points.length + geometryManager.vectors.length + geometryManager.lines.length + geometryManager.planes.length
+            totalObjects:
+              geometryManager.points.length +
+              geometryManager.vectors.length +
+              geometryManager.lines.length +
+              geometryManager.planes.length,
           },
           // Points : on exporte la position brute Three.js
           points: geometryManager.points.map((p, index) => ({
@@ -6135,32 +6277,32 @@
             position_raw: { x: p.position.x, y: p.position.y, z: p.position.z },
             // On ajoute la position "Vue UI" pour faciliter la lecture humaine
             position_ui: { x: p.position.x, profondeur: p.position.z, hauteur: p.position.y },
-            color: "#" + p.color.getHexString()
+            color: "#" + p.color.getHexString(),
           })),
-          vectors: geometryManager.vectors.map(v => ({
+          vectors: geometryManager.vectors.map((v) => ({
             id: v.id,
             name: v.name,
             origin: { x: v.origin.x, y: v.origin.y, z: v.origin.z },
             components: { x: v.components.x, y: v.components.y, z: v.components.z },
             norm: v.components.length(),
             isVisible: v.isVisible,
-            isNormalVector: v.isNormalVector || false
+            isNormalVector: v.isNormalVector || false,
           })),
-          lines: geometryManager.lines.map(l => ({
+          lines: geometryManager.lines.map((l) => ({
             id: l.id,
             name: l.name,
             startPoint: { x: l.startPoint.x, y: l.startPoint.y, z: l.startPoint.z },
             directorVector: { x: l.directorVector.x, y: l.directorVector.y, z: l.directorVector.z },
-            isVisible: l.isVisible
+            isVisible: l.isVisible,
           })),
-          planes: geometryManager.planes.map(p => ({
+          planes: geometryManager.planes.map((p) => ({
             id: p.id,
             name: p.name,
             pointOnPlane: { x: p.pointOnPlane.x, y: p.pointOnPlane.y, z: p.pointOnPlane.z },
             normal: { x: p.normal.x, y: p.normal.y, z: p.normal.z },
             equationConstant_D: -p.normal.dot(p.pointOnPlane), // d = -n.p
-            isVisible: p.isVisible
-          }))
+            isVisible: p.isVisible,
+          })),
         };
 
         // 2. Conversion en chaîne JSON formatée (pretty print)
@@ -6188,12 +6330,12 @@
       // --- GESTION DU THÈME ---
       let isDarkMode = false;
       let gridHelper = null; // Référence globale pour pouvoir la supprimer/recréer
-      let axesGroup = null;  // Référence globale pour les axes
+      let axesGroup = null; // Référence globale pour les axes
 
       function initTheme() {
         // Vérifier si une préférence est sauvegardée
-        const savedTheme = localStorage.getItem('theme');
-        if (savedTheme === 'dark') {
+        const savedTheme = localStorage.getItem("theme");
+        if (savedTheme === "dark") {
           isDarkMode = true;
         }
         applyTheme();
@@ -6201,18 +6343,18 @@
 
       function toggleTheme() {
         isDarkMode = !isDarkMode;
-        localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
+        localStorage.setItem("theme", isDarkMode ? "dark" : "light");
         applyTheme();
       }
 
       function applyTheme() {
         // 1. Mise à jour HTML/CSS
-        document.documentElement.setAttribute('data-theme', isDarkMode ? 'dark' : 'light');
+        document.documentElement.setAttribute("data-theme", isDarkMode ? "dark" : "light");
 
-        const btnIcon = document.querySelector('#themeToggleBtn i');
+        const btnIcon = document.querySelector("#themeToggleBtn i");
         if (btnIcon) {
-          btnIcon.className = isDarkMode ? 'fas fa-sun' : 'fas fa-moon';
-          btnIcon.style.color = isDarkMode ? '#ffeb3b' : '#333'; // Jaune pour soleil, Gris pour lune
+          btnIcon.className = isDarkMode ? "fas fa-sun" : "fas fa-moon";
+          btnIcon.style.color = isDarkMode ? "#ffeb3b" : "#333"; // Jaune pour soleil, Gris pour lune
         }
 
         // 2. Mise à jour de la Scène 3D
@@ -6243,7 +6385,7 @@
 
       function refreshAllLabels() {
         // Points
-        geometryManager.points.forEach(p => {
+        geometryManager.points.forEach((p) => {
           scene.remove(p.label);
           p.label = createGenericTextLabel(p.name);
           p.updateLabelPosition();
@@ -6251,7 +6393,7 @@
         });
 
         // Vecteurs
-        geometryManager.vectors.forEach(v => {
+        geometryManager.vectors.forEach((v) => {
           if (v.label) scene.remove(v.label);
           v.label = createGenericTextLabel(v.name);
           v.updateLabelPosition();
@@ -6290,7 +6432,7 @@
         if (Math.abs(det) < 1e-8) {
           // Droites parallèles
           sc = 0;
-          tc = (b > c ? d / b : e / c); // On projette P1 sur la droite 2
+          tc = b > c ? d / b : e / c; // On projette P1 sur la droite 2
 
           // Point sur la droite 1 (fixe)
           const p1_res = P1.clone();
@@ -6301,7 +6443,7 @@
             distance: p1_res.distanceTo(p2_res),
             p1: p1_res,
             p2: p2_res,
-            type: "parallel"
+            type: "parallel",
           };
         } else {
           // Droites non coplanaires (gauches)
@@ -6315,7 +6457,7 @@
             distance: p1_res.distanceTo(p2_res),
             p1: p1_res,
             p2: p2_res,
-            type: "skew"
+            type: "skew",
           };
         }
       }
@@ -6366,7 +6508,7 @@
 
         return {
           projectedPoint: H,
-          distance: P.distanceTo(H)
+          distance: P.distanceTo(H),
         };
       }
 
@@ -6379,13 +6521,15 @@
       function computeBarycenter(pointsArray, weightsArray = null) {
         if (!pointsArray || pointsArray.length === 0) return new THREE.Vector3(0, 0, 0);
 
-        let sumX = 0, sumY = 0, sumZ = 0;
+        let sumX = 0,
+          sumY = 0,
+          sumZ = 0;
         let totalWeight = 0;
 
         for (let i = 0; i < pointsArray.length; i++) {
           const p = pointsArray[i].position;
           // Si pas de poids fourni, on utilise 1 (isobarycentre)
-          const w = (weightsArray && weightsArray[i] !== undefined) ? parseFloat(weightsArray[i]) : 1;
+          const w = weightsArray && weightsArray[i] !== undefined ? parseFloat(weightsArray[i]) : 1;
 
           sumX += p.x * w;
           sumY += p.y * w;
@@ -6471,8 +6615,8 @@
         const uniqueName = geometryManager.generateUniqueName(lineName, "line");
         const newLine = new Line3D(
           uniqueName,
-          pointObj.position,          // Point de passage
-          vectorObj.components        // Vecteur directeur
+          pointObj.position, // Point de passage
+          vectorObj.components // Vecteur directeur
         );
 
         // 6. Ajout et Sauvegarde
@@ -6494,11 +6638,17 @@
 
         // 1. Récupération de l'objet
         const idVal = document.getElementById("editLineId").value;
-        if (!idVal) { console.error("Pas d'ID"); return; }
+        if (!idVal) {
+          console.error("Pas d'ID");
+          return;
+        }
 
         const id = parseInt(idVal);
         const line = geometryManager.findLineById(id);
-        if (!line) { console.error("Ligne introuvable"); return; }
+        if (!line) {
+          console.error("Ligne introuvable");
+          return;
+        }
 
         const name = document.getElementById("lineNameFromEquation").value.trim();
         const equationsText = document.getElementById("lineEquationInput").value;
@@ -6507,10 +6657,10 @@
         const lines = equationsText.split("\n").filter((l) => l.trim() !== "");
 
         // Valeurs par défaut
-        let vector = { x: 0, y: 0, z: 0 };     // Composantes t
+        let vector = { x: 0, y: 0, z: 0 }; // Composantes t
         let pointText = { x: 0, y: 0, z: 0 }; // Constantes
 
-        lines.forEach(l => {
+        lines.forEach((l) => {
           const axis = l.trim().charAt(0).toLowerCase();
           if (!["x", "y", "z"].includes(axis)) return;
 
@@ -6585,14 +6735,14 @@
         line.mesh.geometry = new THREE.BufferGeometry().setFromPoints([pA, pB]);
 
         // E. Si le Gizmo tenait la ligne, il faut le rafraîchir
-        if (selectedObjectInstance === line && typeof transformControl !== 'undefined') {
+        if (selectedObjectInstance === line && typeof transformControl !== "undefined") {
           transformControl.detach();
           transformControl.attach(line.mesh);
         }
 
         // 6. Mise à jour de l'interface (Liste à gauche)
         updateAllUI(); // Ceci met à jour la liste "Droites existantes"
-        saveState();   // Historique
+        saveState(); // Historique
 
         // 7. Sortir du mode édition
         cancelLineEdit();
@@ -6714,21 +6864,24 @@
         else if (selectVal !== "" && selectVal !== "origin") {
           const pObj = geometryManager.points[parseInt(selectVal)];
           if (pObj) newPoint.copy(pObj.position);
-        }
-        else if (selectVal === "origin") {
+        } else if (selectVal === "origin") {
           newPoint.set(0, 0, 0);
         }
         // Priorité 3 : Calcul via 'd' (Auto)
         else {
           let constantStr = equationStr
             .replace(/[+-]?[\d\\.]*\s*\*?\s*[xyz]/gi, "")
-            .replace(/--/g, "+").trim();
+            .replace(/--/g, "+")
+            .trim();
           let d = 0;
-          try { if (constantStr) d = new Function("return " + constantStr)(); } catch (e) { }
+          try {
+            if (constantStr) d = new Function("return " + constantStr)();
+          } catch (e) {}
 
           // Trouver un point valide
           if (Math.abs(newNormalUnnormalized.x) > 1e-6) newPoint.set(-d / newNormalUnnormalized.x, 0, 0);
-          else if (Math.abs(newNormalUnnormalized.z) > 1e-6) newPoint.set(0, 0, -d / newNormalUnnormalized.z); // Z 3D = Y UI (b)
+          else if (Math.abs(newNormalUnnormalized.z) > 1e-6)
+            newPoint.set(0, 0, -d / newNormalUnnormalized.z); // Z 3D = Y UI (b)
           else if (Math.abs(newNormalUnnormalized.y) > 1e-6) newPoint.set(0, -d / newNormalUnnormalized.y, 0); // Y 3D = Z UI (c)
         }
 
@@ -6747,14 +6900,14 @@
         plane.mesh.updateMatrix();
 
         // C. Gestion Gizmo
-        if (selectedObjectInstance === plane && typeof transformControl !== 'undefined') {
+        if (selectedObjectInstance === plane && typeof transformControl !== "undefined") {
           transformControl.detach();
           transformControl.attach(plane.mesh);
         }
 
         // D. Gestion Vecteur Normal affiché (Vn)
         // Si le bouton "Vn" est actif, on doit mettre à jour le vecteur visuel aussi
-        const existingVn = geometryManager.vectors.find(v => v.parentPlaneId === plane.id && v.isNormalVector);
+        const existingVn = geometryManager.vectors.find((v) => v.parentPlaneId === plane.id && v.isNormalVector);
         if (existingVn) {
           // Vn part du point du plan et suit la normale
           const vnLength = 2.5;
@@ -6793,9 +6946,9 @@
         }
       }
       /**
- * Exporte la scène actuelle dans un fichier JSON téléchargeable.
- * Utilise le format interne serializeSceneData() pour garantir une compatibilité totale à l'import.
- */
+       * Exporte la scène actuelle dans un fichier JSON téléchargeable.
+       * Utilise le format interne serializeSceneData() pour garantir une compatibilité totale à l'import.
+       */
       /**
        * Exporte la scène actuelle dans un fichier JSON avec métadonnées.
        */
@@ -6811,13 +6964,14 @@
               date: new Date().toLocaleString(),
               timestamp: Date.now(),
               // On calcule le total en vérifiant que les tableaux existent
-              totalObjects: (rawData.points ? rawData.points.length : 0) +
+              totalObjects:
+                (rawData.points ? rawData.points.length : 0) +
                 (rawData.vectors ? rawData.vectors.length : 0) +
                 (rawData.lines ? rawData.lines.length : 0) +
-                (rawData.planes ? rawData.planes.length : 0)
+                (rawData.planes ? rawData.planes.length : 0),
             },
             // 3. On fusionne les données géométriques (points, vectors, etc.) à la racine de l'objet
-            ...rawData
+            ...rawData,
           };
 
           // 4. Conversion en texte (avec indentation pour que ce soit lisible par un humain)
@@ -6889,22 +7043,22 @@
       // =====================================================================================
 
       let isSpreadsheetOpen = false;
-      let currentSpreadsheetTab = 'points';
+      let currentSpreadsheetTab = "points";
 
       function toggleSpreadsheet() {
-        const panel = document.getElementById('spreadsheetContainer');
-        const btn = document.getElementById('openSpreadsheetBtn');
+        const panel = document.getElementById("spreadsheetContainer");
+        const btn = document.getElementById("openSpreadsheetBtn");
 
         isSpreadsheetOpen = !isSpreadsheetOpen;
 
         if (isSpreadsheetOpen) {
-          panel.classList.remove('spreadsheet-hidden');
-          btn.style.display = 'none'; // Cache le bouton d'ouverture
+          panel.classList.remove("spreadsheet-hidden");
+          btn.style.display = "none"; // Cache le bouton d'ouverture
           updateSpreadsheet(); // Rafraîchir les données
         } else {
-          panel.classList.add('spreadsheet-hidden');
+          panel.classList.add("spreadsheet-hidden");
           setTimeout(() => {
-            btn.style.display = 'block'; // Réaffiche le bouton après l'anim
+            btn.style.display = "block"; // Réaffiche le bouton après l'anim
           }, 300);
         }
       }
@@ -6913,19 +7067,20 @@
         currentSpreadsheetTab = tabName;
 
         // Mise à jour visuelle des onglets
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-          btn.classList.remove('active');
-          if (btn.textContent.toLowerCase().includes(tabName.substring(0, 4))) { // détection simple
-            btn.classList.add('active');
+        document.querySelectorAll(".tab-btn").forEach((btn) => {
+          btn.classList.remove("active");
+          if (btn.textContent.toLowerCase().includes(tabName.substring(0, 4))) {
+            // détection simple
+            btn.classList.add("active");
           }
         });
 
         // Mapping du bouton cliqué (plus robuste)
-        const buttons = document.querySelectorAll('.tab-btn');
-        if (tabName === 'points') buttons[0].classList.add('active');
-        if (tabName === 'vectors') buttons[1].classList.add('active');
-        if (tabName === 'lines') buttons[2].classList.add('active');
-        if (tabName === 'planes') buttons[3].classList.add('active');
+        const buttons = document.querySelectorAll(".tab-btn");
+        if (tabName === "points") buttons[0].classList.add("active");
+        if (tabName === "vectors") buttons[1].classList.add("active");
+        if (tabName === "lines") buttons[2].classList.add("active");
+        if (tabName === "planes") buttons[3].classList.add("active");
 
         updateSpreadsheet();
       }
@@ -6936,18 +7091,18 @@
       function updateSpreadsheet() {
         if (!isSpreadsheetOpen) return;
 
-        const thead = document.querySelector('#spreadsheetTable thead');
-        const tbody = document.querySelector('#spreadsheetTable tbody');
-        thead.innerHTML = '';
-        tbody.innerHTML = '';
+        const thead = document.querySelector("#spreadsheetTable thead");
+        const tbody = document.querySelector("#spreadsheetTable tbody");
+        thead.innerHTML = "";
+        tbody.innerHTML = "";
 
-        if (currentSpreadsheetTab === 'points') {
+        if (currentSpreadsheetTab === "points") {
           renderPointsTable(thead, tbody);
-        } else if (currentSpreadsheetTab === 'vectors') {
+        } else if (currentSpreadsheetTab === "vectors") {
           renderVectorsTable(thead, tbody);
-        } else if (currentSpreadsheetTab === 'lines') {
+        } else if (currentSpreadsheetTab === "lines") {
           renderLinesTable(thead, tbody);
-        } else if (currentSpreadsheetTab === 'planes') {
+        } else if (currentSpreadsheetTab === "planes") {
           renderPlanesTable(thead, tbody);
         }
       }
@@ -6965,15 +7120,21 @@
     </tr>`;
 
         geometryManager.points.forEach((p, index) => {
-          const tr = document.createElement('tr');
+          const tr = document.createElement("tr");
           tr.id = `sheet-row-point-${index}`;
           // Attention mapping : UI Y = Three Z, UI Z = Three Y
           tr.innerHTML = `
       <td>${index}</td>
       <td><input type="text" value="${p.name}" onchange="sheetUpdatePointName(${index}, this.value)"></td>
-      <td class="col-x"><input type="number" step="0.1" id="sheet-p-${index}-x" value="${formatNumber(p.position.x)}" onchange="sheetUpdatePointCoords(${index})"></td>
-      <td class="col-y"><input type="number" step="0.1" id="sheet-p-${index}-y" value="${formatNumber(p.position.z)}" onchange="sheetUpdatePointCoords(${index})"></td>
-      <td class="col-z"><input type="number" step="0.1" id="sheet-p-${index}-z" value="${formatNumber(p.position.y)}" onchange="sheetUpdatePointCoords(${index})"></td>
+      <td class="col-x"><input type="number" step="0.1" id="sheet-p-${index}-x" value="${formatNumber(
+            p.position.x
+          )}" onchange="sheetUpdatePointCoords(${index})"></td>
+      <td class="col-y"><input type="number" step="0.1" id="sheet-p-${index}-y" value="${formatNumber(
+            p.position.z
+          )}" onchange="sheetUpdatePointCoords(${index})"></td>
+      <td class="col-z"><input type="number" step="0.1" id="sheet-p-${index}-z" value="${formatNumber(
+            p.position.y
+          )}" onchange="sheetUpdatePointCoords(${index})"></td>
       <td>
         <button class="btn-secondary" style="padding:2px 5px; margin:0;" onclick="handleSelection(geometryManager.points[${index}].mesh)">🎯</button>
       </td>
@@ -7027,7 +7188,7 @@
     </tr>`;
 
         geometryManager.vectors.forEach((v) => {
-          const tr = document.createElement('tr');
+          const tr = document.createElement("tr");
           tr.id = `sheet-row-vector-${v.id}`;
           // Origine
           const ox = formatNumber(v.origin.x);
@@ -7082,59 +7243,81 @@
       // Pour Droites et Plans, on fait simple pour l'instant (Nom + Point principal)
       function renderLinesTable(thead, tbody) {
         thead.innerHTML = `<tr><th>Nom</th><th>Point X</th><th>Point Y</th><th>Point Z</th><th>Dir X</th><th>Dir Y</th><th>Dir Z</th></tr>`;
-        geometryManager.lines.forEach(l => {
+        geometryManager.lines.forEach((l) => {
           const p = l.startPoint;
           const u = l.directorVector;
           tbody.innerHTML += `<tr>
             <td>${l.name}</td>
-            <td class="col-x">${formatNumber(p.x)}</td><td class="col-y">${formatNumber(p.z)}</td><td class="col-z">${formatNumber(p.y)}</td>
-            <td class="col-x">${formatNumber(u.x)}</td><td class="col-y">${formatNumber(u.z)}</td><td class="col-z">${formatNumber(u.y)}</td>
+            <td class="col-x">${formatNumber(p.x)}</td><td class="col-y">${formatNumber(
+            p.z
+          )}</td><td class="col-z">${formatNumber(p.y)}</td>
+            <td class="col-x">${formatNumber(u.x)}</td><td class="col-y">${formatNumber(
+            u.z
+          )}</td><td class="col-z">${formatNumber(u.y)}</td>
         </tr>`;
         });
       }
 
       function renderPlanesTable(thead, tbody) {
         thead.innerHTML = `<tr><th>Nom</th><th>Point X</th><th>Point Y</th><th>Point Z</th><th>Norm X</th><th>Norm Y</th><th>Norm Z</th></tr>`;
-        geometryManager.planes.forEach(p => {
+        geometryManager.planes.forEach((p) => {
           const pt = p.pointOnPlane;
           const n = p.displayNormal;
           tbody.innerHTML += `<tr>
             <td>${p.name}</td>
-            <td class="col-x">${formatNumber(pt.x)}</td><td class="col-y">${formatNumber(pt.z)}</td><td class="col-z">${formatNumber(pt.y)}</td>
-            <td class="col-x">${formatNumber(n.x)}</td><td class="col-y">${formatNumber(n.z)}</td><td class="col-z">${formatNumber(n.y)}</td>
+            <td class="col-x">${formatNumber(pt.x)}</td><td class="col-y">${formatNumber(
+            pt.z
+          )}</td><td class="col-z">${formatNumber(pt.y)}</td>
+            <td class="col-x">${formatNumber(n.x)}</td><td class="col-y">${formatNumber(
+            n.z
+          )}</td><td class="col-z">${formatNumber(n.y)}</td>
         </tr>`;
         });
       }
 
-      // --- Variables Globales pour le Snapping ---
-      let snapEnabled = false;
-      const SNAP_TRANSLATE = 1.0; // Pas de déplacement (1 unité)
-      const SNAP_ROTATE = THREE.MathUtils.degToRad(15); // Pas de rotation (15 degrés)
+      let currentSnapSize = 1.0; // Variable modifiable au lieu de const
+      const SNAP_ROTATE = THREE.MathUtils.degToRad(15); // Rotation toujours fixée à 15°
 
+      function updateSnapSize() {
+        const select = document.getElementById("snapSizeSelect");
+        if (!select) return;
+
+        // Mettre à jour la variable globale
+        currentSnapSize = parseFloat(select.value);
+
+        // Si l'aimant est déjà activé, on met à jour le contrôle immédiatement
+        if (snapEnabled && transformControl) {
+          transformControl.setTranslationSnap(currentSnapSize);
+          showSplashScreen(`Taille de l'aimant : ${currentSnapSize}`);
+        }
+      }
 
       function toggleSnapping() {
-        const checkbox = document.getElementById('snapToggle');
-        const icon = document.getElementById('snapIcon'); // On récupère l'icône
+        const checkbox = document.getElementById("snapToggle");
+        const icon = document.getElementById("snapIcon");
+        const select = document.getElementById("snapSizeSelect");
 
         snapEnabled = checkbox.checked;
 
         if (transformControl) {
-          transformControl.setTranslationSnap(snapEnabled ? SNAP_TRANSLATE : null);
+          // On utilise la variable currentSnapSize ici
+          transformControl.setTranslationSnap(snapEnabled ? currentSnapSize : null);
           transformControl.setRotationSnap(snapEnabled ? SNAP_ROTATE : null);
 
           // GESTION VISUELLE
           if (snapEnabled) {
-            // Si activé : on enlève la barre
-            icon.classList.remove('icon-disabled');
-            showSplashScreen("🧲 Aimantation ACTIVÉE");
+            icon.classList.remove("icon-disabled");
+            // On peut aussi changer la couleur du texte du select pour montrer qu'il est actif
+            select.style.opacity = "1";
+            showSplashScreen(`🧲 Aimantation ACTIVÉE (${currentSnapSize})`);
           } else {
-            // Si désactivé : on ajoute la barre
-            icon.classList.add('icon-disabled');
+            icon.classList.add("icon-disabled");
+            // On grise légèrement le select quand désactivé
+            select.style.opacity = "0.5";
             showSplashScreen("Aimantation DÉSACTIVÉE");
           }
         }
       }
-
       function projectPointOnPlane() {
         const pIndex = document.getElementById("projPointSelect").value;
         const plIndex = document.getElementById("projPlaneSelect").value;
@@ -7152,7 +7335,13 @@
 
         // 1. Créer le point projeté H
         const hName = `Proj_${point.name}`;
-        const hPoint = new Point(geometryManager.generateUniqueName(hName, "point"), projectedPos.x, projectedPos.y, projectedPos.z, 0x555555); // Gris
+        const hPoint = new Point(
+          geometryManager.generateUniqueName(hName, "point"),
+          projectedPos.x,
+          projectedPos.y,
+          projectedPos.z,
+          0x555555
+        ); // Gris
         // Attention constructeur Point(name, x, y, z) -> ThreeJS Y/Z inversion dans votre code original ? Vérifiez l'ordre.
         // Si votre constructeur est Point(name, x, z_ui, y_ui), passez (projectedPos.x, projectedPos.z, projectedPos.y)
 
@@ -7173,6 +7362,5 @@
         showSplashScreen(`Point ${hPoint.name} créé.`);
       }
     </script>
-</body>
-
+  </body>
 </html>
