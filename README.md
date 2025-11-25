@@ -1,7 +1,3 @@
-Voici une version mise à jour et complétée de votre fichier `README.md`.
-
-J'ai analysé votre code (`index.html`) et j'ai mis à jour le document pour refléter les fonctionnalités qui étaient marquées comme "à venir" mais qui sont **déjà implémentées** (Export JSON, Undo/Redo, Magnétisme), ainsi que les nouvelles fonctionnalités majeures comme le **Tableur** et le **Thème Sombre**.
-
 ***
 
 # 📐 Éditeur de Géométrie Vectorielle 3D
