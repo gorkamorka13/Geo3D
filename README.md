@@ -1,16 +1,20 @@
+Voici une version mise à jour et complétée de votre fichier `README.md`.
+
+J'ai analysé votre code (`index.html`) et j'ai mis à jour le document pour refléter les fonctionnalités qui étaient marquées comme "à venir" mais qui sont **déjà implémentées** (Export JSON, Undo/Redo, Magnétisme), ainsi que les nouvelles fonctionnalités majeures comme le **Tableur** et le **Thème Sombre**.
+
 ***
 
 # 📐 Éditeur de Géométrie Vectorielle 3D
 
 ![Statut du projet](https://img.shields.io/badge/statut-fonctionnel-success)
-![Version](https://img.shields.io/badge/version-1.0-blue)
+![Version](https://img.shields.io/badge/version-1.5-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Platform](https://img.shields.io/badge/plateforme-Web-orange)
 
 Une application web interactive et pédagogique permettant de visualiser, manipuler et résoudre des problèmes de géométrie dans l'espace (R³) en temps réel. Conçue pour les étudiants, les enseignants et les passionnés de mathématiques.
 
-![Aperçu de l'application](https://via.placeholder.com/800x400?text=Capture+d%27%C3%A9cran+de+l%27application)
-*(Remplacez ce lien par une vraie capture d'écran de votre application)*
+![Aperçu de l'application](https://via.placeholder.com/800x400?text=Aperçu+de+l%27application)
+*(Insérez ici une capture d'écran de votre interface)*
 
 ## 📋 Table des Matières
 
@@ -19,69 +23,71 @@ Une application web interactive et pédagogique permettant de visualiser, manipu
 - [Installation et Démarrage](#-installation-et-démarrage)
 - [Guide d'Utilisation](#-guide-dutilisation)
   - [Contrôles de la Caméra](#contrôles-de-la-caméra)
+  - [Raccourcis Clavier](#raccourcis-clavier)
   - [Système de Coordonnées](#système-de-coordonnées)
 - [Architecture du Code](#-architecture-du-code)
 - [Feuille de Route (Roadmap)](#-feuille-de-route-roadmap)
-- [Contribuer](#-contribuer)
 - [Auteur](#-auteur)
 
 ## ✨ Fonctionnalités
 
 ### 1. Construction Géométrique
-*   **Points** : Ajout par coordonnées cartésiennes (x, y, z).
+*   **Points** : Ajout par coordonnées (x, y, z) ou clic direct. Déplacement interactif via un **Gizmo**.
 *   **Vecteurs** : Création par composantes ou définis par deux points. Visualisation de la norme.
-*   **Droites** : Définition par deux points ou par **équations paramétriques**.
-*   **Plans** : Définition par 3 points non alignés ou par **équation cartésienne** ($ax + by + cz + d = 0$).
+*   **Droites** : Définition par deux points, par Point+Vecteur, ou par **équations paramétriques** ($x=x_0+at...$).
+*   **Plans** : Définition par 3 points, ou par **équation cartésienne** ($ax + by + cz + d = 0$). Affichage de la normale.
 
 ### 2. Calculs Mathématiques Avancés
-L'application effectue les calculs en arrière-plan et affiche les résultats formatés (LaTeX) :
+L'application effectue les calculs en temps réel et affiche les résultats :
 *   **Intersections** :
-    *   Droite ∩ Plan (coordonnées du point ou parallélisme).
-    *   Plan ∩ Plan (équation de la droite d'intersection).
-    *   Droite ∩ Droite (point d'intersection ou distance minimale si non-coplanaires).
-*   **Mesures** :
-    *   Distance Point ↔ Point.
-    *   Distance Point ↔ Droite (projection orthogonale).
-    *   Distance Point ↔ Plan.
-    *   Angles (Droite/Droite, Plan/Plan, Droite/Plan).
+    *   Droite ∩ Plan (coordonnées du point).
+    *   Plan ∩ Plan (droite d'intersection).
+    *   Droite ∩ Droite (point d'intersection ou distance minimale).
+*   **Mesures & Projections** :
+    *   Distances : Point-Point, Point-Droite, Point-Plan.
+    *   Angles : Droite/Droite, Plan/Plan, Droite/Plan.
+    *   **Perpendiculaire commune** entre deux droites.
+    *   **Projection orthogonale** d'un point sur un plan.
 *   **Algèbre Vectorielle** :
-    *   Somme de vecteurs ($\vec{u} + \vec{v}$) avec construction visuelle de Chasles.
-    *   Produit Scalaire ($\vec{u} \cdot \vec{v}$).
-    *   Produit Vectoriel ($\vec{u} \wedge \vec{v}$) avec visualisation du vecteur résultant.
+    *   Somme ($\vec{u} + \vec{v}$) : Calcul libre ou construction de **Chasles**.
+    *   Produit Scalaire ($\vec{u} \cdot \vec{v}$) et calcul d'angle.
+    *   Produit Vectoriel ($\vec{u} \wedge \vec{v}$).
 
 ### 3. Outils & Ergonomie
-*   **Manipulation 3D** : Translation, Rotation et Symétrie (centrale, axiale, plane) des objets.
-*   **Gestion de Scène** : Sauvegarde et chargement des figures via le `LocalStorage` du navigateur.
-*   **Interface Dynamique** :
-    *   Menu contextuel (clic-droit) sur les objets 3D.
-    *   Affichage/Masquage sélectif des objets.
-    *   Support tactile (Mobile/Tablette) complet.
+*   **Tableur de Données (Nouveau)** : Un panneau rétractable en bas d'écran permettant de voir et modifier les coordonnées de tous les objets (Points, Vecteurs, etc.) comme dans un tableur Excel.
+*   **Transformations** : Translation, Rotation et **Symétries** (Centrale, Axiale, Plane) appliquées aux objets sélectionnés.
+*   **Historique (Undo/Redo)** : Annulation et rétablissement des actions (`Ctrl+Z`, `Ctrl+Y`).
+*   **Magnétisme (Snapping)** : Mode "Aimant" pour déplacer les objets par incréments fixes (unités/degrés).
+*   **Gestion de Fichiers** :
+    *   Sauvegarde locale (LocalStorage).
+    *   **Export/Import JSON** : Partagez vos scènes via des fichiers `.json`.
+*   **Interface Adaptative** :
+    *   **Thème Sombre / Clair** (Dark Mode).
+    *   Support tactile complet (Mobile/Tablette) avec gestes (pincement pour zoomer).
+    *   Menu contextuel au clic-droit sur les objets 3D.
 
 ## 🛠 Technologies
 
-Ce projet est une "Single Page Application" (SPA) ne nécessitant aucun backend.
+Ce projet est une "Single Page Application" (SPA) autonome.
 
 *   **Langage** : JavaScript (ES6+) Orienté Objet.
 *   **Moteur 3D** : [Three.js (r128)](https://threejs.org/).
-*   **Mathématiques** : [MathJax](https://www.mathjax.org/) pour le rendu des formules.
+*   **Contrôles** : `TransformControls` (Gizmo de déplacement/rotation).
+*   **Mathématiques** : [MathJax](https://www.mathjax.org/) pour le rendu LaTeX des formules.
 *   **Iconographie** : FontAwesome.
-*   **Architecture** : Vanilla JS (pas de framework type React/Vue), gestionnaire de géométrie centralisé.
+*   **Stockage** : LocalStorage & API FileReader/Blob pour l'import/export.
 
 ## 🚀 Installation et Démarrage
 
-Puisque l'application est statique, elle est très simple à déployer ou à lancer localement.
-
-### Pré-requis
-Un navigateur web moderne (Chrome, Firefox, Edge, Safari).
+L'application est statique (pas de serveur backend requis).
 
 ### Lancement Local
-1.  Clonez le dépôt :
+1.  Clonez le dépôt ou téléchargez les fichiers.
     ```bash
     git clone https://github.com/votre-user/geo-3d-editor.git
-    cd geo-3d-editor
     ```
-2.  Ouvrez le fichier `index.html`.
-    *   *Recommandé* : Utilisez une extension comme **Live Server** (VS Code) ou lancez un serveur local python (`python -m http.server`) pour éviter les restrictions de sécurité CORS liées aux chargements de textures ou de modules JS.
+2.  Ouvrez le fichier `index.html` dans votre navigateur.
+    *   *Note* : Pour le fonctionnement optimal des textures de texte, il est recommandé d'utiliser un serveur local simple (ex: extension "Live Server" sur VS Code ou `python -m http.server`).
 
 ## 🎮 Guide d'Utilisation
 
@@ -93,47 +99,54 @@ Un navigateur web moderne (Chrome, Firefox, Edge, Safari).
 *   **Tactile** :
     *   *Un doigt* : Rotation.
     *   *Deux doigts* : Zoom (pincement) et Panoramique.
-*   **Boutons Rapides** : Utilisez les icônes en haut à droite pour passer en vue de Dessus (XY), Face (XZ) ou Côté (YZ).
+*   **Vues Prédéfinies** : Boutons en haut à droite (Cube) pour vues de Face, Dessus, Côté.
+
+### Raccourcis Clavier
+| Touche | Action |
+| :--- | :--- |
+| **Suppr / Del** | Supprimer l'objet sélectionné |
+| **Ctrl + Z** | Annuler (Undo) |
+| **Ctrl + Y** | Rétablir (Redo) |
+| **T** | Mode Translation (Gizmo) |
+| **R** | Mode Rotation (Gizmo) |
+| **Echap** | Désélectionner / Fermer les menus |
 
 ### Système de Coordonnées
-⚠️ **Important** : Three.js utilise un repère où **Y est la hauteur**.
-Dans les cours de mathématiques standards, **Z est souvent la hauteur**.
-> L'application gère cette conversion automatiquement :
-> *   Dans l'interface (champs de saisie) : **Z = Hauteur**, **Y = Profondeur**.
-> *   Dans le moteur 3D : Les axes sont intervertis pour correspondre à la visualisation attendue.
+⚠️ **Convention Mathématique vs 3D**
+L'application convertit automatiquement les axes pour correspondre aux cours de mathématiques usuels :
+*   **Interface (Saisie)** :
+    *   **X** : Largeur (Rouge)
+    *   **Y** : Profondeur (Bleu) - *Notez l'inversion standard*
+    *   **Z** : Hauteur (Vert)
+*   **Moteur 3D (Three.js)** :
+    *   Les axes Y et Z sont intervertis en interne pour que l'axe vertical visuel corresponde au Z mathématique.
 
 ## 🏗 Architecture du Code
 
-Le code est structuré autour de la Programmation Orientée Objet (POO) :
+Le code est contenu dans un fichier unique pour la portabilité, structuré autour de classes ES6 :
 
-*   `GeometryManager` : Le chef d'orchestre. Il stocke les listes d'objets, gère les IDs uniques et les interactions globales.
-*   `Point`, `Vector`, `Line3D`, `Plane` : Classes représentant les entités géométriques. Chacune gère son propre maillage (Mesh) Three.js et ses méthodes de mise à jour.
-*   `raycaster` : Gère la sélection des objets via la souris ou le tactile.
+*   `GeometryManager` : Singleton qui gère les listes d'objets (`points`, `lines`, `planes`, `vectors`) et les interactions globales.
+*   `Point`, `Vector`, `Line3D`, `Plane` : Classes représentant les entités. Elles gèrent leur propre maillage (Mesh) et leur affichage (Labels).
+*   `TransformControls` : Gère le Gizmo interactif.
+*   `historyStack` : Gère la pile d'états pour l'Undo/Redo.
 
 ## 🗺 Feuille de Route (Roadmap)
 
-Voici les futures évolutions envisagées pour le projet :
+Fonctionnalités envisagées pour les futures versions :
 
-- [ ] **Export/Import de fichiers** : Permettre de télécharger la scène en `.json` ou `.obj` plutôt que le LocalStorage.
-- [ ] **Mode Magnétisme (Snap)** : Attirer le curseur vers les points existants ou la grille lors de la création.
-- [ ] **Historique** : Implémenter Undo/Redo (Ctrl+Z).
-- [ ] **Animations** : Animer le paramètre $t$ pour voir le déplacement sur une droite.
-- [ ] **Refactoring** : Séparer le fichier unique en modules JS distincts (`import/export`).
+- [ ] **Animations Paramétriques** : Curseur pour faire varier un paramètre $t$ et voir un point bouger sur une droite.
+- [ ] **Lieux Géométriques** : Tracer la trace laissée par un point en mouvement.
+- [ ] **Refactoring Modulaire** : Découper le fichier `index.html` géant en modules JS (`import/export`) pour une meilleure maintenabilité.
+- [ ] **Export Image** : Capture d'écran HD de la zone de travail.
 
 ## 🤝 Contribuer
 
-Les contributions sont grandement appréciées !
-
-1.  Forkez le projet.
-2.  Créez votre branche de fonctionnalité (`git checkout -b feature/NouvelleFonction`).
-3.  Commitez vos changements (`git commit -m 'Ajout de la fonction X'`).
-4.  Poussez vers la branche (`git push origin feature/NouvelleFonction`).
-5.  Ouvrez une Pull Request.
+Les contributions sont bienvenues ! N'hésitez pas à ouvrir une "Issue" pour signaler un bug ou proposer une amélioration.
 
 ## 📝 Auteur
 
 **Michel ESPARSA**
-*Développé avec passion pour la pédagogie mathématique.*
+*Développé le 15/11/2025.*
 
 ---
 *Licence MIT - Vous êtes libre d'utiliser, modifier et distribuer ce logiciel.*
