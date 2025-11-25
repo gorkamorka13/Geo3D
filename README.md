@@ -9,7 +9,7 @@
 
 Une application web interactive et pédagogique permettant de visualiser, manipuler et résoudre des problèmes de géométrie dans l'espace (R³) en temps réel. Conçue pour les étudiants, les enseignants et les passionnés de mathématiques.
 
-![Aperçu de l'application](Capture_Geo.png>)
+![Aperçu de l'application](Capture_Geo.png)
 *(Insérez ici une capture d'écran de votre interface)*
 
 ## 📋 Table des Matières
