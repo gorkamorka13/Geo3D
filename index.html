@@ -652,6 +652,208 @@
     #panel.no-transition {
       transition: none;
     }
+
+    /* =========================================
+   STYLE DU TABLEUR (SPREADSHEET)
+   ========================================= */
+    #openSpreadsheetBtn {
+      position: fixed;
+      bottom: 10px;
+      left: 20px;
+      /* Aligné avec le menu gauche */
+      width: auto;
+      padding: 8px 15px;
+      background-color: var(--panel-bg);
+      color: var(--text-color);
+      border: 1px solid var(--input-border);
+      border-radius: 4px;
+      box-shadow: 0 2px 5px var(--shadow-color);
+      z-index: 995;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 13px;
+    }
+
+    #spreadsheetContainer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100vw;
+      height: 300px;
+      /* Hauteur du panneau */
+      background-color: var(--panel-bg);
+      border-top: 1px solid var(--section-border);
+      box-shadow: 0 -2px 10px var(--shadow-color);
+      z-index: 10000;
+      /* Au-dessus de tout sauf context menu */
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.3s ease;
+    }
+
+    #spreadsheetContainer.spreadsheet-hidden {
+      transform: translateY(100%);
+      /* Caché en bas */
+    }
+
+    .spreadsheet-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 5px 10px;
+      background-color: var(--hover-bg);
+      border-bottom: 1px solid var(--section-border);
+    }
+
+    .spreadsheet-tabs {
+      display: flex;
+      gap: 5px;
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      padding: 6px 12px;
+      cursor: pointer;
+      border-radius: 4px 4px 0 0;
+      font-weight: bold;
+      font-size: 13px;
+      width: auto;
+      /* Override du style global button */
+      margin: 0;
+    }
+
+    .tab-btn:hover {
+      background-color: var(--item-bg);
+      color: var(--text-color);
+    }
+
+    .tab-btn.active {
+      background-color: var(--panel-bg);
+      color: var(--input-focus);
+      border-bottom: 2px solid var(--input-focus);
+    }
+
+    .close-spreadsheet-btn {
+      background: transparent;
+      color: var(--text-secondary);
+      border: none;
+      font-size: 12px;
+      cursor: pointer;
+      width: auto;
+      margin: 0;
+    }
+
+    .spreadsheet-body {
+      flex-grow: 1;
+      overflow: auto;
+      padding: 0;
+    }
+
+    #spreadsheetTable {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      color: var(--text-color);
+    }
+
+    #spreadsheetTable th,
+    #spreadsheetTable td {
+      border: 1px solid var(--item-border);
+      padding: 4px 8px;
+      text-align: center;
+    }
+
+    #spreadsheetTable th {
+      background-color: var(--hover-bg);
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      font-weight: bold;
+    }
+
+    /* Inputs dans le tableau */
+    #spreadsheetTable input {
+      width: 100%;
+      border: none;
+      background: transparent;
+      text-align: center;
+      color: var(--text-color);
+      padding: 4px;
+      font-family: monospace;
+    }
+
+    #spreadsheetTable input:focus {
+      background-color: var(--input-bg);
+      outline: 1px solid var(--input-focus);
+    }
+
+    /* Couleurs spécifiques pour X, Y, Z */
+    .col-x input {
+      color: #ff5252;
+      font-weight: bold;
+    }
+
+    .col-y input {
+      color: #448aff;
+      font-weight: bold;
+    }
+
+    /* Z ThreeJS = Y UI (Bleu) */
+    .col-z input {
+      color: #69f0ae;
+      font-weight: bold;
+    }
+
+    /* Y ThreeJS = Z UI (Vert) */
+
+    /* Mode sombre ajustement */
+    [data-theme="dark"] .col-x input {
+      color: #ff8a80;
+    }
+
+    [data-theme="dark"] .col-y input {
+      color: #82b1ff;
+    }
+
+    [data-theme="dark"] .col-z input {
+      color: #b9f6ca;
+    }
+
+    /* Style pour l'icône de l'aimant */
+    #snapIcon {
+      display: inline-block;
+      position: relative;
+      transition: all 0.3s ease;
+      font-size: 16px;
+      margin-right: 5px;
+    }
+
+    /* Quand l'aimant est désactivé (barré) */
+    #snapIcon.icon-disabled {
+      opacity: 0.6;
+      /* Rend l'icône un peu transparente */
+      filter: grayscale(100%);
+      /* (Optionnel) Rend l'icône grise */
+    }
+
+    /* La ligne rouge qui barre l'icône */
+    #snapIcon.icon-disabled::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      /* Épaisseur de la barre */
+      background-color: #ff4444;
+      /* Couleur rouge */
+      transform: translateY(-50%) rotate(-45deg);
+      /* Rotation diagonale */
+      pointer-events: none;
+      /* Ne gêne pas le clic */
+    }
   </style>
 </head>
 
@@ -669,6 +871,24 @@
   </button>
   <div id="container">
     <div id="cameraControls">
+
+
+      <div id="snapControl"
+        style="position: absolute; top: 20px; right: 70px; z-index: 990; background: var(--panel-bg); padding: 5px 10px; border-radius: 4px; border: 1px solid var(--input-border); display: flex; align-items: center; gap: 5px; box-shadow: 0 2px 5px var(--shadow-color);">
+
+        <input type="checkbox" id="snapToggle" onchange="toggleSnapping()" style="display:none;">
+        <!-- Input caché, on clique sur le label -->
+
+        <label for="snapToggle"
+          style="font-size: 13px; margin: 0; cursor: pointer; color: var(--text-color); display: flex; align-items: center;">
+          <!-- L'icône isolée avec la classe 'icon-disabled' par défaut -->
+          <span id="snapIcon" class="icon-disabled">🧲</span>
+          <span>Aimant (1.0)</span>
+        </label>
+
+      </div>
+
+
 
       <!-- Vue de dessus (XY) : La face supérieure du cube est noire -->
       <div class="camera-btn" id="btnTop" onclick="setCameraView('top', this)" title="Vue de dessus (XY)">
@@ -1064,6 +1284,13 @@
           <select id="crossVectorOrigin" style="margin-bottom: 8px"></select>
           <button class="btn-warning" onclick="calculateVectorProduct()">🖩 Créer le vecteur produit</button>
           <div id="vectorProductResult" class="equation-display"></div>
+          <h4 class="sub-section-title" style="margin-top:20px;">Projection Orthogonale</h4>
+          <label>Projeter le point :</label>
+          <select id="projPointSelect"></select>
+          <label>Sur le plan :</label>
+          <select id="projPlaneSelect"></select>
+          <button class="btn-violet" onclick="projectPointOnPlane()">📐 Projeter</button>
+
         </div>
       </div>
 
@@ -1243,14 +1470,44 @@
         Copyright Michel ESPARSA 15/11/2025
       </div>
 
-      <!-- START: HTML pour le menu contextuel -->
       <div id="contextMenu" class="context-menu" style="display: none">
         <ul id="contextMenuItems" class="context-menu-items">
           <!-- Les options du menu seront injectées ici par JavaScript -->
         </ul>
       </div>
-      <!-- END: HTML pour le menu contextuel -->
     </div>
+
+    <!-- =========================================
+     NOUVEAU : PANNEAU TABLEUR (BAS)
+     ========================================= -->
+    <div id="spreadsheetContainer" class="spreadsheet-hidden">
+      <div class="spreadsheet-header">
+        <div class="spreadsheet-tabs">
+          <button class="tab-btn active" onclick="switchSpreadsheetTab('points')">Points</button>
+          <button class="tab-btn" onclick="switchSpreadsheetTab('vectors')">Vecteurs</button>
+          <button class="tab-btn" onclick="switchSpreadsheetTab('lines')">Droites</button>
+          <button class="tab-btn" onclick="switchSpreadsheetTab('planes')">Plans</button>
+        </div>
+        <div class="spreadsheet-controls">
+          <button class="close-spreadsheet-btn" onclick="toggleSpreadsheet()">▼ Fermer</button>
+        </div>
+      </div>
+      <div class="spreadsheet-body">
+        <table id="spreadsheetTable">
+          <thead>
+            <!-- Les en-têtes seront générés par JS -->
+          </thead>
+          <tbody>
+            <!-- Le contenu sera généré par JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Bouton flottant pour ouvrir le tableur (en bas à gauche) -->
+    <button id="openSpreadsheetBtn" onclick="toggleSpreadsheet()">📅 Tableur de données</button>
+
+
     <script>
       // =====================================================================================
       // SECTION 1 : CLASSES DES OBJETS GÉOMÉTRIQUES
@@ -2299,7 +2556,7 @@
 
         // Helper pour créer les lignes (li)
         const createAction = (action, text) =>
-          `<li onclick="${action}; hideContextMenu();" style="padding:8px 15px; cursor:pointer; border-bottom:1px solid #eee; color:#333;">${text}</li>`;
+          `<li onclick="${action}; hideContextMenu();">${text}</li>`;
 
         let htmlContent = "";
 
@@ -2538,6 +2795,7 @@
         updatePlaneList();
         updateVectorList();
         updateSelects();
+        updateSpreadsheet();
       }
 
       function updatePointList() {
@@ -5542,6 +5800,19 @@
             document.getElementById("pointY").value = formatNumber(inst.position.z);
             document.getElementById("pointZ").value = formatNumber(inst.position.y);
           }
+
+          // AJOUT POUR LE TABLEUR (Mise à jour temps réel des inputs)
+          if (isSpreadsheetOpen && currentSpreadsheetTab === 'points') {
+            const idx = geometryManager.points.indexOf(inst);
+            const inputX = document.getElementById(`sheet-p-${idx}-x`);
+            const inputY = document.getElementById(`sheet-p-${idx}-y`);
+            const inputZ = document.getElementById(`sheet-p-${idx}-z`);
+            if (inputX) {
+              inputX.value = formatNumber(inst.position.x);
+              inputY.value = formatNumber(inst.position.z); // UI Y
+              inputZ.value = formatNumber(inst.position.y); // UI Z
+            }
+          }
         }
 
         // 2. VECTEUR (Inchangé)
@@ -5564,6 +5835,18 @@
             // On force le select sur vide/custom pour que les inputs soient pris en compte
             const vSelect = document.getElementById("vectorOriginPoint");
             if (vSelect) vSelect.value = "";
+          }
+
+          // ... code existant ...
+          if (isSpreadsheetOpen && currentSpreadsheetTab === 'vectors') {
+            const o = inst.origin.clone().add(inst.arrowHelper.position);
+            const oxInput = document.getElementById(`sheet-v-${inst.id}-ox`);
+            if (oxInput) {
+              oxInput.value = formatNumber(o.x);
+              document.getElementById(`sheet-v-${inst.id}-oy`).value = formatNumber(o.z);
+              document.getElementById(`sheet-v-${inst.id}-oz`).value = formatNumber(o.y);
+
+            }
           }
         }
 
@@ -6601,6 +6884,294 @@
         reader.readAsText(file);
       }
 
+      // =====================================================================================
+      // SECTION TABLEUR (SPREADSHEET) LOGIC
+      // =====================================================================================
+
+      let isSpreadsheetOpen = false;
+      let currentSpreadsheetTab = 'points';
+
+      function toggleSpreadsheet() {
+        const panel = document.getElementById('spreadsheetContainer');
+        const btn = document.getElementById('openSpreadsheetBtn');
+
+        isSpreadsheetOpen = !isSpreadsheetOpen;
+
+        if (isSpreadsheetOpen) {
+          panel.classList.remove('spreadsheet-hidden');
+          btn.style.display = 'none'; // Cache le bouton d'ouverture
+          updateSpreadsheet(); // Rafraîchir les données
+        } else {
+          panel.classList.add('spreadsheet-hidden');
+          setTimeout(() => {
+            btn.style.display = 'block'; // Réaffiche le bouton après l'anim
+          }, 300);
+        }
+      }
+
+      function switchSpreadsheetTab(tabName) {
+        currentSpreadsheetTab = tabName;
+
+        // Mise à jour visuelle des onglets
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+          btn.classList.remove('active');
+          if (btn.textContent.toLowerCase().includes(tabName.substring(0, 4))) { // détection simple
+            btn.classList.add('active');
+          }
+        });
+
+        // Mapping du bouton cliqué (plus robuste)
+        const buttons = document.querySelectorAll('.tab-btn');
+        if (tabName === 'points') buttons[0].classList.add('active');
+        if (tabName === 'vectors') buttons[1].classList.add('active');
+        if (tabName === 'lines') buttons[2].classList.add('active');
+        if (tabName === 'planes') buttons[3].classList.add('active');
+
+        updateSpreadsheet();
+      }
+
+      /**
+       * Fonction principale qui reconstruit le tableau HTML
+       */
+      function updateSpreadsheet() {
+        if (!isSpreadsheetOpen) return;
+
+        const thead = document.querySelector('#spreadsheetTable thead');
+        const tbody = document.querySelector('#spreadsheetTable tbody');
+        thead.innerHTML = '';
+        tbody.innerHTML = '';
+
+        if (currentSpreadsheetTab === 'points') {
+          renderPointsTable(thead, tbody);
+        } else if (currentSpreadsheetTab === 'vectors') {
+          renderVectorsTable(thead, tbody);
+        } else if (currentSpreadsheetTab === 'lines') {
+          renderLinesTable(thead, tbody);
+        } else if (currentSpreadsheetTab === 'planes') {
+          renderPlanesTable(thead, tbody);
+        }
+      }
+
+      // --- RENDU DES POINTS ---
+      function renderPointsTable(thead, tbody) {
+        thead.innerHTML = `
+    <tr>
+      <th style="width:50px">ID</th>
+      <th>Nom</th>
+      <th style="width:80px">X</th>
+      <th style="width:80px">Y (Prof)</th>
+      <th style="width:80px">Z (Haut)</th>
+      <th style="width:60px">Actions</th>
+    </tr>`;
+
+        geometryManager.points.forEach((p, index) => {
+          const tr = document.createElement('tr');
+          tr.id = `sheet-row-point-${index}`;
+          // Attention mapping : UI Y = Three Z, UI Z = Three Y
+          tr.innerHTML = `
+      <td>${index}</td>
+      <td><input type="text" value="${p.name}" onchange="sheetUpdatePointName(${index}, this.value)"></td>
+      <td class="col-x"><input type="number" step="0.1" id="sheet-p-${index}-x" value="${formatNumber(p.position.x)}" onchange="sheetUpdatePointCoords(${index})"></td>
+      <td class="col-y"><input type="number" step="0.1" id="sheet-p-${index}-y" value="${formatNumber(p.position.z)}" onchange="sheetUpdatePointCoords(${index})"></td>
+      <td class="col-z"><input type="number" step="0.1" id="sheet-p-${index}-z" value="${formatNumber(p.position.y)}" onchange="sheetUpdatePointCoords(${index})"></td>
+      <td>
+        <button class="btn-secondary" style="padding:2px 5px; margin:0;" onclick="handleSelection(geometryManager.points[${index}].mesh)">🎯</button>
+      </td>
+    `;
+          tbody.appendChild(tr);
+        });
+      }
+
+      // --- LOGIQUE DE MISE À JOUR DEPUIS LE TABLEUR (POINTS) ---
+      function sheetUpdatePointName(index, newName) {
+        const p = geometryManager.points[index];
+        if (p) {
+          p.update(newName, p.position.x, p.position.z, p.position.y); // update attend (nom, x, z_ui, y_ui)
+          updateAllUI(); // Rafraîchir liste latérale
+        }
+      }
+
+      function sheetUpdatePointCoords(index) {
+        const p = geometryManager.points[index];
+        if (!p) return;
+
+        const x = parseFloat(document.getElementById(`sheet-p-${index}-x`).value);
+        const y_ui = parseFloat(document.getElementById(`sheet-p-${index}-y`).value); // Profondeur (Z Three)
+        const z_ui = parseFloat(document.getElementById(`sheet-p-${index}-z`).value); // Hauteur (Y Three)
+
+        if (isNaN(x) || isNaN(y_ui) || isNaN(z_ui)) return;
+
+        // On utilise copy pour éviter de recréer l'objet si possible, ou p.update
+        p.position.set(x, z_ui, y_ui); // Attention ordre ThreeJS
+        p.mesh.position.copy(p.position);
+        p.updateLabelPosition();
+
+        // Si Gizmo actif sur ce point
+        if (selectedObjectInstance === p && transformControl) {
+          transformControl.attach(p.mesh); // Recalage du gizmo
+        }
+
+        saveState();
+        // On ne rappelle pas updateAllUI() complet ici pour éviter de perdre le focus de l'input
+        // Mais on doit mettre à jour le panneau latéral si besoin
+        // updatePointList(); // Optionnel
+      }
+
+      // --- RENDU DES VECTEURS ---
+      function renderVectorsTable(thead, tbody) {
+        thead.innerHTML = `
+    <tr>
+      <th>Nom</th>
+      <th>Origine X</th><th>Origine Y</th><th>Origine Z</th>
+      <th>Vect X</th><th>Vect Y</th><th>Vect Z</th>
+    </tr>`;
+
+        geometryManager.vectors.forEach((v) => {
+          const tr = document.createElement('tr');
+          tr.id = `sheet-row-vector-${v.id}`;
+          // Origine
+          const ox = formatNumber(v.origin.x);
+          const oy = formatNumber(v.origin.z); // UI Y
+          const oz = formatNumber(v.origin.y); // UI Z
+          // Composantes
+          const vx = formatNumber(v.components.x);
+          const vy = formatNumber(v.components.z); // UI Y
+          const vz = formatNumber(v.components.y); // UI Z
+
+          tr.innerHTML = `
+      <td><input type="text" value="${v.name}" onchange="sheetUpdateVector(${v.id})"></td>
+      <td class="col-x"><input type="number" id="sheet-v-${v.id}-ox" value="${ox}" onchange="sheetUpdateVector(${v.id})"></td>
+      <td class="col-y"><input type="number" id="sheet-v-${v.id}-oy" value="${oy}" onchange="sheetUpdateVector(${v.id})"></td>
+      <td class="col-z"><input type="number" id="sheet-v-${v.id}-oz" value="${oz}" onchange="sheetUpdateVector(${v.id})"></td>
+      <td class="col-x" style="border-left:2px solid #ddd"><input type="number" id="sheet-v-${v.id}-vx" value="${vx}" onchange="sheetUpdateVector(${v.id})"></td>
+      <td class="col-y"><input type="number" id="sheet-v-${v.id}-vy" value="${vy}" onchange="sheetUpdateVector(${v.id})"></td>
+      <td class="col-z"><input type="number" id="sheet-v-${v.id}-vz" value="${vz}" onchange="sheetUpdateVector(${v.id})"></td>
+    `;
+          tbody.appendChild(tr);
+        });
+      }
+
+      function sheetUpdateVector(id) {
+        const v = geometryManager.findVectorById(id);
+        if (!v) return;
+
+        // Récupération ligne par ID pour être sûr (ou par element relatif si on passait 'this')
+        // Ici on utilise les IDs générés
+        const ox = parseFloat(document.getElementById(`sheet-v-${id}-ox`).value);
+        const oy = parseFloat(document.getElementById(`sheet-v-${id}-oy`).value);
+        const oz = parseFloat(document.getElementById(`sheet-v-${id}-oz`).value);
+
+        const vx = parseFloat(document.getElementById(`sheet-v-${id}-vx`).value);
+        const vy = parseFloat(document.getElementById(`sheet-v-${id}-vy`).value);
+        const vz = parseFloat(document.getElementById(`sheet-v-${id}-vz`).value);
+
+        // Reconstruction vecteurs ThreeJS (Attention inversion Y/Z)
+        const newOrigin = new THREE.Vector3(ox, oz, oy);
+        const newComps = new THREE.Vector3(vx, vz, vy);
+
+        v.update(v.name, newOrigin, newComps);
+
+        if (selectedObjectInstance === v && transformControl) {
+          // Astuce pour le gizmo vecteur : il faut le réattacher au nouvel arrowHelper
+          transformControl.detach();
+          transformControl.attach(v.arrowHelper);
+        }
+        saveState();
+      }
+
+      // Pour Droites et Plans, on fait simple pour l'instant (Nom + Point principal)
+      function renderLinesTable(thead, tbody) {
+        thead.innerHTML = `<tr><th>Nom</th><th>Point X</th><th>Point Y</th><th>Point Z</th><th>Dir X</th><th>Dir Y</th><th>Dir Z</th></tr>`;
+        geometryManager.lines.forEach(l => {
+          const p = l.startPoint;
+          const u = l.directorVector;
+          tbody.innerHTML += `<tr>
+            <td>${l.name}</td>
+            <td class="col-x">${formatNumber(p.x)}</td><td class="col-y">${formatNumber(p.z)}</td><td class="col-z">${formatNumber(p.y)}</td>
+            <td class="col-x">${formatNumber(u.x)}</td><td class="col-y">${formatNumber(u.z)}</td><td class="col-z">${formatNumber(u.y)}</td>
+        </tr>`;
+        });
+      }
+
+      function renderPlanesTable(thead, tbody) {
+        thead.innerHTML = `<tr><th>Nom</th><th>Point X</th><th>Point Y</th><th>Point Z</th><th>Norm X</th><th>Norm Y</th><th>Norm Z</th></tr>`;
+        geometryManager.planes.forEach(p => {
+          const pt = p.pointOnPlane;
+          const n = p.displayNormal;
+          tbody.innerHTML += `<tr>
+            <td>${p.name}</td>
+            <td class="col-x">${formatNumber(pt.x)}</td><td class="col-y">${formatNumber(pt.z)}</td><td class="col-z">${formatNumber(pt.y)}</td>
+            <td class="col-x">${formatNumber(n.x)}</td><td class="col-y">${formatNumber(n.z)}</td><td class="col-z">${formatNumber(n.y)}</td>
+        </tr>`;
+        });
+      }
+
+      // --- Variables Globales pour le Snapping ---
+      let snapEnabled = false;
+      const SNAP_TRANSLATE = 1.0; // Pas de déplacement (1 unité)
+      const SNAP_ROTATE = THREE.MathUtils.degToRad(15); // Pas de rotation (15 degrés)
+
+
+      function toggleSnapping() {
+        const checkbox = document.getElementById('snapToggle');
+        const icon = document.getElementById('snapIcon'); // On récupère l'icône
+
+        snapEnabled = checkbox.checked;
+
+        if (transformControl) {
+          transformControl.setTranslationSnap(snapEnabled ? SNAP_TRANSLATE : null);
+          transformControl.setRotationSnap(snapEnabled ? SNAP_ROTATE : null);
+
+          // GESTION VISUELLE
+          if (snapEnabled) {
+            // Si activé : on enlève la barre
+            icon.classList.remove('icon-disabled');
+            showSplashScreen("🧲 Aimantation ACTIVÉE");
+          } else {
+            // Si désactivé : on ajoute la barre
+            icon.classList.add('icon-disabled');
+            showSplashScreen("Aimantation DÉSACTIVÉE");
+          }
+        }
+      }
+
+      function projectPointOnPlane() {
+        const pIndex = document.getElementById("projPointSelect").value;
+        const plIndex = document.getElementById("projPlaneSelect").value;
+
+        if (pIndex === "" || plIndex === "") return;
+
+        const point = geometryManager.points[pIndex];
+        const plane = geometryManager.findPlaneById(parseInt(plIndex));
+
+        // Mathématiques de la projection
+        // H = P - (distSignée * n)
+        const vP0P = new THREE.Vector3().subVectors(point.position, plane.pointOnPlane);
+        const distSigned = vP0P.dot(plane.normal);
+        const projectedPos = point.position.clone().sub(plane.normal.clone().multiplyScalar(distSigned));
+
+        // 1. Créer le point projeté H
+        const hName = `Proj_${point.name}`;
+        const hPoint = new Point(geometryManager.generateUniqueName(hName, "point"), projectedPos.x, projectedPos.y, projectedPos.z, 0x555555); // Gris
+        // Attention constructeur Point(name, x, y, z) -> ThreeJS Y/Z inversion dans votre code original ? Vérifiez l'ordre.
+        // Si votre constructeur est Point(name, x, z_ui, y_ui), passez (projectedPos.x, projectedPos.z, projectedPos.y)
+
+        geometryManager.addPoint(hPoint);
+
+        // 2. Créer le segment en pointillé [PH]
+        const dashMaterial = new THREE.LineDashedMaterial({ color: 0x555555, dashSize: 0.5, gapSize: 0.2 });
+        const geom = new THREE.BufferGeometry().setFromPoints([point.position, hPoint.position]);
+        const dashLine = new THREE.Line(geom, dashMaterial);
+        dashLine.computeLineDistances(); // Important pour les pointillés
+        scene.add(dashLine);
+
+        // On ne stocke pas la ligne pointillée dans le manager pour l'instant (c'est juste visuel temporaire)
+        // Ou alors créez une classe "ConstructionLine"
+
+        updateAllUI();
+        saveState();
+        showSplashScreen(`Point ${hPoint.name} créé.`);
+      }
     </script>
 </body>
 
