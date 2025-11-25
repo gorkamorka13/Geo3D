@@ -748,7 +748,25 @@
           </div>
           <button class="btn-warning" style="margin-top: 15px; background-color: #607d8b;"
             onclick="downloadDebugJSON()">
-            🐞 Exporter JSON (Debug)
+            🐞 Exporter JSON (Debug)</button>
+          <div style="margin-top: 15px; border-top: 1px solid #ddd; padding-top: 10px;">
+            <h4 class="sub-section-title">Fichiers de sauvegarde (.json) :</h4>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+              <!-- Bouton Exporter -->
+              <button class="btn-secondary" style="background-color: #009688;" onclick="exportSceneToJSON()">
+                📤 Exporter
+              </button>
+
+              <!-- Bouton Importer (déclenche l'input caché) -->
+              <button class="btn-violet" onclick="document.getElementById('importFileInput').click()">
+                📥 Importer
+              </button>
+            </div>
+
+            <!-- Input fichier caché pour l'import -->
+            <input type="file" id="importFileInput" accept=".json" style="display: none;"
+              onchange="importSceneFromJSON(this)" />
+          </div>
         </div>
       </div>
 
@@ -895,14 +913,32 @@
           <label style="margin-top: 10px">Équations (pour le vecteur directeur) :</label>
           <textarea id="lineEquationInput" rows="3" placeholder="x = 2t&#10;y = t&#10;z = -5t"
             style="font-family: monospace"></textarea>
-          <button class="btn-secondary" onclick="addLineFromEquation()">➕ Créer la droite</button>
-          <!-- FIN MODIFICATION ÉTAPE 1 -->
 
+          <input type="hidden" id="editLineId" />
+
+          <!-- Bouton d'ajout existant (ajoutez-lui une ID pour pouvoir le cacher) -->
+          <button id="addLineFromEquationBtn" class="btn-secondary" onclick="addLineFromEquation()">➕ Créer la
+            droite</button>
+
+          <!-- Nouveaux boutons pour l'édition (cachés par défaut) -->
+          <div id="lineEquationActions" class="edit-actions-container" style="display: none">
+            <button id="updateLineBtn" class="btn-secondary" onclick="updateLine()">💾 Mettre à jour</button>
+            <button id="deleteEditingLineBtn" class="btn-danger" onclick="deleteEditingLine()">🗑️ Supprimer</button>
+            <button id="cancelLineEditBtn" class="btn-warning" onclick="cancelLineEdit()">❌ Annuler</button>
+          </div>
 
           <h4 class="sub-section-title">Droites existantes :</h4>
           <div id="lineList" class="geometry-list"></div>
           <button class="btn-danger" onclick="clearStraightLines()">🗑️ Effacer les droites</button>
+
         </div>
+
+
+
+
+
+
+
       </div>
 
       <div class="section collapsible collapsed">
@@ -925,12 +961,8 @@
 
           <button class="btn-warning" onclick="addPlane()">➕ Ajouter ce plan</button>
 
-
-          <!-- ... dans la section "Plan par équation" ... -->
-
           <h4 class="sub-section-title">Plan par vecteur normal (équation) :</h4>
 
-          <!-- NOUVEAU : Sélection du point de passage -->
           <label style="color: #2196f3;">Point de passage (Optionnel) :</label>
           <select id="planeEquationPointSelect" onchange="onPlaneEquationPointChange()">
             <!-- Sera rempli par JS -->
@@ -950,8 +982,15 @@
           <h4 class="sub-section-title">Plan par équation :</h4>
           <label>Équation cartésienne (ax+by+cz+d=0) :</label>
           <input type="text" id="planeEquationInput" placeholder="Ex: 2x - y + 3z - 6 = 0" />
-          <button class="btn-warning" onclick="addPlaneFromEquation()">➕ Créer le plan depuis l'équation</button>
+          <button id="addPlaneFromEquationBtn" class="btn-warning" onclick="addPlaneFromEquation()">➕ Créer le plan
+            depuis l'équation</button>
 
+          <input type="hidden" id="editPlaneId" />
+          <div id="planeEquationActions" class="edit-actions-container" style="display: none">
+            <button id="updatePlaneBtn" class="btn-secondary" onclick="updatePlane()">💾 Mettre à jour</button>
+            <button id="deleteEditingPlaneBtn" class="btn-danger" onclick="deleteEditingPlane()">🗑️ Supprimer</button>
+            <button id="cancelPlaneEditBtn" class="btn-warning" onclick="cancelPlaneEdit()">❌ Annuler</button>
+          </div>
           <h4 class="sub-section-title">Plans existants :</h4>
           <div id="planeList" class="geometry-list"></div>
           <button class="btn-danger" onclick="clearAllPlanes()">🗑️ Effacer tous les plans</button>
@@ -2529,42 +2568,40 @@
 
       function updateStraightLineList() {
         const list = document.getElementById("lineList");
-        list.innerHTML =
-          geometryManager.lines.length === 0 ? '<div class="point-item">Aucune droite tracée.</div>' : "";
+        list.innerHTML = geometryManager.lines.length === 0 ? '<div class="point-item">Aucune droite tracée.</div>' : "";
 
         geometryManager.lines.forEach((line) => {
           const item = document.createElement("div");
           item.className = "geometry-item";
           item.id = `line-item-${line.id}`;
 
-          // 1. Vecteur Directeur (Formatage UI: X, Z(Prof), Y(Haut))
+          // 1. Préparation des textes (Formatage)
           const v = line.directorVector;
-          const vText = `u(${formatNumber(v.x, 1)}, ${formatNumber(v.z, 1)}, ${formatNumber(v.y, 1)})`;
+          const vText = `u(${formatNumber(v.x, 1)}, ${formatNumber(v.z, 1)}, ${formatNumber(v.y, 1)})`; // UI Y=Z, Z=Y
 
-          // 2. Point de Passage (Formatage UI: X, Z(Prof), Y(Haut))
-          // C'est l'ajout principal de cette étape
           const p = line.startPoint;
           const pText = `(${formatNumber(p.x, 1)}, ${formatNumber(p.z, 1)}, ${formatNumber(p.y, 1)})`;
 
-          // 3. Construction du HTML
-          // J'ai ajouté des ID spécifiques (line-vector-ID et line-point-ID) pour faciliter
-          // la mise à jour temps réel à l'étape 3.
+          // 2. Construction du HTML
           item.innerHTML = `
     <div class="geometry-item-main">
-        <div class="geometry-info">
+        <!-- AJOUT : onclick="editLine(...)" sur la zone de texte pour accès rapide -->
+        <div class="geometry-info" onclick="editLine(${line.id})" style="cursor: pointer;" title="Cliquer pour modifier">
             <span class="geometry-name">${line.name}</span>
             <span class="geometry-details" id="line-vector-${line.id}">Vect: ${vText}</span>
         </div>
-        <div class="geometry-actions">
-            <!-- Bouton pour ouvrir le panel transformation -->
-            <button class="btn-secondary" onclick="openTransformationPanel('line', ${line.id})" title="Transformations">🔄</button>
 
-            <button class="btn-secondary" onclick="toggleStraightLineVisibility(${line.id})" title="${line.isVisible ? "Masquer" : "Afficher"
-            }">${line.isVisible ? "👁️" : "🙈"}</button>
+        <div class="geometry-actions">
+            <!-- AJOUT : Bouton Crayon pour éditer -->
+            <button class="btn-secondary" onclick="editLine(${line.id})" title="Modifier">✏️</button>
+
+            <!-- Boutons existants -->
+
+            <button class="btn-secondary" onclick="toggleStraightLineVisibility(${line.id})" title="${line.isVisible ? "Masquer" : "Afficher"}">${line.isVisible ? "👁️" : "🙈"}</button>
             <button class="btn-danger" onclick="removeStraightLineById(${line.id})" title="Supprimer">🗑️</button>
         </div>
     </div>
-    <!-- NOUVEAU : Ligne secondaire pour afficher le point -->
+
     <div class="geometry-details-secondary">
         <span id="line-point-${line.id}" style="color: #666;">
             Passe par : <strong>${pText}</strong>
@@ -2584,36 +2621,34 @@
           item.className = "geometry-item";
           item.id = `plane-item-${plane.id}`;
 
-          // 1. Préparer le texte du vecteur normal
+          // 1. Formatage données
           const n = plane.displayNormal;
-          const normalText = `Vn : n(${formatNumber(n.x, 1)}, ${formatNumber(n.z, 1)}, ${formatNumber(n.y, 1)})`;
+          const normalText = `Vn : n(${formatNumber(n.x, 1)}, ${formatNumber(n.z, 1)}, ${formatNumber(n.y, 1)})`; // UI Y=Z, Z=Y
 
-          // 2. Préparer le texte du point de passage (NOUVEAU)
           const p = plane.pointOnPlane;
           const pointText = `(${formatNumber(p.x, 1)}, ${formatNumber(p.z, 1)}, ${formatNumber(p.y, 1)})`;
 
-          // 3. Bouton Vn (logique existante)
+          // 2. Gestion bouton Vn
           const existingNormalVector = geometryManager.vectors.find(
             (v) => v.parentPlaneId === plane.id && v.isNormalVector
           );
-          let normalBtnHtml;
-          if (existingNormalVector) {
-            normalBtnHtml = `<button class="btn-violet-light" onclick="toggleNormalVector(${plane.id})" title="Masquer le vecteur normal">Vn ➖</button>`;
-          } else {
-            normalBtnHtml = `<button class="btn-violet" onclick="toggleNormalVector(${plane.id})" title="Afficher le vecteur normal">Vn ➕</button>`;
-          }
+          const normalBtnHtml = existingNormalVector
+            ? `<button class="btn-violet-light" onclick="toggleNormalVector(${plane.id})" title="Masquer Vn">Vn ➖</button>`
+            : `<button class="btn-violet" onclick="toggleNormalVector(${plane.id})" title="Afficher Vn">Vn ➕</button>`;
 
-          // 4. Structure HTML mise à jour
-          // Notez l'ajout de la div "geometry-details-secondary" avec l'ID "plane-point-ID"
+          // 3. HTML (Avec onclick sur le texte et bouton Crayon)
           item.innerHTML = `
   <div class="geometry-item-main">
-      <div class="geometry-info">
+      <div class="geometry-info" onclick="editPlane(${plane.id})" style="cursor: pointer;" title="Cliquer pour modifier">
           <span class="geometry-name">${plane.name}</span>
           <span class="geometry-details" id="plane-normal-${plane.id}">${normalText}</span>
       </div>
       <div class="geometry-actions">
+          <!-- AJOUT : Bouton Crayon -->
+          <button class="btn-secondary" onclick="editPlane(${plane.id})" title="Modifier">✏️</button>
+
           ${normalBtnHtml}
-          <button class="btn-secondary" onclick="openTransformationPanel('plane', ${plane.id})" title="Transformations">🔄</button>
+
           <button class="btn-secondary" onclick="togglePlaneVisibility(${plane.id})" title="${plane.isVisible ? "Masquer" : "Afficher"}">${plane.isVisible ? "👁️" : "🙈"}</button>
           <button class="btn-danger" onclick="removePlaneById(${plane.id})" title="Supprimer">🗑️</button>
       </div>
@@ -2720,15 +2755,32 @@
 
       function updateSelects() {
         const allSelects = document.querySelectorAll("select");
-        const menusWithOrigin = ["vectorOriginPoint", "sumVectorOrigin", "crossVectorOrigin", "rotationCenterSelect", "planeEquationPointSelect", "lineEquationPointSelect"];
 
+        // Ces menus doivent proposer l'option "Origine (0,0,0)" en plus des points
+        const menusWithOrigin = [
+          "vectorOriginPoint",
+          "sumVectorOrigin",
+          "crossVectorOrigin",
+          "rotationCenterSelect",
+          "planeEquationPointSelect",
+          "lineEquationPointSelect"
+        ];
+
+        // CORRECTION : Liste des menus qui contiennent le mot "Vector" dans leur ID
+        // mais qui doivent afficher des POINTS (et non des vecteurs)
+        const pointInputIds = [
+          "sumVectorOrigin",    // Point de départ (Somme)
+          "crossVectorOrigin",  // Origine (Produit vectoriel)
+          "vectorOriginPoint",  // Origine (Tracer vecteur)
+          "vectorStartPoint",   // Point de départ (Tracer vecteur par 2 points)
+          "vectorEndPoint"      // Point d'arrivée (Tracer vecteur par 2 points)
+        ];
 
         allSelects.forEach((select) => {
           const id = select.id;
           const currentValue = select.value;
 
-          // 1. On ignore les menus qui ne dépendent pas de la boucle générale
-          // (Sauf s'ils ont besoin d'être rafraichis par une fonction spécifique ailleurs)
+          // On ignore les menus spéciaux gérés ailleurs
           if (["rotationAxisSelect", "symmetryTypeSelect", "savedScenesSelect", "symmetryRefSelect"].includes(id)) {
             return;
           }
@@ -2736,212 +2788,252 @@
           // On vide le menu pour le reconstruire
           select.innerHTML = "";
 
-          // --- CAS SPÉCIAL 1 : Point de passage pour création de Plan (Nouveau) ---
-          if (id === "planeEquationPointSelect") {
-            select.add(new Option("-- Par défaut (selon constante d) --", ""));
+          // --- CAS SPÉCIAUX (Plans / Droites par équation) ---
+          if (id === "planeEquationPointSelect" || id === "lineEquationPointSelect") {
+            select.add(new Option(id === "planeEquationPointSelect" ? "-- Par défaut (selon constante d) --" : "-- Point de passage (défaut: équation) --", ""));
             select.add(new Option("Origine (0,0,0)", "origin"));
             geometryManager.points.forEach((p, i) => select.add(new Option(p.name, i)));
             select.value = currentValue;
-            return; // On a fini pour ce menu spécifique
+            return;
           }
 
-          // --- CAS SPÉCIAL 2 : Point de passage pour création de Droite ---
-          if (id === "lineEquationPointSelect") {
-            select.add(new Option("-- Point de passage (défaut: équation) --", ""));
-            select.add(new Option("Origine (0,0,0)", "origin"));
+          // --- LOGIQUE GÉNÉRALE CORRIGÉE ---
+
+          // 1. Est-ce un menu qui doit afficher des POINTS ?
+          // (Soit il est dans la liste d'exceptions, soit il ne contient ni Vector/Line/Plane dans son nom)
+          const isPointMenu = pointInputIds.includes(id) || (!id.includes("Vector") && !id.includes("Line") && !id.includes("Plane"));
+
+          if (isPointMenu) {
+            select.add(new Option("-- Point --", ""));
             geometryManager.points.forEach((p, i) => select.add(new Option(p.name, i)));
-            select.value = currentValue;
-            return; // On a fini pour ce menu spécifique
           }
-
-          // --- LOGIQUE GÉNÉRALE ---
-
-          // A. Les Vecteurs
-          if (id.includes("Vector")) {
+          // 2. Les Vecteurs (excluant les exceptions ci-dessus)
+          else if (id.includes("Vector")) {
             select.add(new Option("-- Vecteur --", ""));
             geometryManager.vectors.forEach((v) => select.add(new Option(v.name, v.id)));
           }
-          // B. Les Droites (inclut 'equationLineSelect')
+          // 3. Les Droites
           else if (id.includes("Line")) {
-            // Ajout des droites (fonctionne pour "lineSelect" ET "perpLine1")
             select.add(new Option("-- Droite --", ""));
             geometryManager.lines.forEach((l) => select.add(new Option(l.name, l.id)));
           }
-          // C. Les Plans (inclut 'equationPlaneSelect')
+          // 4. Les Plans
           else if (id.includes("Plane")) {
             select.add(new Option("-- Plan --", ""));
             geometryManager.planes.forEach((p) => select.add(new Option(p.name, p.id)));
           }
-          // D. Les Points (Par défaut pour tout le reste)
-          else {
-            select.add(new Option("-- Point --", ""));
-            geometryManager.points.forEach((p, i) => select.add(new Option(p.name, i)));
-          }
 
           // --- OPTIONS SUPPLÉMENTAIRES (Origine) ---
           if (menusWithOrigin.includes(id)) {
-            // On insère l'option Origine intelligemment
-            // Si le menu a déjà une option (le titre "-- Choisir --"), on insère après
             const originOpt = new Option("Origine (0,0,0)", "origin");
+            // On insère après le titre ("-- Point --")
             if (select.options.length > 0) {
-              select.add(originOpt, select.options[1]); // Index 1 = après le titre
+              select.add(originOpt, select.options[1]);
             } else {
               select.add(originOpt);
             }
           }
-          // if (["vectorOriginPoint", "sumVectorOrigin", "crossVectorOrigin", "rotationCenterSelect"].includes(id)) {
-          //   if (select.options.length > 0) {
-          //     const originOpt = new Option("Origine (0,0,0)", "origin");
-          //     select.add(originOpt, select.options[1]);
-          //   } else {
-          //     select.add(new Option("Origine (0,0,0)", "origin"));
-          //   }
-          // }
 
-          // Restauration de la valeur sélectionnée (si elle existe encore)
+          // Restauration de la valeur sélectionnée
           select.value = currentValue;
         });
 
-        // --- IMPORTANT : Mise à jour des zones d'affichage des équations ---
-        // C'est ce qui permet de rafraîchir le texte de l'équation si une droite/plan est déjà sélectionné
+        // Mise à jour des affichages d'équations et symétrie
         displayPlaneEquation();
         displayLineEquation();
-
-        // Mise à jour du menu de symétrie s'il existe
         if (document.getElementById("symmetryTypeSelect")) {
           updateSymmetryUI();
         }
       }
-
       // =====================================================================================
       // SECTION 5 : CRÉATION / MODIFICATION / SUPPRESSION D'OBJETS
       // =====================================================================================
       function editPoint(index, forceOpen = true) {
-        // MODIFICATION : On n'ouvre le panneau que si forceOpen est vrai
+        // 1. UI
         if (forceOpen) {
           ensurePanelVisible();
+          const input = document.getElementById("pointName");
+          if (input) {
+            const section = input.closest(".section.collapsible");
+            if (section && section.classList.contains("collapsed")) section.classList.remove("collapsed");
+          }
         }
 
         const p = geometryManager.points[index];
         if (!p) return;
 
+        // 2. Remplissage
         document.getElementById("pointName").value = p.name;
         document.getElementById("pointX").value = formatNumber(p.position.x);
-        document.getElementById("pointY").value = formatNumber(p.position.z);
-        document.getElementById("pointZ").value = formatNumber(p.position.y);
+        document.getElementById("pointY").value = formatNumber(p.position.z); // Z 3D -> Y UI
+        document.getElementById("pointZ").value = formatNumber(p.position.y); // Y 3D -> Z UI
         document.getElementById("editPointIndex").value = index;
 
-        document.getElementById("addPointBtn").style.display = "none";
-        document.getElementById("pointEditActions").style.display = "grid";
+        // 3. Boutons
+        const btnAdd = document.getElementById("addPointBtn");
+        if (btnAdd) btnAdd.style.display = "none";
+        const actions = document.getElementById("pointEditActions");
+        if (actions) actions.style.display = "grid";
 
-        // MODIFICATION : On ne fait défiler que si le panneau est censé s'ouvrir
-        if (forceOpen) {
-          const s = document.getElementById("pointList").closest(".section.collapsible");
-          if (s && s.classList.contains("collapsed")) {
-            s.classList.remove("collapsed");
-          }
+        // 4. ACTIVATION GIZMO SÉCURISÉE
+        // Si l'objet n'est pas encore sélectionné (ex: clic bouton crayon), on le sélectionne.
+        if (selectedObjectInstance !== p && p.mesh) {
+          handleSelection(p.mesh);
         }
       }
 
       function editVector(id, forceOpen = true) {
-        // 1. Si demandé, on ouvre le panneau latéral
-        if (forceOpen) ensurePanelVisible();
+        // 1. UI
+        if (forceOpen) {
+          ensurePanelVisible();
+          const input = document.getElementById("vectorNameCoords");
+          if (input) {
+            const section = input.closest(".section.collapsible");
+            if (section && section.classList.contains("collapsed")) section.classList.remove("collapsed");
+          }
+        }
 
-        // 2. On récupère le vecteur par son ID
         const v = geometryManager.findVectorById(id);
-        if (!v) {
-          console.error("Vecteur introuvable pour l'id :", id);
-          return;
-        }
+        if (!v) return;
 
-        // 3. Remplissage des champs (Nom)
+        // 2. Remplissage
         document.getElementById("vectorNameCoords").value = v.name;
+        document.getElementById("vectorCoordX").value = formatNumber(v.components.x);
+        document.getElementById("vectorCoordY").value = formatNumber(v.components.z);
+        document.getElementById("vectorCoordZ").value = formatNumber(v.components.y);
 
-        // 4. Remplissage des Composantes (Vx, Vy, Vz)
-        // On utilise une sécurité (|| 0) au cas où les données seraient incomplètes
-        document.getElementById("vectorCoordX").value = formatNumber(v.components.x || 0);
-        document.getElementById("vectorCoordY").value = formatNumber(v.components.z || 0); // Z ThreeJS -> Y UI
-        document.getElementById("vectorCoordZ").value = formatNumber(v.components.y || 0); // Y ThreeJS -> Z UI
-
-        // 5. Remplissage de l'Origine (Ox, Oy, Oz)
-        const ox = v.origin.x || 0;
-        const oy = v.origin.y || 0; // Y ThreeJS -> Z UI (Hauteur)
-        const oz = v.origin.z || 0; // Z ThreeJS -> Y UI (Profondeur)
-
+        const ox = v.origin.x, oy = v.origin.z, oz = v.origin.y;
         document.getElementById("vectorOriginX").value = formatNumber(ox);
-        document.getElementById("vectorOriginY").value = formatNumber(oz); // Attention inversion affichage
-        document.getElementById("vectorOriginZ").value = formatNumber(oy); // Attention inversion affichage
-
-        // 6. Gestion du menu déroulant "Origine" (VERSION CORRIGÉE ET SÉCURISÉE)
-        const originSelect = document.getElementById("vectorOriginPoint");
-        if (originSelect) {
-          originSelect.value = "";
-
-          // Calcul manuel de la longueur au carré pour éviter "distanceToSq is not a function"
-          const originLengthSq = ox * ox + oy * oy + oz * oz;
-
-          // Si l'origine est (0,0,0) (ou très proche)
-          if (originLengthSq < 0.0001) {
-            originSelect.value = "origin";
-          }
-          // Sinon on cherche si ça correspond à un point existant
-          else {
-            for (let i = 0; i < geometryManager.points.length; i++) {
-              const p = geometryManager.points[i].position;
-              // Calcul manuel de la distance au carré entre l'origine du vecteur et le point p
-              const dx = ox - p.x;
-              const dy = oy - p.y;
-              const dz = oz - p.z;
-              const distSq = dx * dx + dy * dy + dz * dz;
-
-              if (distSq < 0.0001) {
-                originSelect.value = i.toString();
-                break;
-              }
-            }
-          }
-        }
-
-        // 7. Stockage de l'ID en cours d'édition
+        document.getElementById("vectorOriginY").value = formatNumber(oy);
+        document.getElementById("vectorOriginZ").value = formatNumber(oz);
         document.getElementById("editVectorId").value = id;
 
-        // 8. GESTION DES BOUTONS
-        // A. Cacher le bouton "Tracer le vecteur"
-        const addBtn = document.getElementById("addVectorFromCoordsBtn");
-        if (addBtn) addBtn.style.display = "none";
+        // 3. Boutons
+        const btnAdd = document.getElementById("addVectorFromCoordsBtn");
+        if (btnAdd) btnAdd.style.display = "none";
+        const actions = document.getElementById("vectorEditActions");
+        if (actions) actions.style.display = "grid";
 
-        // B. Afficher le groupe de boutons "Mettre à jour / Supprimer / Annuler"
-        const editActions = document.getElementById("vectorEditActions");
-        if (editActions) {
-          editActions.style.display = "grid";
-        }
-
-        // 9. OUVERTURE DE LA SECTION ET DÉFILEMENT
-        if (forceOpen) {
-          const inputField = document.getElementById("vectorNameCoords");
-          const section = inputField.closest(".section.collapsible");
-
-          if (section && section.classList.contains("collapsed")) {
-            section.classList.remove("collapsed");
-          }
-
+        // 4. ACTIVATION GIZMO SÉCURISÉE
+        if (selectedObjectInstance !== v && v.arrowHelper) {
+          // Pour un vecteur, on passe le helper à handleSelection
+          // (Attention: handleSelection attend un objet avec userData.instance, ce que arrowHelper.line possède)
+          handleSelection(v.arrowHelper.line);
         }
       }
-
 
       function editLine(id, forceOpen = true) {
-        // MODIFICATION : Si on ne force pas l'ouverture (mobile), on ne fait rien de visuel dans le panneau
+        // 1. UI
         if (forceOpen) {
           ensurePanelVisible();
-          expandSectionAndScrollToItem(`line-item-${id}`, "lineList");
+          const input = document.getElementById("lineEquationInput");
+          if (input) {
+            const section = input.closest(".section.collapsible");
+            if (section && section.classList.contains("collapsed")) section.classList.remove("collapsed");
+            input.scrollIntoView({ behavior: "smooth", block: "center" });
+          }
+        }
+
+        const line = geometryManager.findLineById(id);
+        if (!line) return;
+
+        // 2. Remplissage
+        const idField = document.getElementById("editLineId");
+        if (idField) idField.value = id;
+
+        const nameField = document.getElementById("lineNameFromEquation");
+        if (nameField) nameField.value = line.name;
+
+        document.getElementById("lineEqPointX").value = formatNumber(line.startPoint.x);
+        document.getElementById("lineEqPointY").value = formatNumber(line.startPoint.z);
+        document.getElementById("lineEqPointZ").value = formatNumber(line.startPoint.y);
+        document.getElementById("lineEquationPointSelect").value = "";
+
+        // Génération équation
+        const p = line.startPoint;
+        const v = line.directorVector;
+        const fmt = (start, dir) => {
+          let s = "";
+          if (Math.abs(start) > 1e-4) s += formatNumber(start);
+          if (Math.abs(dir) > 1e-4) {
+            const sign = dir > 0 ? (s ? " + " : "") : " - ";
+            const val = Math.abs(Math.abs(dir) - 1) < 1e-4 ? "t" : formatNumber(Math.abs(dir)) + "t";
+            s += sign + val;
+          }
+          return s || "0";
+        };
+        const txtX = `x = ${fmt(p.x, v.x)}`;
+        const txtY = `y = ${fmt(p.z, v.z)}`;
+        const txtZ = `z = ${fmt(p.y, v.y)}`;
+        document.getElementById("lineEquationInput").value = `${txtX}\n${txtY}\n${txtZ}`;
+
+        // 3. Boutons
+        const btnAdd = document.getElementById("addLineFromEquationBtn");
+        if (btnAdd) btnAdd.style.display = "none";
+        const actions = document.getElementById("lineEquationActions");
+        if (actions) actions.style.display = "grid";
+
+        // 4. ACTIVATION GIZMO SÉCURISÉE
+        if (selectedObjectInstance !== line && line.mesh) {
+          handleSelection(line.mesh);
         }
       }
-
       function editPlane(id, forceOpen = true) {
-        // MODIFICATION
+        // 1. UI
         if (forceOpen) {
           ensurePanelVisible();
-          expandSectionAndScrollToItem(`plane-item-${id}`, "planeList");
+          const input = document.getElementById("planeEquationInput");
+          if (input) {
+            const section = input.closest(".section.collapsible");
+            if (section && section.classList.contains("collapsed")) section.classList.remove("collapsed");
+            input.scrollIntoView({ behavior: "smooth", block: "center" });
+          }
+        }
+
+        const plane = geometryManager.findPlaneById(id);
+        if (!plane) return;
+
+        // 2. Remplissage
+        const idField = document.getElementById("editPlaneId");
+        if (idField) idField.value = id;
+
+        document.getElementById("planeEqPointX").value = formatNumber(plane.pointOnPlane.x);
+        document.getElementById("planeEqPointY").value = formatNumber(plane.pointOnPlane.z);
+        document.getElementById("planeEqPointZ").value = formatNumber(plane.pointOnPlane.y);
+        document.getElementById("planeEquationPointSelect").value = "";
+
+        // Génération équation
+        const n = plane.displayNormal;
+        const p = plane.pointOnPlane;
+        const a = n.x, b = n.z, c = n.y;
+        const d = -(a * p.x + b * p.z + c * p.y);
+
+        const fmtCoef = (val, axisName) => {
+          if (Math.abs(val) < 1e-4) return "";
+          const sign = val > 0 ? "+" : "-";
+          const absVal = Math.abs(val);
+          const valStr = Math.abs(absVal - 1) < 1e-4 ? "" : formatNumber(absVal);
+          return `${sign} ${valStr}${axisName} `;
+        };
+
+        let eqStr = "";
+        if (Math.abs(a) > 1e-4) eqStr += `${formatNumber(a)}x `;
+        eqStr += fmtCoef(b, "y");
+        eqStr += fmtCoef(c, "z");
+        if (Math.abs(d) > 1e-4) eqStr += d > 0 ? `+ ${formatNumber(d)}` : `- ${formatNumber(Math.abs(d))}`;
+        eqStr = eqStr.trim().replace(/^\+\s/, "") + " = 0";
+
+        document.getElementById("planeEquationInput").value = eqStr;
+
+        // 3. Boutons
+        const btnAdd = document.getElementById("addPlaneFromEquationBtn");
+        if (btnAdd) btnAdd.style.display = "none";
+        const actions = document.getElementById("planeEquationActions");
+        if (actions) actions.style.display = "grid";
+
+        // 4. ACTIVATION GIZMO SÉCURISÉE
+        if (selectedObjectInstance !== plane && plane.mesh) {
+          handleSelection(plane.mesh);
         }
       }
 
@@ -3756,53 +3848,45 @@
         const inst = mesh.userData.instance;
         if (!inst) return;
 
+        // 1. Gestion du Toggle : Si on clique sur l'objet DÉJÀ sélectionné, on le désélectionne
         if (inst === selectedObjectInstance) {
           deselectCurrentObject();
-          cancelEdit();
-          cancelVectorEdit();
+          // On vide les formulaires pour être propre
+          if (typeof cancelEdit === 'function') cancelEdit();
+          if (typeof cancelVectorEdit === 'function') cancelVectorEdit();
+          if (typeof cancelLineEdit === 'function') cancelLineEdit();
+          if (typeof cancelPlaneEdit === 'function') cancelPlaneEdit();
           return;
         }
 
+        // 2. Nouvelle sélection
         deselectCurrentObject();
         selectedObjectInstance = inst;
 
-        // Attachement du Gizmo
-        if (inst instanceof Vector) {
-          if (inst.arrowHelper) transformControl.attach(inst.arrowHelper);
-        } else {
-          transformControl.attach(mesh);
-        }
-        transformControl.setMode('translate');
-
-        // Surbrillance
-        if (inst instanceof Vector) {
-          inst.arrowHelper.setColor(HIGHLIGHT_COLOR);
-        } else {
-          mesh.material.color.set(HIGHLIGHT_COLOR);
-          if (inst instanceof Plane) mesh.material.opacity = 0.75;
-        }
-
-        // Gestion de l'affichage "Transformations" selon la taille d'écran
-        const isMobile = window.innerWidth <= 768;
-
-        // On rend le conteneur visible (pour que le formulaire existe)
-        document.getElementById("transformations-hint").style.display = "none";
-        document.getElementById("transformations-container").style.display = "block";
-
-        // MAIS on ne force le dépliage et le scroll QUE sur ordinateur
-        if (!isMobile) {
-          document.getElementById("transformations-hint").style.display = "none";
-          document.getElementById("transformations-container").style.display = "block";
-
-          // On déplie la section si elle est fermée, mais SANS SCROLLER
-          const transContainer = document.getElementById("transformations-container");
-          const section = transContainer.closest(".section");
-          if (section && section.classList.contains("collapsed")) {
-            section.classList.remove("collapsed");
+        // 3. Attachement du Gizmo
+        if (transformControl) {
+          // CAS VECTEUR : On attache à l'arrowHelper (la flèche visuelle)
+          if (inst instanceof Vector) {
+            if (inst.arrowHelper) {
+              transformControl.attach(inst.arrowHelper);
+              inst.arrowHelper.setColor(0xffff00); // Jaune
+            }
           }
+          // CAS GÉNÉRAL (Point, Droite, Plan)
+          else {
+            transformControl.attach(mesh);
+
+            // Surbrillance
+            if (mesh.material && mesh.material.color) {
+              mesh.material.color.set(0xffff00);
+              if (inst instanceof Plane) mesh.material.opacity = 0.75;
+            }
+          }
+          transformControl.setMode('translate');
         }
 
-        // Appel de la mise à jour du panneau (qui n'ouvrira PAS le panneau sur mobile)
+        // 4. Mise à jour du panneau latéral
+        // Cette fonction va appeler editPoint, editLine, etc.
         updatePanelForSelection(inst);
       }
 
@@ -5444,7 +5528,6 @@
           document.body.style.cursor = "default";
         }
       }
-
       function syncDataFromGizmo() {
         const inst = selectedObjectInstance;
         if (!inst) return;
@@ -5461,11 +5544,11 @@
           }
         }
 
-        // 2. VECTEUR (Inchangé mais nettoyé)
+        // 2. VECTEUR (Inchangé)
         else if (inst instanceof Vector) {
           const currentOrigin = inst.origin.clone().add(inst.arrowHelper.position);
           inst.updateLabelPosition();
-          // Mise à jour de la liste
+
           const originListSpan = document.getElementById(`vector-origin-list-${inst.id}`);
           if (originListSpan) {
             const ox = formatNumber(currentOrigin.x, 1);
@@ -5473,75 +5556,90 @@
             const oz = formatNumber(currentOrigin.y, 1);
             originListSpan.innerHTML = `Origine: <strong>(${ox}, ${oy}, ${oz})</strong>`;
           }
-          // Formulaire d'édition
+
           if (document.getElementById("editVectorId").value == inst.id) {
             document.getElementById("vectorOriginX").value = formatNumber(currentOrigin.x);
             document.getElementById("vectorOriginY").value = formatNumber(currentOrigin.z);
             document.getElementById("vectorOriginZ").value = formatNumber(currentOrigin.y);
+            // On force le select sur vide/custom pour que les inputs soient pris en compte
+            const vSelect = document.getElementById("vectorOriginPoint");
+            if (vSelect) vSelect.value = "";
           }
         }
 
-        // 3. DROITE (MODIFIÉ)
+        // 3. DROITE (CORRIGÉ)
         else if (inst instanceof Line3D) {
-          // Calcul de la position actuelle (Point de départ initial + Déplacement du Mesh)
+          // Calcul de la position actuelle
           const currentP = inst.startPoint.clone().add(inst.mesh.position);
 
-          // A. Mise à jour de la liste "Droites existantes"
+          // A. Mise à jour de la liste
           const pointSpan = document.getElementById(`line-point-${inst.id}`);
           if (pointSpan) {
             const px = formatNumber(currentP.x, 1);
-            const py = formatNumber(currentP.z, 1); // Profondeur UI
-            const pz = formatNumber(currentP.y, 1); // Hauteur UI
+            const py = formatNumber(currentP.z, 1);
+            const pz = formatNumber(currentP.y, 1);
             pointSpan.innerHTML = `Passe par : <strong>(${px}, ${py}, ${pz})</strong>`;
           }
 
-          // B. Mise à jour de l'équation si affichée (TEMPS RÉEL)
+          // B. Mise à jour de l'affichage équation
           const eqSelect = document.getElementById("equationLineSelect");
-
-          // On vérifie si la droite en cours de modification est celle affichée dans le panneau "Equations"
           if (eqSelect && parseInt(eqSelect.value) === inst.id) {
-            // On crée un objet léger qui imite la structure d'une Line3D
-            // avec la position recalculée (currentP) et le vecteur directeur existant
             const tempLine = {
               startPoint: currentP,
-              directorVector: inst.directorVector // Le vecteur directeur ne change pas lors d'une translation
+              directorVector: inst.directorVector
             };
-
-            // On force l'affichage avec ces données temporaires
             displayLineEquation(tempLine);
+          }
+
+          // C. --- CORRECTION CRITIQUE : MISE À JOUR DU FORMULAIRE D'ÉDITION ---
+          // Si on est en train d'éditer CETTE droite précise
+          if (document.getElementById("editLineId").value == inst.id) {
+            document.getElementById("lineEqPointX").value = formatNumber(currentP.x);
+            document.getElementById("lineEqPointY").value = formatNumber(currentP.z); // Profondeur (UI Y = 3D Z)
+            document.getElementById("lineEqPointZ").value = formatNumber(currentP.y); // Hauteur (UI Z = 3D Y)
+
+            // IMPORTANT : On remet le selecteur sur "vide" pour forcer l'usage des coordonnées manuelles
+            // sinon la fonction updateLine() pourrait reprendre le point nommé précédent.
+            document.getElementById("lineEquationPointSelect").value = "";
           }
         }
 
-
-        // 4. PLAN (Inchangé)
+        // 4. PLAN (CORRIGÉ)
         else if (inst instanceof Plane) {
-          // 1. Mise à jour mathématique
           inst.pointOnPlane.copy(inst.mesh.position);
 
-          // Gestion de la rotation (si applicable)
           if (transformControl.mode === "rotate") {
             const rotationMatrix = new THREE.Matrix4().extractRotation(inst.mesh.matrix);
-            // On recalcul le vecteur normal pour qu'il suive la rotation
-            const initialNormal = new THREE.Vector3(0, 0, 1); // Normale de base d'un PlaneGeometry non tourné
-            // Note : Si votre plan a été créé avec une orientation spécifique,
-            // il faudrait idéalement stocker le quaternion initial, mais cette méthode fonctionne pour les manipulations visuelles.
+            const initialNormal = new THREE.Vector3(0, 0, 1);
             inst.normal.copy(initialNormal).applyMatrix4(rotationMatrix).normalize();
             inst.displayNormal.copy(inst.normal);
+            // Note : Pour la rotation, mettre à jour l'équation texte (ax+by...) est complexe
+            // et pourrait écraser le formatage utilisateur, on se concentre sur la position ici.
           }
 
-          // 2. Mise à jour de l'interface (Liste des plans) - NOUVEAU
+          // A. Mise à jour liste
           const pointSpan = document.getElementById(`plane-point-${inst.id}`);
           if (pointSpan) {
             const px = formatNumber(inst.pointOnPlane.x, 1);
-            const py_ui = formatNumber(inst.pointOnPlane.z, 1); // Inversion standard Y/Z
+            const py_ui = formatNumber(inst.pointOnPlane.z, 1);
             const pz_ui = formatNumber(inst.pointOnPlane.y, 1);
             pointSpan.innerHTML = `Passe par : <strong>(${px}, ${py_ui}, ${pz_ui})</strong>`;
           }
 
-          // 3. Mise à jour de l'affichage de l'équation si le panneau est ouvert
+          // B. Equation display
           const planeSelect = document.getElementById("equationPlaneSelect");
           if (planeSelect && parseInt(planeSelect.value) === inst.id) {
             displayPlaneEquation();
+          }
+
+          // C. --- CORRECTION CRITIQUE : MISE À JOUR DU FORMULAIRE D'ÉDITION ---
+          if (document.getElementById("editPlaneId").value == inst.id) {
+            document.getElementById("planeEqPointX").value = formatNumber(inst.pointOnPlane.x);
+            document.getElementById("planeEqPointY").value = formatNumber(inst.pointOnPlane.z); // Profondeur
+            document.getElementById("planeEqPointZ").value = formatNumber(inst.pointOnPlane.y); // Hauteur
+
+            // Force l'usage des coordonnées manuelles
+            document.getElementById("planeEquationPointSelect").value = "";
           }
         }
       }
@@ -6106,6 +6204,401 @@
         vSelect.value = "";
 
         showSplashScreen(`✅ Droite "${uniqueName}" créée !`);
+      }
+
+      function updateLine() {
+        console.log("updateLine lancée..."); // DEBUG
+
+        // 1. Récupération de l'objet
+        const idVal = document.getElementById("editLineId").value;
+        if (!idVal) { console.error("Pas d'ID"); return; }
+
+        const id = parseInt(idVal);
+        const line = geometryManager.findLineById(id);
+        if (!line) { console.error("Ligne introuvable"); return; }
+
+        const name = document.getElementById("lineNameFromEquation").value.trim();
+        const equationsText = document.getElementById("lineEquationInput").value;
+
+        // 2. Analyse de l'équation (Parsing)
+        const lines = equationsText.split("\n").filter((l) => l.trim() !== "");
+
+        // Valeurs par défaut
+        let vector = { x: 0, y: 0, z: 0 };     // Composantes t
+        let pointText = { x: 0, y: 0, z: 0 }; // Constantes
+
+        lines.forEach(l => {
+          const axis = l.trim().charAt(0).toLowerCase();
+          if (!["x", "y", "z"].includes(axis)) return;
+
+          const content = l.substring(l.indexOf("=") + 1).replace(/\s/g, "");
+
+          // Trouver t (ex: "-5t")
+          const tMatch = content.match(/[+-]?[\d\.]*t/);
+          if (tMatch) {
+            let tStr = tMatch[0].replace("t", "");
+            if (tStr === "" || tStr === "+") vector[axis] = 1;
+            else if (tStr === "-") vector[axis] = -1;
+            else vector[axis] = parseFloat(tStr);
+          }
+
+          // Trouver constante (ex: "2") - on enlève la partie t pour lire le reste
+          const constStr = tMatch ? content.replace(tMatch[0], "") : content;
+          const val = parseFloat(constStr);
+          if (!isNaN(val)) pointText[axis] = val;
+        });
+
+        // 3. Récupération Point de Passage (Priorité aux inputs manuels)
+        const px = document.getElementById("lineEqPointX").value;
+        const py = document.getElementById("lineEqPointY").value;
+        const pz = document.getElementById("lineEqPointZ").value;
+        const selectVal = document.getElementById("lineEquationPointSelect").value;
+
+        let newStart = new THREE.Vector3();
+
+        // Logique de priorité : Inputs > Select > Texte Equation
+        if (px !== "" || py !== "" || pz !== "") {
+          newStart.set(parseFloat(px) || 0, parseFloat(pz) || 0, parseFloat(py) || 0); // Note: Z UI -> Y 3D
+        } else if (selectVal !== "" && selectVal !== "origin") {
+          const pObj = geometryManager.points[parseInt(selectVal)];
+          if (pObj) newStart.copy(pObj.position);
+        } else if (selectVal === "origin") {
+          newStart.set(0, 0, 0);
+        } else {
+          newStart.set(pointText.x, pointText.z, pointText.y); // Note: Z UI -> Y 3D
+        }
+
+        // 4. Vecteur Directeur
+        const newDir = new THREE.Vector3(vector.x, vector.z, vector.y); // Note: Z UI -> Y 3D
+        if (newDir.lengthSq() < 1e-8) {
+          showSplashScreen("Erreur : Vecteur directeur nul.");
+          return;
+        }
+
+        // =========================================================
+        // 5. MISE À JOUR DES DONNÉES ET DE LA SCÈNE (CRITIQUE)
+        // =========================================================
+
+        // A. Mise à jour de l'objet JS
+        line.name = name || line.name;
+        line.startPoint.copy(newStart);
+        line.directorVector.copy(newDir);
+
+        // B. Mise à jour du Mesh (Visuel)
+        // IMPORTANT : On remet le conteneur à 0 pour que la géométrie absolue fonctionne
+        line.mesh.position.set(0, 0, 0);
+        line.mesh.rotation.set(0, 0, 0);
+        line.mesh.scale.set(1, 1, 1);
+        line.mesh.updateMatrix();
+
+        // C. Recalculer les points de la ligne
+        const len = 1000; // Longueur visuelle
+        const dirNorm = newDir.clone().normalize();
+        const pA = newStart.clone().addScaledVector(dirNorm, -len);
+        const pB = newStart.clone().addScaledVector(dirNorm, len);
+
+        // D. Remplacer la géométrie
+        line.mesh.geometry.dispose(); // Nettoyer mémoire
+        line.mesh.geometry = new THREE.BufferGeometry().setFromPoints([pA, pB]);
+
+        // E. Si le Gizmo tenait la ligne, il faut le rafraîchir
+        if (selectedObjectInstance === line && typeof transformControl !== 'undefined') {
+          transformControl.detach();
+          transformControl.attach(line.mesh);
+        }
+
+        // 6. Mise à jour de l'interface (Liste à gauche)
+        updateAllUI(); // Ceci met à jour la liste "Droites existantes"
+        saveState();   // Historique
+
+        // 7. Sortir du mode édition
+        cancelLineEdit();
+        showSplashScreen(`✅ Droite mise à jour !`);
+      }
+
+      function cancelLineEdit() {
+        // Vider
+        document.getElementById("editLineId").value = "";
+        document.getElementById("lineNameFromEquation").value = "";
+        document.getElementById("lineEquationInput").value = "x = 2t\ny = t\nz = -5t";
+        document.getElementById("lineEqPointX").value = "";
+        document.getElementById("lineEqPointY").value = "";
+        document.getElementById("lineEqPointZ").value = "";
+        document.getElementById("lineEquationPointSelect").value = "";
+
+        // Basculer boutons
+        document.getElementById("addLineFromEquationBtn").style.display = "block";
+        document.getElementById("lineEquationActions").style.display = "none";
+
+        // Désélectionner
+        deselectCurrentObject();
+      }
+
+      function deleteEditingLine() {
+        const id = parseInt(document.getElementById("editLineId").value);
+        if (!isNaN(id)) {
+          removeStraightLineById(id);
+          cancelLineEdit();
+        }
+      }
+
+      function cancelLineEdit() {
+        // Vider les champs
+        document.getElementById("lineNameFromEquation").value = "";
+        document.getElementById("lineEquationInput").value = "x = 2t\ny = t\nz = -5t"; // Valeur par défaut
+        document.getElementById("editLineId").value = "";
+        document.getElementById("lineEqPointX").value = "";
+        document.getElementById("lineEqPointY").value = "";
+        document.getElementById("lineEqPointZ").value = "";
+        document.getElementById("lineEquationPointSelect").value = "";
+
+        // Basculer l'affichage des boutons
+        document.getElementById("addLineFromEquationBtn").style.display = "block";
+        document.getElementById("lineEquationActions").style.display = "none";
+
+        // Désélectionner
+        deselectCurrentObject();
+      }
+
+      function deleteEditingLine() {
+        const id = parseInt(document.getElementById("editLineId").value);
+        if (!isNaN(id)) {
+          removeStraightLineById(id); // Fonction existante
+          cancelLineEdit();
+        }
+      }
+
+      function updatePlane() {
+        const idVal = document.getElementById("editPlaneId").value;
+        if (!idVal) return;
+
+        const id = parseInt(idVal);
+        const plane = geometryManager.findPlaneById(id);
+        if (!plane) return;
+
+        let equationStr = document.getElementById("planeEquationInput").value.trim();
+        if (!equationStr) {
+          showSplashScreen("L'équation est vide.");
+          return;
+        }
+
+        // --- 1. Parsing de l'équation (Identique à addPlaneFromEquation) ---
+        if (equationStr.includes("=")) {
+          const parts = equationStr.split("=");
+          equationStr = `${parts[0]} - (${parts[1]})`;
+        }
+
+        const getCoefficient = (variable) => {
+          const regex = new RegExp(`([+-]?[\\d\\.]*)\\s*\\*?\\s*${variable}`, "gi");
+          let total = 0;
+          let match;
+          while ((match = regex.exec(equationStr)) !== null) {
+            let s = match[1].replace(/\s/g, "");
+            if (s === "" || s === "+") total += 1;
+            else if (s === "-") total += -1;
+            else total += parseFloat(s);
+          }
+          return total;
+        };
+
+        const a = getCoefficient("x");
+        const b = getCoefficient("y"); // UI Y (Prof) -> 3D Z
+        const c = getCoefficient("z"); // UI Z (Haut) -> 3D Y
+
+        // Normale ThreeJS (x, y, z) -> (a, c, b)
+        const newNormalUnnormalized = new THREE.Vector3(a, c, b);
+
+        if (newNormalUnnormalized.lengthSq() < 1e-8) {
+          showSplashScreen("Vecteur normal invalide.");
+          return;
+        }
+
+        const newNormal = newNormalUnnormalized.clone().normalize();
+
+        // --- 2. Point de passage ---
+        const pxStr = document.getElementById("planeEqPointX").value;
+        const pyStr = document.getElementById("planeEqPointY").value;
+        const pzStr = document.getElementById("planeEqPointZ").value;
+        const selectVal = document.getElementById("planeEquationPointSelect").value;
+
+        let newPoint = new THREE.Vector3();
+
+        // Priorité 1 : Manuel
+        if (pxStr !== "" || pyStr !== "" || pzStr !== "") {
+          newPoint.set(parseFloat(pxStr) || 0, parseFloat(pzStr) || 0, parseFloat(pyStr) || 0);
+        }
+        // Priorité 2 : Select
+        else if (selectVal !== "" && selectVal !== "origin") {
+          const pObj = geometryManager.points[parseInt(selectVal)];
+          if (pObj) newPoint.copy(pObj.position);
+        }
+        else if (selectVal === "origin") {
+          newPoint.set(0, 0, 0);
+        }
+        // Priorité 3 : Calcul via 'd' (Auto)
+        else {
+          let constantStr = equationStr
+            .replace(/[+-]?[\d\\.]*\s*\*?\s*[xyz]/gi, "")
+            .replace(/--/g, "+").trim();
+          let d = 0;
+          try { if (constantStr) d = new Function("return " + constantStr)(); } catch (e) { }
+
+          // Trouver un point valide
+          if (Math.abs(newNormalUnnormalized.x) > 1e-6) newPoint.set(-d / newNormalUnnormalized.x, 0, 0);
+          else if (Math.abs(newNormalUnnormalized.z) > 1e-6) newPoint.set(0, 0, -d / newNormalUnnormalized.z); // Z 3D = Y UI (b)
+          else if (Math.abs(newNormalUnnormalized.y) > 1e-6) newPoint.set(0, -d / newNormalUnnormalized.y, 0); // Y 3D = Z UI (c)
+        }
+
+        // --- 3. MISE À JOUR OBJET ET SCÈNE ---
+
+        // A. Mise à jour données
+        plane.normal.copy(newNormal);
+        plane.displayNormal.copy(newNormalUnnormalized); // On garde (a,c,b) pour l'affichage
+        plane.pointOnPlane.copy(newPoint);
+
+        // B. Mise à jour Mesh
+        // Position
+        plane.mesh.position.copy(plane.pointOnPlane);
+        // Rotation (Quaternion pour aligner Z local avec la normale)
+        plane.mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), plane.normal);
+        plane.mesh.updateMatrix();
+
+        // C. Gestion Gizmo
+        if (selectedObjectInstance === plane && typeof transformControl !== 'undefined') {
+          transformControl.detach();
+          transformControl.attach(plane.mesh);
+        }
+
+        // D. Gestion Vecteur Normal affiché (Vn)
+        // Si le bouton "Vn" est actif, on doit mettre à jour le vecteur visuel aussi
+        const existingVn = geometryManager.vectors.find(v => v.parentPlaneId === plane.id && v.isNormalVector);
+        if (existingVn) {
+          // Vn part du point du plan et suit la normale
+          const vnLength = 2.5;
+          const vnComps = plane.normal.clone().multiplyScalar(vnLength);
+          existingVn.update(existingVn.name, plane.pointOnPlane, vnComps);
+        }
+
+        // --- 4. Finalisation ---
+        updateAllUI();
+        saveState();
+        cancelPlaneEdit();
+        showSplashScreen(`✅ Plan mis à jour !`);
+      }
+
+      function cancelPlaneEdit() {
+        // Reset champs
+        document.getElementById("editPlaneId").value = "";
+        document.getElementById("planeEquationInput").value = "";
+        document.getElementById("planeEqPointX").value = "";
+        document.getElementById("planeEqPointY").value = "";
+        document.getElementById("planeEqPointZ").value = "";
+        document.getElementById("planeEquationPointSelect").value = "";
+
+        // Reset boutons
+        document.getElementById("addPlaneFromEquationBtn").style.display = "block";
+        document.getElementById("planeEquationActions").style.display = "none";
+
+        deselectCurrentObject();
+      }
+
+      function deleteEditingPlane() {
+        const id = parseInt(document.getElementById("editPlaneId").value);
+        if (!isNaN(id)) {
+          removePlaneById(id); // Utilise la fonction existante
+          cancelPlaneEdit();
+        }
+      }
+      /**
+ * Exporte la scène actuelle dans un fichier JSON téléchargeable.
+ * Utilise le format interne serializeSceneData() pour garantir une compatibilité totale à l'import.
+ */
+      /**
+       * Exporte la scène actuelle dans un fichier JSON avec métadonnées.
+       */
+      function exportSceneToJSON() {
+        try {
+          // 1. On récupère les données de géométrie brutes (celles utilisées par l'historique)
+          const rawData = JSON.parse(serializeSceneData());
+
+          // 2. On construit l'objet final en ajoutant le bloc "meta" demandé
+          const exportData = {
+            meta: {
+              appName: "Éditeur Points 3D",
+              date: new Date().toLocaleString(),
+              timestamp: Date.now(),
+              // On calcule le total en vérifiant que les tableaux existent
+              totalObjects: (rawData.points ? rawData.points.length : 0) +
+                (rawData.vectors ? rawData.vectors.length : 0) +
+                (rawData.lines ? rawData.lines.length : 0) +
+                (rawData.planes ? rawData.planes.length : 0)
+            },
+            // 3. On fusionne les données géométriques (points, vectors, etc.) à la racine de l'objet
+            ...rawData
+          };
+
+          // 4. Conversion en texte (avec indentation pour que ce soit lisible par un humain)
+          const jsonString = JSON.stringify(exportData, null, 2);
+
+          // 5. Création et téléchargement du fichier
+          const blob = new Blob([jsonString], { type: "application/json" });
+          const url = URL.createObjectURL(blob);
+
+          const a = document.createElement("a");
+          // Format du nom de fichier : scene_YYYY-MM-DD_HH-MM.json
+          const dateStr = new Date().toISOString().slice(0, 16).replace(/[:T]/g, "-");
+          a.download = `scene_3d_${dateStr}.json`;
+          a.href = url;
+
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+
+          showSplashScreen("✅ Scène exportée avec métadonnées !");
+        } catch (e) {
+          console.error(e);
+          showSplashScreen("❌ Erreur lors de l'export.");
+        }
+      }
+      /**
+       * Importe une scène depuis un fichier JSON sélectionné par l'utilisateur.
+       * @param {HTMLInputElement} inputElement - L'élément input type="file"
+       */
+      function importSceneFromJSON(inputElement) {
+        const file = inputElement.files[0];
+
+        if (!file) return;
+
+        // Sécurité : Demander confirmation car cela va écraser la scène actuelle
+        if (!confirm("Attention : L'importation va remplacer la scène actuelle. Voulez-vous continuer ?")) {
+          inputElement.value = ""; // Reset de l'input
+          return;
+        }
+
+        const reader = new FileReader();
+
+        reader.onload = function (e) {
+          try {
+            const jsonContent = e.target.result;
+
+            // On utilise la fonction existante restoreSceneData qui gère déjà tout le nettoyage et la reconstruction
+            restoreSceneData(jsonContent);
+
+            // On sauvegarde cet état dans l'historique pour pouvoir faire "Annuler" si l'import n'est pas voulu
+            saveState();
+
+            showSplashScreen(`✅ Scène "${file.name}" importée !`);
+          } catch (err) {
+            console.error(err);
+            showSplashScreen("❌ Erreur : Fichier invalide ou corrompu.");
+          }
+
+          // Reset de l'input pour permettre de réimporter le même fichier si besoin
+          inputElement.value = "";
+        };
+
+        reader.readAsText(file);
       }
 
     </script>
