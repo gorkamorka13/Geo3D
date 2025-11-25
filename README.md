@@ -9,7 +9,7 @@
 
 Une application web interactive et pédagogique permettant de visualiser, manipuler et résoudre des problèmes de géométrie dans l'espace (R³) en temps réel. Conçue pour les étudiants, les enseignants et les passionnés de mathématiques.
 
-![Aperçu de l'application](<img width="1031" height="820" alt="Image" src="https://github.com/user-attachments/assets/9ba0c342-cf5f-4cd3-a192-7e7e3eb81edf" />)
+![Aperçu de l'application](https://github.com/gorkamorka13/Geo3D/blob/main/Capture%20d%E2%80%99%C3%A9cran%20geo.png>)
 *(Insérez ici une capture d'écran de votre interface)*
 
 ## 📋 Table des Matières
