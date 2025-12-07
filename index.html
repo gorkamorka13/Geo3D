@@ -10,7 +10,7 @@
     <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <!-- Ajout de Font Awesome pour les icônes -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
-    <link rel="icon" type="image/png" href="/favicon.png" sizes="32x32" />
+    <link rel="icon" type="image/ico" href="/favicon.ico" sizes="32x32" />
     <style>
       /* =========================================
        1. VARIABLES & THÈME (Clair / Sombre)
@@ -666,9 +666,9 @@
         }
       }
 
-      #panel.no-transition {
-        transition: none;
-      }
+#panel.no-transition {
+  transition: none !important;
+}
 
       /* =========================================
    STYLE DU TABLEUR (SPREADSHEET)
@@ -2094,14 +2094,18 @@
       let isGizmoDragging = false;
       let lastTooltipX = 0;
       let lastTooltipY = 0;
-      const swipeState = {
-        isSwiping: false, // VRAI si un geste de balayage du panneau est en cours
-        lock: null, // deviendra 'horizontal' ou 'vertical'
-        startX: 0,
-        startY: 0,
-        panelStartTranslateX: 0,
-      };
-      const SWIPE_EDGE_ZONE = 40; // Zone de détection sur le bord gauche
+
+const swipeState = {
+  isSwiping: false,
+  lock: null,
+  startX: 0,
+  startY: 0,
+  currentX: 0,         // NOUVEAU : stocke la position actuelle
+  startTime: 0,        // NOUVEAU : pour calculer la vitesse
+  panelWidth: 0        // NOUVEAU : pour éviter de recalculer
+};
+const SWIPE_EDGE_ZONE = 50; // Augmenté à 50px pour faciliter la prise en main
+const SWIPE_THRESHOLD_VELOCITY = 0.3; // Vitesse minimale pour un "flick"
 
       function gcd(a, b) {
         a = Math.abs(a);
@@ -2391,222 +2395,222 @@
         if (wasDragged) return;
         performRaycastSelection(event.clientX, event.clientY);
       }
-      function handleTouchStart(e) {
-        wasDragged = false;
-        // ON A SUPPRIMÉ LES LIGNES FAISANT RÉFÉRENCE À longPressTimer ICI
 
-        const touch = e.touches[0];
+function handleTouchStart(e) {
+  wasDragged = false;
+  const touch = e.touches[0];
 
-        // ============================================================
-        // 1. PROTECTION UI (Boutons fixes & Panneau)
-        // ============================================================
+  // 1. PROTECTION UI
+  if (
+    e.target.closest("#openBtn") ||
+    e.target.closest("#cameraControls") ||
+    e.target.closest("#spreadsheetContainer") ||
+    e.target.closest("#openSpreadsheetBtn")
+  ) {
+    return;
+  }
 
-        // A. Boutons et interfaces
-        if (
-          e.target.closest("#openBtn") ||
-          e.target.closest("#cameraControls") ||
-          e.target.closest("#spreadsheetContainer") || // Ajout protection tableur
-          e.target.closest("#openSpreadsheetBtn")
-        ) {
-          // Ajout bouton tableur
-          return;
-        }
+  // 2. INITIALISATION SWIPE
+  // On détecte si on touche le bord gauche (si fermé) ou le panneau (si ouvert)
+  // Zone de détection élargie à 40px
+  const canStartOpening = !panelOpen && touch.clientX < 40;
+  const canStartClosing = panelOpen && e.target.closest("#panel");
 
-        // B. LOGIQUE SWIPE (Panneau Latéral)
-        const canStartOpening = !panelOpen && touch.clientX < 40; // SWIPE_EDGE_ZONE hardcodé ou var
-        const canStartClosing = panelOpen && e.target.closest("#panel");
+  if (canStartOpening || canStartClosing) {
+    swipeState.isSwiping = true;
+    swipeState.lock = null;
+    swipeState.startX = touch.clientX;
+    swipeState.startY = touch.clientY;
 
-        if (canStartOpening || canStartClosing) {
-          swipeState.isSwiping = true;
-          swipeState.lock = null;
-          swipeState.startX = touch.clientX;
-          swipeState.startY = touch.clientY;
-          const panel = document.getElementById("panel");
-          const panelRect = panel.getBoundingClientRect();
-          swipeState.panelStartTranslateX = panel.classList.contains("hidden") ? -panelRect.width : 0;
-          return;
-        }
+    const panel = document.getElementById("panel");
 
-        swipeState.isSwiping = false;
+    // CORRECTION MAJEURE : On calcule la largeur totale réelle (Largeur + Marge CSS 20px)
+    const totalWidth = panel.offsetWidth + 20;
 
-        // ============================================================
-        // 2. PROTECTION GIZMO (TransformControls)
-        // ============================================================
-        if (typeof transformControl !== "undefined" && transformControl && selectedObjectInstance) {
-          mouse.x = (touch.clientX / window.innerWidth) * 2 - 1;
-          mouse.y = -(touch.clientY / window.innerHeight) * 2 + 1;
-          raycaster.setFromCamera(mouse, camera);
+    // Si caché, on part de -totalWidth. Si ouvert, on part de 0.
+    swipeState.panelStartTranslateX = panel.classList.contains("hidden") ? -totalWidth : 0;
 
-          const gizmoIntersects = raycaster.intersectObjects(transformControl.children, true);
-          if (gizmoIntersects.length > 0) {
-            return;
-          }
-        }
+    // On coupe l'animation tout de suite pour éviter la latence
+    panel.classList.add("no-transition");
+    return;
+  }
 
-        // ============================================================
-        // 3. INITIALISATION MOUVEMENTS CAMÉRA
-        // ============================================================
+  swipeState.isSwiping = false;
 
-        // --- CAS A : 1 DOIGT (Rotation) ---
-        if (e.touches.length === 1) {
-          isDragging = true;
-          isPanning = false;
-          previousMousePosition = { x: touch.clientX, y: touch.clientY };
+  // 3. Protection Gizmo
+  if (typeof transformControl !== "undefined" && transformControl && selectedObjectInstance) {
+    mouse.x = (touch.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(touch.clientY / window.innerHeight) * 2 + 1;
+    raycaster.setFromCamera(mouse, camera);
+    const gizmoIntersects = raycaster.intersectObjects(transformControl.children, true);
+    if (gizmoIntersects.length > 0) return;
+  }
 
-          // INDISPENSABLE POUR LA TOLÉRANCE DE 5PX
-          touchStartPosition = { x: touch.clientX, y: touch.clientY };
-        }
+  // 4. Init Caméra
+  if (e.touches.length === 1) {
+    isDragging = true;
+    isPanning = false;
+    previousMousePosition = { x: touch.clientX, y: touch.clientY };
+    touchStartPosition = { x: touch.clientX, y: touch.clientY };
+  } else if (e.touches.length >= 2) {
+    isPanning = true;
+    isDragging = false;
+    const dx = e.touches[0].clientX - e.touches[1].clientX;
+    const dy = e.touches[0].clientY - e.touches[1].clientY;
+    initialPinchDistance = Math.sqrt(dx * dx + dy * dy);
+    previousMousePosition = {
+      x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
+      y: (e.touches[0].clientY + e.touches[1].clientY) / 2,
+    };
+  }
+}
 
-        // --- CAS B : 2 DOIGTS (Zoom + Panoramique) ---
-        else if (e.touches.length >= 2) {
-          isPanning = true;
-          isDragging = false;
-          const dx = e.touches[0].clientX - e.touches[1].clientX;
-          const dy = e.touches[0].clientY - e.touches[1].clientY;
-          initialPinchDistance = Math.sqrt(dx * dx + dy * dy);
-          previousMousePosition = {
-            x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
-            y: (e.touches[0].clientY + e.touches[1].clientY) / 2,
-          };
-        }
+function handleTouchMove(e) {
+  // 1. Sécurité Gizmo
+  if (typeof isGizmoDragging !== "undefined" && isGizmoDragging) return;
+
+  // 2. Gestion Swipe Panneau
+  if (swipeState.isSwiping) {
+    const touch = e.touches[0];
+    const deltaX = touch.clientX - swipeState.startX;
+    const deltaY = touch.clientY - swipeState.startY;
+
+    if (!swipeState.lock) {
+      swipeState.lock = Math.abs(deltaX) > Math.abs(deltaY) ? "horizontal" : "vertical";
+    }
+
+    if (swipeState.lock === "horizontal") {
+      e.preventDefault();
+      const panel = document.getElementById("panel");
+
+      // Calcul de la nouvelle position
+      let newX = swipeState.panelStartTranslateX + deltaX;
+
+      // CORRECTION MAJEURE : Bornes correctes (-LargeurTotale à 0)
+      const totalWidth = panel.offsetWidth + 20;
+      newX = Math.max(-totalWidth, Math.min(0, newX));
+
+      panel.style.transform = `translateX(${newX}px)`;
+    }
+    return;
+  }
+
+  // Suite logique caméra (inchangée)
+  const touch = e.touches[0];
+  const moveX = Math.abs(touch.clientX - touchStartPosition.x);
+  const moveY = Math.abs(touch.clientY - touchStartPosition.y);
+
+  if (moveX > 5 || moveY > 5) {
+    wasDragged = true;
+  }
+
+  if (isDragging && e.touches.length === 1) {
+    e.preventDefault();
+    if (wasDragged) {
+      const dX = touch.clientX - previousMousePosition.x;
+      const dY = touch.clientY - previousMousePosition.y;
+      cameraRotation.y += dX * 0.005;
+      cameraRotation.x += dY * 0.005;
+      cameraRotation.x = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, cameraRotation.x));
+      updateCameraPosition();
+      previousMousePosition = { x: touch.clientX, y: touch.clientY };
+    }
+  } else if (isPanning && e.touches.length >= 2) {
+    e.preventDefault();
+    wasDragged = true;
+    const touch1 = e.touches[0];
+    const touch2 = e.touches[1];
+    const currentMidX = (touch1.clientX + touch2.clientX) / 2;
+    const currentMidY = (touch1.clientY + touch2.clientY) / 2;
+    const panDX = currentMidX - previousMousePosition.x;
+    const panDY = currentMidY - previousMousePosition.y;
+    if (Math.abs(panDX) > 0.5 || Math.abs(panDY) > 0.5) {
+      panCamera(panDX, panDY);
+    }
+    const dx = touch1.clientX - touch2.clientX;
+    const dy = touch1.clientY - touch2.clientY;
+    const currentPinchDistance = Math.sqrt(dx * dx + dy * dy);
+    const diff = initialPinchDistance - currentPinchDistance;
+    if (Math.abs(diff) > 1) {
+      zoomCamera(diff * 0.05);
+      initialPinchDistance = currentPinchDistance;
+    }
+    previousMousePosition = { x: currentMidX, y: currentMidY };
+  }
+}
+
+function handleTouchEnd(e) {
+  // 1. PROTECTION UI
+  if (
+    e.target.closest("#openBtn") ||
+    e.target.closest("#cameraControls") ||
+    e.target.closest("#spreadsheetContainer") ||
+    e.target.closest("#openSpreadsheetBtn") ||
+    e.target.closest("#contextMenu")
+  ) {
+    isDragging = false;
+    isPanning = false;
+    swipeState.isSwiping = false;
+    swipeState.lock = null;
+    return;
+  }
+
+  // 2. GESTION SWIPE DU PANNEAU (Corrigée)
+  if (swipeState.isSwiping) {
+    if (swipeState.lock === "horizontal") {
+      const panel = document.getElementById("panel");
+      const openBtn = document.getElementById("openBtn");
+
+      // Réactiver la transition
+      panel.classList.remove("no-transition");
+
+      // CORRECTION MAJEURE : Lire la position AVANT de nettoyer le style
+      // On récupère la valeur X actuelle directement depuis le style transform
+      const currentTransform = panel.style.transform;
+      let currentX = swipeState.panelStartTranslateX; // Valeur par défaut
+
+      if (currentTransform && currentTransform.includes("translateX")) {
+         const match = currentTransform.match(/translateX\(([-\d.]+)px\)/);
+         if (match) currentX = parseFloat(match[1]);
       }
 
-      function handleTouchMove(e) {
-        // 1. Sécurité Gizmo
-        if (typeof isGizmoDragging !== "undefined" && isGizmoDragging) return;
+      // On nettoie le style inline pour laisser les classes CSS gérer la suite
+      panel.style.transform = "";
 
-        // 2. Gestion Swipe Panneau
-        if (swipeState.isSwiping) {
-          const touch = e.touches[0];
-          const deltaX = touch.clientX - swipeState.startX;
-          const deltaY = touch.clientY - swipeState.startY;
-          if (!swipeState.lock) {
-            swipeState.lock = Math.abs(deltaX) > Math.abs(deltaY) ? "horizontal" : "vertical";
-          }
-          if (swipeState.lock === "horizontal") {
-            e.preventDefault();
-            const panel = document.getElementById("panel");
-            panel.classList.add("no-transition");
-            let newX = swipeState.panelStartTranslateX + deltaX;
-            newX = Math.max(-panel.offsetWidth, Math.min(0, newX));
-            panel.style.transform = `translateX(${newX}px)`;
-          }
-          return;
-        }
+      // Seuil de bascule (moitié de la largeur)
+      const totalWidth = panel.offsetWidth + 20;
+      const threshold = -totalWidth / 2;
 
-        const touch = e.touches[0];
-
-        // 3. Calcul de la distance parcourue depuis le début (Tolérance 5px)
-        const moveX = Math.abs(touch.clientX - touchStartPosition.x);
-        const moveY = Math.abs(touch.clientY - touchStartPosition.y);
-
-        if (moveX > 5 || moveY > 5) {
-          wasDragged = true;
-        }
-
-        // 4. Rotation Caméra (1 doigt)
-        if (isDragging && e.touches.length === 1) {
-          e.preventDefault();
-
-          // CORRECTION ICI : On ne bouge que si le seuil est franchi
-          if (wasDragged) {
-            const dX = touch.clientX - previousMousePosition.x;
-            const dY = touch.clientY - previousMousePosition.y;
-
-            cameraRotation.y += dX * 0.005;
-            cameraRotation.x += dY * 0.005;
-            cameraRotation.x = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, cameraRotation.x));
-
-            updateCameraPosition();
-
-            // IMPORTANT : On met à jour la position précédente ICI, et pas avant
-            previousMousePosition = { x: touch.clientX, y: touch.clientY };
-          }
-          // Si wasDragged est faux, on ne met PAS à jour previousMousePosition.
-          // Cela permet d'accumuler la distance jusqu'à franchir les 5px.
-        }
-
-        // 5. Zoom et Panoramique (2 doigts)
-        else if (isPanning && e.touches.length >= 2) {
-          e.preventDefault();
-          wasDragged = true;
-
-          const touch1 = e.touches[0];
-          const touch2 = e.touches[1];
-          const currentMidX = (touch1.clientX + touch2.clientX) / 2;
-          const currentMidY = (touch1.clientY + touch2.clientY) / 2;
-
-          const panDX = currentMidX - previousMousePosition.x;
-          const panDY = currentMidY - previousMousePosition.y;
-
-          if (Math.abs(panDX) > 0.5 || Math.abs(panDY) > 0.5) {
-            panCamera(panDX, panDY);
-          }
-
-          const dx = touch1.clientX - touch2.clientX;
-          const dy = touch1.clientY - touch2.clientY;
-          const currentPinchDistance = Math.sqrt(dx * dx + dy * dy);
-          const diff = initialPinchDistance - currentPinchDistance;
-
-          if (Math.abs(diff) > 1) {
-            zoomCamera(diff * 0.05);
-            initialPinchDistance = currentPinchDistance;
-          }
-          previousMousePosition = { x: currentMidX, y: currentMidY };
-        }
+      if (currentX > threshold) {
+        // OUVRIR
+        panelOpen = true;
+        panel.classList.remove("hidden");
+        openBtn.classList.remove("show"); // Cache le bouton burger
+      } else {
+        // FERMER
+        panelOpen = false;
+        panel.classList.add("hidden");
+        openBtn.classList.add("show"); // Affiche le bouton burger
       }
+    }
 
-      function handleTouchEnd(e) {
-        // 1. PROTECTION UI
-        if (
-          e.target.closest("#openBtn") ||
-          e.target.closest("#cameraControls") ||
-          e.target.closest("#panel") ||
-          e.target.closest("#spreadsheetContainer") ||
-          e.target.closest("#openSpreadsheetBtn") ||
-          e.target.closest("#contextMenu")
-        ) {
-          isDragging = false;
-          isPanning = false;
-          swipeState.isSwiping = false;
-          swipeState.lock = null;
-          return;
-        }
+    // Reset complet
+    swipeState.isSwiping = false;
+    swipeState.lock = null;
+    return; // On arrête là pour ne pas déclencher de clic 3D
+  }
 
-        // 2. GESTION SWIPE DU PANNEAU
-        if (swipeState.isSwiping) {
-          if (swipeState.lock === "horizontal") {
-            const panel = document.getElementById("panel");
-            panel.classList.remove("no-transition");
-            panel.style.transform = "";
-            const panelRect = panel.getBoundingClientRect();
-            if (panelRect.left > -panel.offsetWidth / 2) {
-              panelOpen = true;
-              panel.classList.remove("hidden");
-              document.getElementById("openBtn").classList.remove("show");
-            } else {
-              panelOpen = false;
-              panel.classList.add("hidden");
-              document.getElementById("openBtn").classList.add("show");
-            }
-          }
-        }
-        // 3. GESTION DU TAP 3D (Sélection)
-        else {
-          if (!wasDragged) {
-            e.preventDefault();
-            performRaycastSelection(touchStartPosition.x, touchStartPosition.y);
-          }
-        }
+  // 3. Clic 3D normal
+  if (!wasDragged) {
+    e.preventDefault();
+    performRaycastSelection(touchStartPosition.x, touchStartPosition.y);
+  }
 
-        // 4. Nettoyage final (SANS longPressTimer)
-        swipeState.isSwiping = false;
-        swipeState.lock = null;
-        isDragging = false;
-        isPanning = false;
-      }
+  isDragging = false;
+  isPanning = false;
+}
 
-      const raycastCandidates = [];
+const raycastCandidates = [];
 
       function getIntersectionResult(x, y) {
         // 1. Transformation des coordonnées (inchangé)
@@ -5065,14 +5069,25 @@
         // La ligne suivante est supprimée :
         // itemElement.scrollIntoView({ behavior: "smooth", block: "center" });
       }
+function togglePanel() {
+  const p = document.getElementById("panel");
+  const o = document.getElementById("openBtn");
 
-      function togglePanel() {
-        const p = document.getElementById("panel"),
-          o = document.getElementById("openBtn");
-        panelOpen = !panelOpen;
-        p.classList.toggle("hidden", !panelOpen);
-        o.classList.toggle("show", !panelOpen);
-      }
+  // 1. NETTOYAGE CRITIQUE :
+  // On s'assure d'enlever la classe qui bloque l'animation (utilisée par le swipe)
+  p.classList.remove("no-transition");
+
+  // On supprime toute position "en dur" laissée par un éventuel swipe inachevé
+  p.style.transform = "";
+
+  // 2. BASCULE LOGIQUE
+  panelOpen = !panelOpen;
+
+  // 3. APPLICATION DES CLASSES
+  // Le CSS 'transition: transform 0.3s' fera le reste
+  p.classList.toggle("hidden", !panelOpen);
+  o.classList.toggle("show", !panelOpen);
+}
 
       function ensurePanelVisible() {
         // La variable globale 'panelOpen' nous indique l'état actuel du panneau.
