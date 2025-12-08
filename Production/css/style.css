@@ -1,0 +1,876 @@
+      /* =========================================
+       1. VARIABLES & THÈME (Clair / Sombre)
+       ========================================= */
+      :root {
+        /* --- THÈME CLAIR (Défaut) --- */
+        --bg-color: #f0f0f0;
+        --panel-bg: #ffffff;
+        --text-color: #333333;
+        --text-secondary: #666666;
+        --input-bg: #ffffff;
+        --input-border: #cccccc;
+        --input-focus: #4caf50;
+        --item-bg: #ffffff;
+        --item-border: #eeeeee;
+        --hover-bg: #f9f9f9;
+        --button-text: #ffffff;
+        --shadow-color: rgba(0, 0, 0, 0.15);
+        --burger-color: #333333;
+        --camera-btn-bg: #f0f0f0;
+        --camera-btn-hover: #e0e0e0;
+        --section-border: #ddd;
+      }
+
+      [data-theme="dark"] {
+        /* --- THÈME SOMBRE --- */
+        --bg-color: #121212;
+        --panel-bg: #2c2c2c;
+        --text-color: #e0e0e0;
+        --text-secondary: #aaaaaa;
+        --input-bg: #383838;
+        --input-border: #555555;
+        --input-focus: #81c784;
+        --item-bg: #333333;
+        --item-border: #444444;
+        --hover-bg: #404040;
+        --button-text: #ffffff;
+        --shadow-color: rgba(0, 0, 0, 0.5);
+        --burger-color: #ffffff;
+        --camera-btn-bg: #333333;
+        --camera-btn-hover: #444444;
+        --section-border: #444;
+      }
+
+      /* =========================================
+       2. CONFIGURATION GÉNÉRALE
+       ========================================= */
+      body {
+        margin: 0;
+        overflow: hidden;
+        font-family: Arial, sans-serif;
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        transition: background-color 0.3s ease, color 0.3s ease;
+      }
+
+      #container {
+        width: 100vw;
+        height: 100vh;
+        position: relative;
+        touch-action: none;
+      }
+
+      /* =========================================
+       3. PANNEAU LATÉRAL
+       ========================================= */
+      #panel {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        background: var(--panel-bg);
+        padding: 0 20px 20px 20px;
+        /* Padding haut pour les boutons */
+        border-radius: 8px;
+        box-shadow: 0 2px 10px var(--shadow-color);
+        max-height: 90vh;
+        overflow-y: auto;
+        width: 320px;
+        transition: transform 0.3s ease, background-color 0.3s ease;
+        z-index: 999;
+        scrollbar-width: thin;
+        scrollbar-color: var(--text-secondary) var(--panel-bg);
+      }
+
+      #panel.hidden {
+        transform: translateX(calc(-100% - 20px));
+      }
+
+      /* Scrollbar Webkit */
+      #panel::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      #panel::-webkit-scrollbar-track {
+        background: var(--panel-bg);
+      }
+
+      #panel::-webkit-scrollbar-thumb {
+        background-color: var(--text-secondary);
+        border-radius: 4px;
+        border: 2px solid var(--panel-bg);
+      }
+
+      /* =========================================
+       4. BOUTONS DE NAVIGATION (Burger & Thème)
+       ========================================= */
+
+      /* NOUVEAU : Header collant pour les boutons */
+      #panelHeader {
+        position: sticky;
+        top: 0;
+        background-color: var(--panel-bg);
+        z-index: 1002;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px 0;
+        margin: 0 -20px 10px -20px; /* Déborde pour couvrir le padding du parent */
+        padding-left: 20px;
+        padding-right: 20px;
+        border-bottom: 1px solid var(--section-border); /* Optionnel : séparation visuelle */
+      }
+
+      /* Bouton Burger (Fermer) dans le panneau */
+      #toggleBtn {
+        position: relative; /* Plus absolute */
+        background: transparent;
+        z-index: 1003;
+      }
+
+      /* Bouton Thème (Lune/Soleil) dans le panneau */
+      #themeToggleBtn {
+        position: relative; /* Plus absolute */
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        font-size: 18px;
+        color: var(--text-color);
+        padding: 8px;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        transition: background-color 0.2s;
+      }
+
+      #themeToggleBtn:hover {
+        background-color: var(--hover-bg);
+      }
+
+      /* Bouton Burger (Ouvrir) flottant */
+      #openBtn {
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        background: var(--panel-bg);
+        box-shadow: 0 2px 10px var(--shadow-color);
+        z-index: 998;
+        display: none;
+      }
+
+      #openBtn.show {
+        display: flex;
+      }
+
+      /* Lignes du Burger */
+      .burger-btn {
+        width: 40px;
+        height: 40px;
+        padding: 8px;
+        border-radius: 6px;
+        cursor: pointer;
+        border: none;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: 4px;
+        background-color: transparent;
+      }
+
+      .burger-btn:hover {
+        background-color: var(--hover-bg) !important;
+      }
+
+      .burger-line {
+        width: 20px;
+        height: 2px;
+        background-color: var(--burger-color);
+        transition: all 0.3s ease;
+      }
+
+      /* =========================================
+       5. TYPOGRAPHIE & SECTIONS
+       ========================================= */
+      h3 {
+        margin: 0;
+        font-size: 18px;
+        color: var(--text-color);
+      }
+
+      .section-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        cursor: pointer;
+        position: relative;
+      }
+
+      .section-header h3 {
+        font-size: 16px;
+        font-weight: bold;
+        flex-grow: 1;
+      }
+
+      .header-icon {
+        font-size: 20px;
+        width: 24px;
+        text-align: center;
+        flex-shrink: 0;
+        color: var(--text-color);
+      }
+
+      .section {
+        margin-bottom: 10px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid var(--section-border);
+      }
+
+      .section:last-of-type {
+        border-bottom: none;
+        margin-bottom: 0;
+      }
+
+      /* Flèche dépliante */
+      .section.collapsible .section-header::after {
+        content: "▲";
+        font-size: 12px;
+        color: var(--text-secondary);
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        transition: transform 0.3s ease;
+      }
+
+      .section.collapsible.collapsed .section-header::after {
+        transform: translateY(-50%) rotate(180deg);
+      }
+
+      .section.collapsible.collapsed .section-content {
+        display: none;
+      }
+
+      .sub-section-title {
+        font-size: 13px;
+        margin-top: 10px;
+        margin-bottom: 10px;
+        color: var(--text-color);
+        opacity: 0.9;
+      }
+
+      /* =========================================
+       6. FORMULAIRES & INPUTS
+       ========================================= */
+      .input-group {
+        margin-bottom: 10px;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-size: 13px;
+        font-weight: bold;
+        color: var(--text-secondary);
+      }
+
+      input,
+      select,
+      textarea {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid var(--input-border);
+        background-color: var(--input-bg);
+        color: var(--text-color);
+        border-radius: 4px;
+        font-size: 13px;
+        box-sizing: border-box;
+      }
+
+      input:focus,
+      select:focus,
+      textarea:focus {
+        outline: none;
+        border-color: var(--input-focus);
+      }
+
+      .coord-inputs {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 8px;
+      }
+
+      .checkbox-group {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 8px 0;
+      }
+
+      .checkbox-group input {
+        width: auto;
+      }
+
+      .checkbox-group label {
+        margin: 0;
+        cursor: pointer;
+      }
+
+      .equation-display {
+        background: var(--hover-bg);
+        padding: 10px;
+        border-radius: 4px;
+        font-family: "Courier New", monospace;
+        font-size: 13px;
+        color: var(--text-color);
+        min-height: 20px;
+        display: block;
+        text-align: left;
+        word-break: break-all;
+        border: 1px solid var(--item-border);
+      }
+
+      /* =========================================
+       7. BOUTONS D'ACTION
+       ========================================= */
+      button {
+        width: 100%;
+        margin: 8px 0;
+        padding: 10px;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: bold;
+        transition: background-color 0.2s;
+      }
+
+      /* Bouton Principal (Vert) */
+      button:not([class]) {
+        background: #4caf50;
+      }
+
+      button:not([class]):hover {
+        background: #45a049;
+      }
+
+      #addPointBtn {
+        background: #4caf50;
+      }
+
+      #addPointBtn:hover {
+        background: #45a049;
+      }
+
+      /* Classes spécifiques */
+      .btn-secondary {
+        background: #2196f3;
+      }
+
+      .btn-secondary:hover {
+        background: #0b7dda;
+      }
+
+      .btn-danger {
+        background: #f44336;
+      }
+
+      .btn-danger:hover {
+        background: #da190b;
+      }
+
+      .btn-warning {
+        background: #ff9800;
+      }
+
+      .btn-warning:hover {
+        background: #e68900;
+      }
+
+      .btn-violet {
+        background: #8a2be2;
+      }
+
+      .btn-violet:hover {
+        background: #7a25c4;
+      }
+
+      .btn-violet-light {
+        background: #9370db;
+      }
+
+      .btn-violet-light:hover {
+        background: #825fbc;
+      }
+
+      .edit-actions-container {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      .edit-actions-container button {
+        font-size: 12px;
+        margin: 0;
+        padding: 10px 5px;
+      }
+
+      /* =========================================
+       8. LISTES (Items Géométriques)
+       ========================================= */
+      .point-list,
+      .geometry-list {
+        max-height: 200px;
+        overflow-y: auto;
+        border: 1px solid var(--input-border);
+        border-radius: 4px;
+        padding: 5px;
+        background: var(--hover-bg);
+        /* Fond légèrement différent du panel */
+      }
+
+      .point-item,
+      .geometry-item {
+        padding: 8px;
+        margin: 5px 0;
+        background: var(--item-bg);
+        border-radius: 4px;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        font-size: 13px;
+        border: 1px solid var(--item-border);
+        color: var(--text-color);
+      }
+
+      .geometry-item-main {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        width: 100%;
+        gap: 10px;
+      }
+
+      .geometry-info {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .point-name,
+      .geometry-name {
+        font-weight: bold;
+        color: var(--text-color);
+        font-size: 13px;
+        word-break: break-word;
+      }
+
+      .geometry-coords,
+      .geometry-details {
+        font-size: 12px;
+        color: var(--text-secondary);
+        word-break: break-word;
+      }
+
+      .geometry-details-secondary {
+        font-size: 11px;
+        color: var(--text-secondary);
+        margin-top: 4px;
+        padding-left: 2px;
+      }
+
+      /* Force la couleur des spans générés dynamiquement si nécessaire */
+      .geometry-details-secondary span {
+        color: var(--text-secondary) !important;
+      }
+
+      .geometry-actions {
+        display: flex;
+        gap: 5px;
+        flex-shrink: 0;
+      }
+
+      .geometry-actions button {
+        width: auto;
+        padding: 5px 8px;
+        font-size: 11px;
+        margin: 0;
+      }
+
+      /* =========================================
+       9. CONTRÔLES CAMÉRA
+       ========================================= */
+      #cameraControls {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        z-index: 990;
+        pointer-events: auto;
+      }
+
+      .camera-btn {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background-color: var(--camera-btn-bg);
+        border: 1px solid var(--input-border);
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.2s, border-color 0.2s;
+        color: var(--text-color);
+        font-size: 18px;
+        box-shadow: 0 2px 4px var(--shadow-color);
+      }
+
+      .camera-btn:hover {
+        background-color: var(--camera-btn-hover);
+      }
+
+      .camera-btn.active {
+        background-color: #2196f3;
+        color: white;
+        border-color: #2196f3;
+      }
+
+      /* Adaptation des SVG caméra pour le mode sombre (optionnel,
+       les polygones ont des fills hardcodés mais le cadre changera) */
+
+      /* =========================================
+       10. MENU CONTEXTUEL & TOOLS
+       ========================================= */
+      .context-menu {
+        position: fixed;
+        z-index: 2147483647;
+        background-color: var(--panel-bg);
+        border: 1px solid var(--input-border);
+        box-shadow: 2px 2px 10px var(--shadow-color);
+        border-radius: 4px;
+        padding: 5px 0;
+        min-width: 160px;
+        display: none;
+      }
+
+      .context-menu-items {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      .context-menu-items li {
+        padding: 8px 15px;
+        font-size: 14px;
+        color: var(--text-color);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        border-bottom: 1px solid var(--item-border);
+      }
+
+      .context-menu-items li:last-child {
+        border-bottom: none;
+      }
+
+      .context-menu-items li:hover {
+        background-color: var(--hover-bg);
+      }
+
+      #splashScreen {
+        position: fixed;
+        top: 50px;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: rgba(40, 40, 40, 0.95);
+        /* Toujours sombre pour contraste */
+        color: white;
+        padding: 12px 25px;
+        border-radius: 25px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        z-index: 10001;
+        font-size: 14px;
+        font-weight: bold;
+        transition: opacity 0.5s ease-in-out, top 0.5s ease-in-out;
+      }
+
+      #splashScreen.splash-hidden {
+        opacity: 0;
+        top: -100px;
+        pointer-events: none;
+      }
+
+      #tooltip {
+        position: fixed;
+        background-color: rgba(0, 0, 0, 0.85);
+        /* Toujours sombre */
+        color: #fff;
+        padding: 8px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        pointer-events: none;
+        display: none;
+        z-index: 500;
+        white-space: nowrap;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        transform: translate(15px, 15px);
+      }
+
+      /* =========================================
+       11. RESPONSIVE (MOBILE)
+       ========================================= */
+      @media (max-width: 768px) {
+        #panel {
+          background: var(--panel-bg);
+          width: fit-content;
+          min-width: 280px;
+          opacity: 0.98;
+          /* Légèrement plus opaque sur mobile */
+        }
+
+        #openBtn {
+          top: 15px;
+          left: 15px;
+        }
+
+        .camera-btn svg {
+          pointer-events: none;
+        }
+      }
+
+      #panel.no-transition {
+        transition: none;
+      }
+
+      /* =========================================
+   STYLE DU TABLEUR (SPREADSHEET)
+   ========================================= */
+      #openSpreadsheetBtn {
+        position: fixed;
+        bottom: 10px;
+        left: 20px;
+        /* Aligné avec le menu gauche */
+        width: auto;
+        padding: 8px 15px;
+        background-color: var(--panel-bg);
+        color: var(--text-color);
+        border: 1px solid var(--input-border);
+        border-radius: 4px;
+        box-shadow: 0 2px 5px var(--shadow-color);
+        z-index: 995;
+        cursor: pointer;
+        font-weight: bold;
+        font-size: 13px;
+      }
+
+      #spreadsheetContainer {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100vw;
+        height: 300px;
+        /* Hauteur du panneau */
+        background-color: var(--panel-bg);
+        border-top: 1px solid var(--section-border);
+        box-shadow: 0 -2px 10px var(--shadow-color);
+        z-index: 10000;
+        /* Au-dessus de tout sauf context menu */
+        display: flex;
+        flex-direction: column;
+        transition: transform 0.3s ease;
+      }
+
+      #spreadsheetContainer.spreadsheet-hidden {
+        transform: translateY(100%);
+        /* Caché en bas */
+      }
+
+      .spreadsheet-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 5px 10px;
+        background-color: var(--hover-bg);
+        border-bottom: 1px solid var(--section-border);
+      }
+
+      .spreadsheet-tabs {
+        display: flex;
+        gap: 5px;
+      }
+
+      .tab-btn {
+        background: transparent;
+        border: none;
+        color: var(--text-secondary);
+        padding: 6px 12px;
+        cursor: pointer;
+        border-radius: 4px 4px 0 0;
+        font-weight: bold;
+        font-size: 13px;
+        width: auto;
+        /* Override du style global button */
+        margin: 0;
+      }
+
+      .tab-btn:hover {
+        background-color: var(--item-bg);
+        color: var(--text-color);
+      }
+
+      .tab-btn.active {
+        background-color: var(--panel-bg);
+        color: var(--input-focus);
+        border-bottom: 2px solid var(--input-focus);
+      }
+
+      .close-spreadsheet-btn {
+        background: transparent;
+        color: var(--text-secondary);
+        border: none;
+        font-size: 12px;
+        cursor: pointer;
+        width: auto;
+        margin: 0;
+      }
+
+      .spreadsheet-body {
+        flex-grow: 1;
+        overflow: auto;
+        padding: 0;
+      }
+
+      #spreadsheetTable {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+        color: var(--text-color);
+      }
+
+      #spreadsheetTable th,
+      #spreadsheetTable td {
+        border: 1px solid var(--item-border);
+        padding: 4px 8px;
+        text-align: center;
+      }
+
+      #spreadsheetTable th {
+        background-color: var(--hover-bg);
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        font-weight: bold;
+      }
+
+      /* Inputs dans le tableau */
+      #spreadsheetTable input {
+        width: 100%;
+        border: none;
+        background: transparent;
+        text-align: center;
+        color: var(--text-color);
+        padding: 4px;
+        font-family: monospace;
+      }
+
+      #spreadsheetTable input:focus {
+        background-color: var(--input-bg);
+        outline: 1px solid var(--input-focus);
+      }
+
+      /* Couleurs spécifiques pour X, Y, Z */
+      .col-x input {
+        color: #ff5252;
+        font-weight: bold;
+      }
+
+      .col-y input {
+        color: #448aff;
+        font-weight: bold;
+      }
+
+      /* Z ThreeJS = Y UI (Bleu) */
+      .col-z input {
+        color: #69f0ae;
+        font-weight: bold;
+      }
+
+      /* Y ThreeJS = Z UI (Vert) */
+
+      /* Mode sombre ajustement */
+      [data-theme="dark"] .col-x input {
+        color: #ff8a80;
+      }
+
+      [data-theme="dark"] .col-y input {
+        color: #82b1ff;
+      }
+
+      [data-theme="dark"] .col-z input {
+        color: #b9f6ca;
+      }
+
+      /* Style pour l'icône de l'aimant */
+      #snapIcon {
+        display: inline-block;
+        position: relative;
+        transition: all 0.3s ease;
+        font-size: 16px;
+        margin-right: 5px;
+      }
+
+      /* Quand l'aimant est désactivé (barré) */
+      #snapIcon.icon-disabled {
+        opacity: 0.6;
+        /* Rend l'icône un peu transparente */
+        filter: grayscale(100%);
+        /* (Optionnel) Rend l'icône grise */
+      }
+
+      /* La ligne rouge qui barre l'icône */
+      #snapIcon.icon-disabled::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 0;
+        width: 100%;
+        height: 2px;
+        /* Épaisseur de la barre */
+        background-color: #ff4444;
+        /* Couleur rouge */
+        transform: translateY(-50%) rotate(-45deg);
+        /* Rotation diagonale */
+        pointer-events: none;
+        /* Ne gêne pas le clic */
+      }
+
+      /* --- CORRECTION LISTE DÉROULANTE AIMANT --- */
+      #snapSizeSelect {
+        color: var(--text-color) !important;
+        background-color: var(--panel-bg);
+        /* On force la couleur de fond du panneau */
+      }
+
+      /* Cible spécifiquement les options quand la liste est ouverte */
+      #snapSizeSelect option {
+        background-color: var(--panel-bg);
+        color: var(--text-color);
+      }
+
+      /* Renforcement spécifique pour le mode sombre */
+      [data-theme="dark"] #snapSizeSelect {
+        color: #ffffff !important;
+        /* Force le blanc pur */
+        background-color: #2c2c2c;
+        /* Force le fond gris foncé */
+      }

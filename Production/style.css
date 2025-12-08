@@ -1,0 +1,448 @@
+body {
+  margin: 0;
+  overflow: hidden;
+  font-family: Arial, sans-serif;
+}
+
+#container {
+  width: 100vw;
+  height: 100vh;
+  /* Le container principal du viewer 3D */
+  position: relative;
+  /* Nécessaire pour positionner les boutons de caméra à l'intérieur */
+}
+
+#panel {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 50px 20px 20px 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  max-height: 90vh;
+  overflow-y: auto;
+  width: 320px;
+  transition: transform 0.3s ease;
+  z-index: 999;
+}
+
+#panel.hidden {
+  transform: translateX(-380px);
+}
+
+#toggleBtn {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  background: transparent;
+  color: #333;
+  padding: 5px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  border: none;
+  z-index: 1001;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+}
+
+#toggleBtn:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.burger-line {
+  width: 20px;
+  height: 2px;
+  background-color: #333;
+  transition: all 0.3s ease;
+}
+
+#openBtn {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  background: rgba(255, 255, 255, 0.95);
+  color: #333;
+  padding: 8px;
+  border-radius: 6px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  border: none;
+  z-index: 998;
+  display: none;
+  width: 40px;
+  height: 40px;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+}
+
+#openBtn.show {
+  display: flex;
+}
+
+#openBtn:hover {
+  background: rgba(255, 255, 255, 1);
+}
+
+h3 {
+  margin: 0 0 15px 0;
+  font-size: 18px;
+  color: #333;
+}
+
+.section {
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #ddd;
+}
+
+.input-group {
+  margin-bottom: 10px;
+}
+
+label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 13px;
+  font-weight: bold;
+  color: #555;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 13px;
+  box-sizing: border-box;
+}
+
+.coord-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+
+.coord-inputs input {
+  width: 100%;
+}
+
+button {
+  width: 100%;
+  margin: 8px 0;
+  padding: 10px;
+  background: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+button:hover {
+  background: #45a049;
+}
+
+.btn-secondary {
+  background: #2196f3;
+}
+
+.btn-secondary:hover {
+  background: #0b7dda;
+}
+
+.btn-danger {
+  background: #f44336;
+}
+
+.btn-danger:hover {
+  background: #da190b;
+}
+
+.btn-warning {
+  background: #ff9800;
+}
+
+.btn-warning:hover {
+  background: #e68900;
+}
+
+.point-list,
+.geometry-list {
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 10px;
+  background: #f9f9f9;
+}
+
+.point-item,
+.geometry-item {
+  padding: 8px;
+  margin: 5px 0;
+  background: white;
+  border-radius: 4px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  flex-wrap: wrap;
+  /* Pour gérer le texte long */
+}
+
+.point-name,
+.geometry-name {
+  font-weight: bold;
+  color: #333;
+  flex-basis: 100%;
+  /* Nom prend toute la largeur */
+  margin-bottom: 4px;
+}
+
+.point-coords,
+.geometry-details {
+  color: #666;
+  font-size: 11px;
+  flex-basis: 100%;
+  /* Détails prennent toute la largeur */
+}
+
+.geometry-actions {
+  margin-top: 8px;
+  flex-basis: 100%;
+  display: flex;
+  gap: 5px;
+  justify-content: flex-end;
+  /* Aligner les boutons à droite */
+}
+
+.geometry-actions button {
+  width: auto;
+  padding: 5px 10px;
+  font-size: 11px;
+  margin: 0;
+}
+
+.checkbox-group {
+  display: flex;
+  align-items: center;
+  margin: 10px 0;
+}
+
+.checkbox-group input[type="checkbox"] {
+  width: auto;
+  margin-right: 8px;
+}
+
+.checkbox-group label {
+  margin: 0;
+  font-weight: normal;
+}
+
+.controls-hint {
+  font-size: 11px;
+  color: #666;
+  margin-top: 10px;
+  padding: 10px;
+  background: #f0f0f0;
+  border-radius: 4px;
+}
+
+.controls-hint p {
+  margin: 3px 0;
+}
+
+.sub-section-title {
+  font-size: 14px;
+  font-weight: bold;
+  margin-top: 15px;
+  margin-bottom: 10px;
+  color: #444;
+}
+
+.equation-display {
+  background: #e9e9e9;
+  padding: 10px;
+  border-radius: 4px;
+  font-family: "Courier New", monospace;
+  font-size: 13px;
+  color: #333;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  word-break: break-all;
+}
+
+/* --- STYLES POUR LES SECTIONS COLLAPSIBLES --- */
+.section.collapsible {
+  border-bottom: none;
+  /* On enlève la bordure dupliquée */
+  padding-bottom: 0;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  padding: 10px 0;
+  border-bottom: 1px solid #ddd;
+  /* On met la bordure sur l'en-tête */
+  margin-bottom: 15px;
+  /* Espace avant que le contenu ne s'ouvre */
+}
+
+.section-header h3 {
+  margin: 0;
+  /* Annule la marge par défaut du h3 */
+}
+
+/* Style pour l'icône de flèche (ajoutée via un pseudo-élément) */
+.section-header::after {
+  content: "▼";
+  font-size: 12px;
+  color: #555;
+  transition: transform 0.3s ease;
+  margin-right: 5px;
+}
+
+.section-content {
+  overflow: hidden;
+  /* Animation fluide avec max-height */
+  max-height: 2000px;
+  /* Une valeur assez grande pour contenir n'importe quelle section */
+  transition:
+    max-height 0.4s ease-in-out,
+    padding 0.4s ease-in-out,
+    margin 0.4s ease-in-out;
+  padding-bottom: 15px;
+  /* Le padding qui était sur .section */
+}
+
+/* --- État quand la section est fermée --- */
+
+.section.collapsed .section-header {
+  margin-bottom: 0;
+  /* Pas de marge quand le contenu est caché */
+}
+
+/* Rotation de la flèche */
+.section.collapsed .section-header::after {
+  transform: rotate(-90deg);
+}
+
+/* Cacher le contenu en animant max-height à 0 */
+.section.collapsed .section-content {
+  max-height: 0;
+  padding-bottom: 0;
+  margin-top: 0;
+  /* Assure que le contenu disparaît proprement */
+}
+
+/* --- FIN STYLES COLLAPSIBLES --- */
+
+/* --- NOUVEAUX STYLES POUR LES CONTRÔLES DE CAMÉRA DANS LA SCÈNE --- */
+#cameraControls {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  /* RESTE TOUJOURS À DROITE */
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 990;
+  /* IMPORTANT : Doit être inférieur au z-index du panneau */
+}
+
+.camera-btn {
+  width: 40px;
+  /* Largeur et hauteur égales pour des boutons carrés */
+  height: 40px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #f0f0f0;
+  /* Couleur de fond par défaut pour les boutons inactifs */
+  border: 1px solid #ccc;
+  /* Bordure légère */
+  border-radius: 5px;
+  /* Bords légèrement arrondis */
+  cursor: pointer;
+  transition:
+    background-color 0.2s,
+    border-color 0.2s,
+    color 0.2s;
+  /* Transition douce pour le survol et l'activation */
+  color: #333;
+  /* Couleur de l'icône par défaut */
+  font-size: 18px;
+  /* Taille de l'icône */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  /* Ombre légère */
+}
+
+.camera-btn:hover {
+  background-color: #e0e0e0;
+  /* Couleur de fond au survol pour les inactifs */
+}
+
+/* Style pour le bouton actif (celui qui est sélectionné) */
+.camera-btn.active {
+  background-color: #007bff;
+  /* Bleu vif pour le bouton actif */
+  color: white;
+  /* Texte/icône blanc pour le contraste */
+  border-color: #007bff;
+  /* Bordure bleue */
+}
+
+/* Icones pour les vues */
+.fa-cube {
+  transform: rotateX(20deg) rotateY(-20deg);
+  /* Pour donner une légère perspective au cube */
+}
+
+@media (max-width: 768px) {
+  /* Le panneau prend toute la largeur et hauteur de l'écran */
+  #panel {
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    max-height: 100vh;
+    border-radius: 0;
+    box-sizing: border-box;
+    /* Assure que le padding est inclus dans la largeur */
+  }
+
+  /* Ajuste la position du panneau une fois caché */
+  #panel.hidden {
+    transform: translateX(-100%);
+  }
+
+  /* On s'assure que le bouton "Ouvrir" est bien visible */
+  #openBtn {
+    top: 15px;
+    left: 15px;
+  }
+
+  .camera-btn svg {
+    width: 20px;
+    height: 20px;
+    pointer-events: none;
+  }
+}
