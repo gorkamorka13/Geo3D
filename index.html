@@ -1080,6 +1080,14 @@
                 </button>
               </div>
 
+              <button
+                class="btn-violet"
+                style="background-color: #3f51b5; margin-top: 10px"
+                onclick="generateMathReport()"
+              >
+                📄 Générer Rapport Mathématique
+              </button>
+
               <!-- Input fichier caché pour l'import -->
               <input
                 type="file"
@@ -1503,6 +1511,28 @@
             </div>
             <button class="btn-warning" onclick="calculateCommonPerpendicular()">🖩 Tracer la perpendiculaire</button>
             <div id="perpResult" class="equation-display"></div>
+          <!-- DÉBUT AJOUT PROJECTIONS -->
+<h4 class="sub-section-title" style="margin-top: 20px; border-top: 1px solid #eee; padding-top:10px;">Projections Orthogonales</h4>
+
+<!-- 1. Projection Point sur Plan -->
+<label>Point sur Plan :</label>
+<div class="coord-inputs" style="grid-template-columns: 1fr 1fr; margin-bottom: 8px">
+  <select id="projPointOnPlaneSelect"></select> <!-- Sélection du Point -->
+  <select id="projPlaneTargetSelect"></select>   <!-- Sélection du Plan -->
+</div>
+<button class="btn-violet" onclick="calculateProjectionPointPlane()">📐 Projeter et créer le point</button>
+<div id="projPlaneResult" class="equation-display"></div>
+
+<!-- 2. Projection Point sur Droite -->
+<label style="margin-top: 15px;">Point sur Droite :</label>
+<div class="coord-inputs" style="grid-template-columns: 1fr 1fr; margin-bottom: 8px">
+  <select id="projPointOnLineSelect"></select> <!-- Sélection du Point -->
+  <select id="projLineTargetSelect"></select>  <!-- Sélection de la Droite -->
+</div>
+<button class="btn-violet" onclick="calculateProjectionPointLine()">📐 Projeter et créer le point</button>
+<div id="projLineResult" class="equation-display"></div>
+<!-- FIN AJOUT PROJECTIONS -->
+
           </div>
         </div>
 
@@ -3230,6 +3260,8 @@
           "vectorOriginPoint", // Origine (Tracer vecteur)
           "vectorStartPoint", // Point de départ (Tracer vecteur par 2 points)
           "vectorEndPoint", // Point d'arrivée (Tracer vecteur par 2 points)
+              "projPointOnPlaneSelect",
+    "projPointOnLineSelect",
         ];
 
         allSelects.forEach((select) => {
@@ -3404,7 +3436,10 @@
           if (input) {
             const section = input.closest(".section.collapsible");
             if (section && section.classList.contains("collapsed")) section.classList.remove("collapsed");
-            input.scrollIntoView({ behavior: "smooth", block: "center" });
+            input.scrollIntoView({
+              behavior: "smooth",
+              block: "center",
+            });
           }
         }
 
@@ -3418,12 +3453,15 @@
         const nameField = document.getElementById("lineNameFromEquation");
         if (nameField) nameField.value = line.name;
 
-        document.getElementById("lineEqPointX").value = formatNumber(line.startPoint.x);
-        document.getElementById("lineEqPointY").value = formatNumber(line.startPoint.z);
-        document.getElementById("lineEqPointZ").value = formatNumber(line.startPoint.y);
+        // --- FIX: DO NOT PRE-FILL MANUAL INPUTS ---
+        // If we fill these, updateLine() will use them instead of the equation text you edit.
+        // We clear them so the Equation Parser (Priority 3) takes precedence.
+        document.getElementById("lineEqPointX").value = "";
+        document.getElementById("lineEqPointY").value = "";
+        document.getElementById("lineEqPointZ").value = "";
         document.getElementById("lineEquationPointSelect").value = "";
 
-        // Génération équation
+        // Génération équation (This effectively shows the current coordinates to the user)
         const p = line.startPoint;
         const v = line.directorVector;
         const fmt = (start, dir) => {
@@ -3436,9 +3474,12 @@
           }
           return s || "0";
         };
+
+        // Note: ThreeJS Y is Height (Z UI), ThreeJS Z is Depth (Y UI)
         const txtX = `x = ${fmt(p.x, v.x)}`;
-        const txtY = `y = ${fmt(p.z, v.z)}`;
-        const txtZ = `z = ${fmt(p.y, v.y)}`;
+        const txtY = `y = ${fmt(p.z, v.z)}`; // UI Y (Depth) uses Three Z
+        const txtZ = `z = ${fmt(p.y, v.y)}`; // UI Z (Height) uses Three Y
+
         document.getElementById("lineEquationInput").value = `${txtX}\n${txtY}\n${txtZ}`;
 
         // 3. Boutons
@@ -3452,6 +3493,7 @@
           handleSelection(line.mesh);
         }
       }
+
       function editPlane(id, forceOpen = true) {
         // 1. UI
         if (forceOpen) {
@@ -5043,12 +5085,27 @@
         const mixedProduct = p1_minus_p2.dot(v1_cross_v2);
 
         if (Math.abs(mixedProduct) < 1e-6) {
-          const p2_minus_p1 = p1_minus_p2.clone().negate();
-          const v2_cross_p2p1 = new THREE.Vector3().crossVectors(v2, p2_minus_p1);
-          const t = v2_cross_p2p1.dot(v1_cross_v2) / v1_cross_v2.lengthSq();
+          // --- CORRECTION DU CALCUL D'INTERSECTION ---
+
+          // 1. Calculer le vecteur P2 - P1
+          const p2_minus_p1 = new THREE.Vector3().subVectors(p2, p1);
+
+          // 2. Formule : t = ((P2 - P1) x V2) . (V1 x V2) / ||V1 x V2||²
+          // On calcule le numérateur du produit vectoriel
+          const numeratorVec = new THREE.Vector3().crossVectors(p2_minus_p1, v2);
+
+          // 3. Calcul du paramètre t
+          const t = numeratorVec.dot(v1_cross_v2) / v1_cross_v2.lengthSq();
+
+          // 4. Calcul du point : P1 + t * V1
           const intersectionPoint = p1.clone().add(v1.clone().multiplyScalar(t));
+
+          // --- FIN DE LA CORRECTION ---
+
           const baseName = `Intersect(${d1.name}, ${d2.name})`;
           const pointName = geometryManager.generateUniqueName(baseName, "point");
+
+          // Création du point (Constructeur Point : Nom, x, y, z)
           const newPoint = new Point(
             pointName,
             intersectionPoint.x,
@@ -5057,10 +5114,17 @@
             0x00ff00
           );
           geometryManager.addPoint(newPoint);
-          r.innerHTML = `Droites sécantes.<br>Point "${pointName}" créé.`;
+
+          // Mise à jour de l'affichage
+          const coordStr = `(${formatNumber(intersectionPoint.x)}, ${formatNumber(intersectionPoint.z)}, ${formatNumber(
+            intersectionPoint.y
+          )})`;
+
+          r.innerHTML = `Droites sécantes.<br>Point "<strong>${pointName}</strong>" créé.<br>Coord : ${coordStr}`;
           updateAllUI();
           saveState();
         } else {
+          // ... (laisser le bloc 'else' pour les droites non-coplanaires tel quel)
           const distance = Math.abs(mixedProduct) / v1_cross_v2.length();
           r.innerHTML = `Droites non-coplanaires.<br>Distance min ≈ <strong>${distance.toFixed(3)}</strong>.`;
         }
@@ -5849,15 +5913,18 @@
           points: geometryManager.points.map((p) => ({
             name: p.name,
             position: { x: p.position.x, y: p.position.y, z: p.position.z },
+            // Les points n'ont pas de bouton masquer/afficher dans l'interface actuelle,
+            // mais on pourrait l'ajouter ici si besoin.
           })),
           vectors: geometryManager.vectors.map((v) => ({
             id: v.id,
             name: v.name,
             origin: { x: v.origin.x, y: v.origin.y, z: v.origin.z },
             components: { x: v.components.x, y: v.components.y, z: v.components.z },
-            isLabelVisible: v.isLabelVisible,
+            // Sauvegarde des états de visibilité
             isVisible: v.isVisible,
-            // Sauvegarde des props spécifiques (normale de plan, etc)
+            isLabelVisible: v.isLabelVisible,
+            // Props spécifiques
             isNormalVector: v.isNormalVector || false,
             parentPlaneId: v.parentPlaneId || null,
           })),
@@ -5866,6 +5933,7 @@
             name: l.name,
             startPoint: { x: l.startPoint.x, y: l.startPoint.y, z: l.startPoint.z },
             directorVector: { x: l.directorVector.x, y: l.directorVector.y, z: l.directorVector.z },
+            // Sauvegarde de la visibilité
             isVisible: l.isVisible,
           })),
           planes: geometryManager.planes.map((p) => ({
@@ -5873,6 +5941,7 @@
             name: p.name,
             pointOnPlane: { x: p.pointOnPlane.x, y: p.pointOnPlane.y, z: p.pointOnPlane.z },
             displayNormal: { x: p.displayNormal.x, y: p.displayNormal.y, z: p.displayNormal.z },
+            // Sauvegarde de la visibilité
             isVisible: p.isVisible,
           })),
         });
@@ -5880,54 +5949,95 @@
 
       function restoreSceneData(jsonString) {
         deselectCurrentObject();
-        const data = JSON.parse(jsonString);
+        let data;
+        try {
+          data = JSON.parse(jsonString);
+        } catch (e) {
+          console.error("Erreur de parsing JSON", e);
+          return;
+        }
 
         // 1. Nettoyage complet
         geometryManager.clearAll();
 
         // 2. Reconstruction
-        data.points.forEach((p) =>
-          geometryManager.addPoint(new Point(p.name, p.position.x, p.position.y, p.position.z))
-        );
 
-        data.vectors.forEach((v) => {
-          const vec = new Vector(
-            v.name,
-            new THREE.Vector3(v.origin.x, v.origin.y, v.origin.z),
-            new THREE.Vector3(v.components.x, v.components.y, v.components.z)
+        // --- POINTS ---
+        if (data.points) {
+          data.points.forEach((p) =>
+            geometryManager.addPoint(new Point(p.name, p.position.x, p.position.y, p.position.z))
           );
-          vec.id = v.id;
-          vec.isVisible = v.isVisible !== undefined ? v.isVisible : true;
-          vec.isLabelVisible = v.isLabelVisible !== undefined ? v.isLabelVisible : true;
-          vec.isNormalVector = v.isNormalVector;
-          vec.parentPlaneId = v.parentPlaneId;
-          nextVectorId = Math.max(nextVectorId, v.id + 1);
-          geometryManager.addVector(vec);
-        });
+        }
 
-        data.lines.forEach((l) => {
-          const line = new Line3D(
-            l.name,
-            new THREE.Vector3(l.startPoint.x, l.startPoint.y, l.startPoint.z),
-            new THREE.Vector3(l.directorVector.x, l.directorVector.y, l.directorVector.z)
-          );
-          line.id = l.id;
-          line.isVisible = l.isVisible !== undefined ? l.isVisible : true;
-          nextStraightLineId = Math.max(nextStraightLineId, l.id + 1);
-          geometryManager.addLine(line);
-        });
+        // --- VECTEURS ---
+        if (data.vectors) {
+          data.vectors.forEach((v) => {
+            const vec = new Vector(
+              v.name,
+              new THREE.Vector3(v.origin.x, v.origin.y, v.origin.z),
+              new THREE.Vector3(v.components.x, v.components.y, v.components.z)
+            );
+            vec.id = v.id;
+            vec.isNormalVector = v.isNormalVector;
+            vec.parentPlaneId = v.parentPlaneId;
+            nextVectorId = Math.max(nextVectorId, v.id + 1);
 
-        data.planes.forEach((p) => {
-          const plane = new Plane(
-            p.name,
-            new THREE.Vector3(p.pointOnPlane.x, p.pointOnPlane.y, p.pointOnPlane.z),
-            new THREE.Vector3(p.displayNormal.x, p.displayNormal.y, p.displayNormal.z)
-          );
-          plane.id = p.id;
-          plane.isVisible = p.isVisible !== undefined ? p.isVisible : true;
-          nextPlaneId = Math.max(nextPlaneId, p.id + 1);
-          geometryManager.addPlane(plane);
-        });
+            // RESTAURATION VISIBILITÉ VECTEUR
+            // 1. On charge la propriété (par défaut true si non définie)
+            vec.isVisible = v.isVisible !== undefined ? v.isVisible : true;
+            vec.isLabelVisible = v.isLabelVisible !== undefined ? v.isLabelVisible : true;
+
+            // 2. IMPORTANT : On ajoute au manager
+            geometryManager.addVector(vec);
+
+            // 3. TRES IMPORTANT : On force l'application visuelle sur le mesh 3D
+            // car addVector() rend l'objet visible par défaut.
+            vec.setVisibility(vec.isVisible);
+            vec.setLabelVisibility(vec.isLabelVisible);
+          });
+        }
+
+        // --- DROITES ---
+        if (data.lines) {
+          data.lines.forEach((l) => {
+            const line = new Line3D(
+              l.name,
+              new THREE.Vector3(l.startPoint.x, l.startPoint.y, l.startPoint.z),
+              new THREE.Vector3(l.directorVector.x, l.directorVector.y, l.directorVector.z)
+            );
+            line.id = l.id;
+            nextStraightLineId = Math.max(nextStraightLineId, l.id + 1);
+
+            // RESTAURATION VISIBILITÉ DROITE
+            line.isVisible = l.isVisible !== undefined ? l.isVisible : true;
+
+            geometryManager.addLine(line);
+
+            // Force l'application visuelle
+            line.setVisibility(line.isVisible);
+          });
+        }
+
+        // --- PLANS ---
+        if (data.planes) {
+          data.planes.forEach((p) => {
+            const plane = new Plane(
+              p.name,
+              new THREE.Vector3(p.pointOnPlane.x, p.pointOnPlane.y, p.pointOnPlane.z),
+              new THREE.Vector3(p.displayNormal.x, p.displayNormal.y, p.displayNormal.z)
+            );
+            plane.id = p.id;
+            nextPlaneId = Math.max(nextPlaneId, p.id + 1);
+
+            // RESTAURATION VISIBILITÉ PLAN
+            plane.isVisible = p.isVisible !== undefined ? p.isVisible : true;
+
+            geometryManager.addPlane(plane);
+
+            // Force l'application visuelle
+            plane.setVisibility(plane.isVisible);
+          });
+        }
 
         updateAllUI();
       }
@@ -7492,6 +7602,469 @@
         saveState();
         showSplashScreen(`Point ${hPoint.name} créé.`);
       }
+
+      // =========================================================
+      // GÉNÉRATEUR DE RAPPORT (VERSION SÉCURISÉE - CORRIGÉE)
+      // =========================================================
+
+// =========================================================
+// GÉNÉRATEUR DE RAPPORT COMPLET
+// (Avec intersections, distances et PREUVES d'orthogonalité)
+// =========================================================
+
+// =========================================================
+// GÉNÉRATEUR DE RAPPORT (AVEC DÉTECTION DES PROJECTIONS)
+// =========================================================
+
+function generateMathReport() {
+    var sceneName = document.getElementById("sceneNameInput").value || "Sans titre";
+    var reportDate = new Date().toLocaleString();
+
+    var win = window.open("", "_blank");
+    if (!win) {
+        alert("Pop-ups bloqués. Veuillez autoriser les pop-ups pour ce site.");
+        return;
+    }
+
+    var html = [];
+
+    // --- HEADER ---
+    html.push('<!DOCTYPE html>');
+    html.push('<html lang="fr">');
+    html.push('<head>');
+    html.push('<meta charset="UTF-8">');
+    html.push('<title>Rapport - ' + escapeHtml(sceneName) + '</title>');
+    html.push('<style>');
+    html.push('body { font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; padding: 40px; color: #333; line-height: 1.5; }');
+    html.push('h1 { color: #2c3e50; border-bottom: 2px solid #2c3e50; padding-bottom: 10px; }');
+    html.push('h2 { color: #2980b9; margin-top: 30px; border-left: 5px solid #2980b9; padding-left: 10px; background: #f4f8fb; padding-top:5px; padding-bottom:5px; }');
+    html.push('h3 { color: #16a085; margin-top: 20px; font-size: 1.1em; }');
+    html.push('table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 14px; }');
+    html.push('th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: left; }');
+    html.push('th { background-color: #f2f2f2; font-weight: bold; }');
+    html.push('.math { font-family: "Courier New", monospace; background: #eee; padding: 2px 5px; border-radius: 3px; color: #d35400; font-weight: bold; }');
+    html.push('.intro { background: #f9f9f9; padding: 15px; border: 1px solid #ddd; margin-bottom: 20px; border-radius: 4px; }');
+    html.push('.tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 12px; color: white; font-weight: bold; vertical-align: middle; margin-right: 5px; }');
+    html.push('.tag-para { background-color: #3498db; }');
+    html.push('.tag-perp { background-color: #9b59b6; }');
+    html.push('.tag-dist { background-color: #e67e22; }');
+    html.push('.tag-inter { background-color: #27ae60; }');
+    html.push('.tag-proj { background-color: #8e44ad; }'); /* Nouveau tag violet */
+    html.push('ul { list-style-type: none; padding: 0; }');
+    html.push('li.relation-item { margin-bottom: 8px; padding: 8px; border-bottom: 1px solid #eee; }');
+    html.push('.proof { font-size: 0.9em; color: #555; margin-top: 4px; padding-left: 10px; border-left: 2px solid #9b59b6; }');
+    html.push('</style>');
+    html.push('</head>');
+    html.push('<body>');
+
+    html.push('<h1>Rapport Géométrique 3D</h1>');
+    html.push('<div class="intro">');
+    html.push('<strong>Scène :</strong> ' + escapeHtml(sceneName) + '<br>');
+    html.push('<strong>Date :</strong> ' + reportDate + '<br>');
+    html.push('<strong>Convention :</strong> Repère (O, x, y, z) où <em>z</em> est la hauteur.');
+    html.push('</div>');
+
+    // --- 1. POINTS ---
+    if (geometryManager.points.length > 0) {
+        html.push('<h2>1. Points</h2><table><thead><tr><th>Nom</th><th>Coordonnées (x, y, z)</th></tr></thead><tbody>');
+        geometryManager.points.forEach(function(p) {
+            html.push('<tr><td><strong>' + escapeHtml(p.name) + '</strong></td>');
+            html.push('<td class="math">(' + formatNumber(p.position.x) + '; ' + formatNumber(p.position.z) + '; ' + formatNumber(p.position.y) + ')</td></tr>');
+        });
+        html.push('</tbody></table>');
+    }
+
+    // --- 2. VECTEURS ---
+    if (geometryManager.vectors.length > 0) {
+        html.push('<h2>2. Vecteurs</h2><table><thead><tr><th>Nom</th><th>Composantes</th><th>Norme</th><th>Origine</th></tr></thead><tbody>');
+        geometryManager.vectors.forEach(function(v) {
+            var n = formatNumber(v.components.length());
+            var org = (v.origin.lengthSq() > 0.0001) ?
+                '(' + formatNumber(v.origin.x) + '; ' + formatNumber(v.origin.z) + '; ' + formatNumber(v.origin.y) + ')' : 'Origine';
+
+            html.push('<tr><td><strong>' + escapeHtml(v.name) + '</strong></td>');
+            html.push('<td class="math">(' + formatNumber(v.components.x) + '; ' + formatNumber(v.components.z) + '; ' + formatNumber(v.components.y) + ')</td>');
+            html.push('<td class="math">' + n + '</td><td>' + org + '</td></tr>');
+        });
+        html.push('</tbody></table>');
+    }
+
+    // --- 3. DROITES ---
+    if (geometryManager.lines.length > 0) {
+        html.push('<h2>3. Droites (Équations)</h2>');
+        geometryManager.lines.forEach(function(l) {
+            html.push('<h3>🔹 ' + escapeHtml(l.name) + '</h3><ul>');
+            var p = l.startPoint;
+            var u = l.directorVector;
+
+            var eq = 'x = ' + formatEqLine(p.x, u.x) + '<br>y = ' + formatEqLine(p.z, u.z) + '<br>z = ' + formatEqLine(p.y, u.y);
+
+            html.push('<li><strong>Passant par:</strong> P(' + formatNumber(p.x) + '; ' + formatNumber(p.z) + '; ' + formatNumber(p.y) + ')</li>');
+            html.push('<li><strong>Vecteur:</strong> u(' + formatNumber(u.x) + '; ' + formatNumber(u.z) + '; ' + formatNumber(u.y) + ')</li>');
+            html.push('<li><strong>Paramétrique:</strong><br><div class="math" style="display:inline-block; border-left:3px solid #ccc; padding-left:10px;">' + eq + '</div></li>');
+            html.push('</ul>');
+        });
+    }
+
+    // --- 4. PLANS ---
+    if (geometryManager.planes.length > 0) {
+        html.push('<h2>4. Plans (Équations)</h2>');
+        geometryManager.planes.forEach(function(p) {
+            html.push('<h3>🔸 ' + escapeHtml(p.name) + '</h3><ul>');
+            var n = p.normal;
+            var pt = p.pointOnPlane;
+
+            var a = n.x, b = n.z, c = n.y;
+            var d = -(a * pt.x + b * pt.z + c * pt.y);
+            var cart = buildCartesianEquation(a, b, c, d);
+
+            html.push('<li><strong>Normale:</strong> n(' + formatNumber(a) + '; ' + formatNumber(b) + '; ' + formatNumber(c) + ')</li>');
+            html.push('<li><strong>Cartésienne:</strong> <span class="math">' + cart + '</span></li>');
+            html.push('</ul>');
+        });
+    }
+
+    // =========================================================
+    // SECTION 5 : ANALYSE (INTERSECTIONS & PROJECTIONS)
+    // =========================================================
+
+    html.push('<h2>5. Analyse et Relations</h2>');
+    html.push('<ul>');
+
+    var relationsFound = false;
+
+    // --- DÉTECTION DES PROJECTIONS ORTHOGONALES ---
+    // On boucle sur tous les couples de points (P, H)
+    if (geometryManager.points.length >= 2) {
+        geometryManager.points.forEach(function(P) {
+            geometryManager.points.forEach(function(H) {
+                if (P === H) return;
+
+                var vecPH = new THREE.Vector3().subVectors(H.position, P.position);
+                var distPH = vecPH.length();
+                if (distPH < 0.001) return; // Points confondus
+
+                // 1. Projection sur PLAN
+                geometryManager.planes.forEach(function(pl) {
+                    // Si H appartient au plan (dist ~ 0)
+                    var distH_Plan = Math.abs(new THREE.Vector3().subVectors(H.position, pl.pointOnPlane).dot(pl.normal));
+
+                    if (distH_Plan < 0.01) {
+                        // Et si PH est colinéaire à la normale (produit vectoriel nul)
+                        var cross = new THREE.Vector3().crossVectors(vecPH.clone().normalize(), pl.normal);
+                        if (cross.length() < 0.01) {
+                            html.push('<li class="relation-item"><span class="tag tag-proj">PROJECTION</span> <strong>' + H.name + '</strong> est le projeté orthogonal de <strong>' + P.name + '</strong> sur le plan <strong>' + pl.name + '</strong>.</li>');
+                            html.push('<li class="relation-item" style="padding-left:40px;">↳ Distance exacte = <span class="math">' + formatNumber(distPH) + '</span></li>');
+                            relationsFound = true;
+                        }
+                    }
+                });
+
+                // 2. Projection sur DROITE
+                geometryManager.lines.forEach(function(ln) {
+                    // Si H appartient à la droite
+                    var mathLine = new THREE.Line3(
+                        ln.startPoint.clone().add(ln.directorVector.clone().multiplyScalar(-1000)),
+                        ln.startPoint.clone().add(ln.directorVector.clone().multiplyScalar(1000))
+                    );
+                    var closestPoint = new THREE.Vector3();
+                    mathLine.closestPointToPoint(H.position, true, closestPoint);
+
+                    if (H.position.distanceTo(closestPoint) < 0.01) {
+                        // Et si PH est orthogonal au vecteur directeur (produit scalaire nul)
+                        var dot = Math.abs(vecPH.clone().normalize().dot(ln.directorVector.clone().normalize()));
+                        if (dot < 0.01) {
+                            html.push('<li class="relation-item"><span class="tag tag-proj">PROJECTION</span> <strong>' + H.name + '</strong> est le projeté orthogonal de <strong>' + P.name + '</strong> sur la droite <strong>' + ln.name + '</strong>.</li>');
+                            html.push('<li class="relation-item" style="padding-left:40px;">↳ Distance exacte = <span class="math">' + formatNumber(distPH) + '</span></li>');
+                            relationsFound = true;
+                        }
+                    }
+                });
+            });
+        });
+    }
+
+    // --- ANALYSE DROITES / DROITES ---
+    if (geometryManager.lines.length >= 2) {
+        for (var i = 0; i < geometryManager.lines.length; i++) {
+            for (var j = i + 1; j < geometryManager.lines.length; j++) {
+                var l1 = geometryManager.lines[i];
+                var l2 = geometryManager.lines[j];
+
+                var u1 = l1.directorVector.clone().normalize();
+                var u2 = l2.directorVector.clone().normalize();
+                var p1 = l1.startPoint;
+                var p2 = l2.startPoint;
+
+                var dotDir = Math.abs(u1.dot(u2));
+                var crossDir = new THREE.Vector3().crossVectors(u1, u2);
+
+                if (dotDir > 0.9999) {
+                    html.push('<li class="relation-item"><span class="tag tag-para">PARALLÈLES</span> Droites <strong>' + l1.name + '</strong> // <strong>' + l2.name + '</strong></li>');
+                    var p1p2 = new THREE.Vector3().subVectors(p2, p1);
+                    var dist = p1p2.cross(u1).length();
+                    html.push('<li class="relation-item" style="padding-left:40px;">↳ Distance = <span class="math">' + formatNumber(dist) + '</span></li>');
+                    relationsFound = true;
+                } else {
+                    var isOrtho = (dotDir < 0.001);
+                    var typeAngle = "";
+                    var proofOrtho = "";
+
+                    if (isOrtho) {
+                        typeAngle = '<span class="tag tag-perp">ORTHOGONALES</span> ';
+                        var x1 = formatNumber(u1.x), y1 = formatNumber(u1.z), z1 = formatNumber(u1.y);
+                        var x2 = formatNumber(u2.x), y2 = formatNumber(u2.z), z2 = formatNumber(u2.y);
+                        proofOrtho = '<div class="proof">Preuve produit scalaire : <span class="math">u1 . u2 = 0</span></div>';
+                    }
+
+                    // Calcul distance min
+                    var p1p2 = new THREE.Vector3().subVectors(p2, p1);
+                    var distMin = Math.abs(p1p2.dot(crossDir)) / crossDir.length();
+
+                    if (distMin < 0.001) {
+                        // Intersection Point
+                        var crossU1U2 = new THREE.Vector3().crossVectors(u1, u2);
+                        var t1 = new THREE.Vector3().crossVectors(p1p2, u2).dot(crossU1U2) / crossU1U2.lengthSq();
+                        var intersectPt = p1.clone().add(u1.clone().multiplyScalar(t1));
+                        var ptStr = '(' + formatNumber(intersectPt.x) + '; ' + formatNumber(intersectPt.z) + '; ' + formatNumber(intersectPt.y) + ')';
+
+                        var etiquette = isOrtho ? '<span class="tag tag-perp">PERPENDICULAIRES</span>' : '<span class="tag tag-inter">SÉCANTES</span>';
+                        html.push('<li class="relation-item">' + etiquette + ' <strong>' + l1.name + '</strong> et <strong>' + l2.name + '</strong></li>');
+                        html.push('<li class="relation-item" style="padding-left:40px;">↳ Intersection : <span class="math">' + ptStr + '</span></li>');
+                        if (isOrtho) html.push('<li class="relation-item" style="padding-left:40px;">' + proofOrtho + '</li>');
+                    } else {
+                        html.push('<li class="relation-item">' + typeAngle + 'Droites <strong>' + l1.name + '</strong> et <strong>' + l2.name + '</strong> non-coplanaires.</li>');
+                        html.push('<li class="relation-item" style="padding-left:40px;"><span class="tag tag-dist">DISTANCE</span> Min = <span class="math">' + formatNumber(distMin) + '</span></li>');
+                        if (isOrtho) html.push('<li class="relation-item" style="padding-left:40px;">' + proofOrtho + '</li>');
+                    }
+                    relationsFound = true;
+                }
+            }
+        }
+    }
+
+    // --- ANALYSE DROITE / PLAN ---
+    if (geometryManager.lines.length > 0 && geometryManager.planes.length > 0) {
+        geometryManager.lines.forEach(function(l) {
+            geometryManager.planes.forEach(function(p) {
+                var u = l.directorVector.clone().normalize();
+                var n = p.normal;
+                var dot = Math.abs(u.dot(n));
+
+                if (dot < 0.001) {
+                    var vDist = new THREE.Vector3().subVectors(l.startPoint, p.pointOnPlane);
+                    var dist = Math.abs(vDist.dot(n));
+                    if (dist < 0.001) {
+                        html.push('<li class="relation-item"><span class="tag tag-inter">INCLUSE</span> <strong>' + l.name + '</strong> ⊂ <strong>' + p.name + '</strong></li>');
+                    } else {
+                        html.push('<li class="relation-item"><span class="tag tag-para">PARALLÈLE</span> <strong>' + l.name + '</strong> // <strong>' + p.name + '</strong> (Dist: ' + formatNumber(dist) + ')</li>');
+                    }
+                } else {
+                    var num = new THREE.Vector3().subVectors(p.pointOnPlane, l.startPoint).dot(p.normal);
+                    var den = l.directorVector.clone().normalize().dot(p.normal);
+                    var interI = l.startPoint.clone().add(l.directorVector.clone().normalize().multiplyScalar(num / den));
+                    var ptStr = '(' + formatNumber(interI.x) + '; ' + formatNumber(interI.z) + '; ' + formatNumber(interI.y) + ')';
+
+                    var perpTag = (dot > 0.9999) ? '<span class="tag tag-perp">PERPENDICULAIRE</span> ' : '<span class="tag tag-inter">INTERSECTION</span> ';
+                    html.push('<li class="relation-item">' + perpTag + '<strong>' + l.name + '</strong> / <strong>' + p.name + '</strong></li>');
+                    html.push('<li class="relation-item" style="padding-left:40px;">↳ Point I <span class="math">' + ptStr + '</span></li>');
+                }
+                relationsFound = true;
+            });
+        });
+    }
+
+    if (!relationsFound) {
+        html.push('<li>Aucune relation remarquable détectée.</li>');
+    }
+    html.push('</ul>');
+
+    // --- FOOTER ---
+    html.push('<div style="margin-top:40px; text-align:center; border-top:1px solid #ddd; padding-top:20px; font-size:12px; color:#888;">');
+    html.push('<button onclick="window.print()" style="padding:10px 20px; cursor:pointer; background:#2980b9; color:white; border:none; border-radius:4px; font-size:14px;">Imprimer / PDF</button>');
+    html.push('<br><br>Généré automatiquement par Éditeur 3D Web');
+    html.push('</div>');
+    html.push('</body></html>');
+
+    // Écriture finale
+    win.document.write(html.join(''));
+    win.document.close();
+}
+
+
+
+      function escapeHtml(text) {
+        var div = document.createElement("div");
+        div.textContent = text;
+        return div.innerHTML;
+      }
+
+      function buildCartesianEquation(a, b, c, d) {
+        var parts = [];
+
+        if (Math.abs(a) > 0.001) {
+          parts.push(formatNumber(a) + "x");
+        }
+        if (Math.abs(b) > 0.001) {
+          var sign = b > 0 ? "+ " : "- ";
+          parts.push(sign + formatNumber(Math.abs(b)) + "y");
+        }
+        if (Math.abs(c) > 0.001) {
+          var sign = c > 0 ? "+ " : "- ";
+          parts.push(sign + formatNumber(Math.abs(c)) + "z");
+        }
+        if (Math.abs(d) > 0.001) {
+          var sign = d > 0 ? "+ " : "- ";
+          parts.push(sign + formatNumber(Math.abs(d)));
+        }
+
+        var result = parts.join(" ") + " = 0";
+
+        if (result.indexOf("+ ") === 0) {
+          result = result.substring(2);
+        }
+
+        return result;
+      }
+
+      function formatEqLine(start, dir) {
+        var sStart = Math.abs(start) < 0.001 ? "" : formatNumber(start);
+        if (Math.abs(dir) < 0.001) return sStart || "0";
+
+        var sDir = Math.abs(Math.abs(dir) - 1) < 0.001 ? "t" : formatNumber(Math.abs(dir)) + "t";
+
+        if (dir < 0) return sStart ? sStart + " - " + sDir : "-" + sDir;
+        return sStart ? sStart + " + " + sDir : sDir;
+      }
+
+      function formatSigned(val) {
+        if (Math.abs(val) < 0.001) return "";
+        var sign = val > 0 ? "+" : "-";
+        var abs = Math.abs(Math.abs(val) - 1) < 0.001 ? "" : formatNumber(Math.abs(val));
+        return sign + " " + abs;
+      }
+
+      // =========================================================
+// CALCULS DE PROJECTIONS ORTHOGONALES
+// =========================================================
+
+function calculateProjectionPointPlane() {
+    const pId = document.getElementById("projPointOnPlaneSelect").value;
+    const plId = document.getElementById("projPlaneTargetSelect").value;
+    const r = document.getElementById("projPlaneResult");
+
+    if (pId === "" || plId === "") {
+        r.textContent = "Sélectionnez un point et un plan.";
+        return;
+    }
+
+    const P_obj = geometryManager.points[pId];
+    const Plane_obj = geometryManager.findPlaneById(parseInt(plId));
+
+    // 1. Mathématiques : H = P - (distSignée * n)
+    const P = P_obj.position;
+    const n = Plane_obj.normal; // Supposée normalisée
+    const A = Plane_obj.pointOnPlane;
+
+    const vAP = new THREE.Vector3().subVectors(P, A);
+    const distSigned = vAP.dot(n);
+    const distExact = Math.abs(distSigned);
+
+    const H = P.clone().sub(n.clone().multiplyScalar(distSigned));
+
+    // 2. Création du Point H dans la scène
+    const hName = geometryManager.generateUniqueName(`H_${P_obj.name}`, "point");
+    // Attention : Constructeur Point(name, x, y, z). Dans votre code UI, Y=Z et Z=Y.
+    // Mais ici on passe des Vector3 ThreeJS, donc on passe (x, y, z) brut si le constructeur gère l'inversion,
+    // OU on passe (x, z, y) si le constructeur inverse.
+    // D'après votre code existant `addPoint`, il semble attendre (x, y_ui, z_ui) => (x, z, y).
+    const newPoint = new Point(hName, H.x, H.y, H.z); // On utilise les coords brutes ThreeJS
+    // Correction manuelle de la position car le constructeur Point fait parfois des inversions selon votre version
+    newPoint.position.copy(H);
+    newPoint.mesh.position.copy(H);
+    newPoint.updateLabelPosition();
+
+    geometryManager.addPoint(newPoint);
+
+    // 3. Création du segment pointillé [PH] (Visualisation de la distance)
+    if (distExact > 0.01) {
+        const material = new THREE.LineDashedMaterial({ color: 0xff00ff, dashSize: 0.5, gapSize: 0.2 });
+        const points = [P, H];
+        const geometry = new THREE.BufferGeometry().setFromPoints(points);
+        const line = new THREE.Line(geometry, material);
+        line.computeLineDistances();
+        line.userData = { temporary: true }; // Marqueur pour nettoyage éventuel
+        scene.add(line);
+        // On l'ajoute temporairement à une liste si vous voulez pouvoir les effacer,
+        // ou on le laisse comme "décoration".
+    }
+
+    // 4. Affichage du résultat
+    const coordsStr = `(${formatNumber(H.x)}; ${formatNumber(H.z)}; ${formatNumber(H.y)})`; // Format UI (X, Prof, Haut)
+    r.innerHTML = `
+        <strong>Projeté H créé !</strong><br>
+        Coord : ${coordsStr}<br>
+        Distance PH = <strong>${formatNumber(distExact)}</strong>
+    `;
+
+    updateAllUI();
+    saveState();
+}
+
+function calculateProjectionPointLine() {
+    const pId = document.getElementById("projPointOnLineSelect").value;
+    const lId = document.getElementById("projLineTargetSelect").value;
+    const r = document.getElementById("projLineResult");
+
+    if (pId === "" || lId === "") {
+        r.textContent = "Sélectionnez un point et une droite.";
+        return;
+    }
+
+    const P_obj = geometryManager.points[pId];
+    const Line_obj = geometryManager.findLineById(parseInt(lId));
+
+    // 1. Mathématiques : Projection sur une droite définie par A et u
+    const P = P_obj.position;
+    const A = Line_obj.startPoint;
+    const u = Line_obj.directorVector.clone().normalize();
+
+    const vAP = new THREE.Vector3().subVectors(P, A);
+    const t = vAP.dot(u); // Produit scalaire
+
+    const H = A.clone().add(u.multiplyScalar(t));
+    const distExact = P.distanceTo(H);
+
+    // 2. Création du Point H
+    const hName = geometryManager.generateUniqueName(`H_${P_obj.name}`, "point");
+    const newPoint = new Point(hName, H.x, H.y, H.z);
+    newPoint.position.copy(H);
+    newPoint.mesh.position.copy(H);
+    newPoint.updateLabelPosition();
+
+    geometryManager.addPoint(newPoint);
+
+    // 3. Segment pointillé [PH]
+    if (distExact > 0.01) {
+        const material = new THREE.LineDashedMaterial({ color: 0xff00ff, dashSize: 0.5, gapSize: 0.2 });
+        const geometry = new THREE.BufferGeometry().setFromPoints([P, H]);
+        const line = new THREE.Line(geometry, material);
+        line.computeLineDistances();
+        scene.add(line);
+    }
+
+    // 4. Affichage
+    const coordsStr = `(${formatNumber(H.x)}; ${formatNumber(H.z)}; ${formatNumber(H.y)})`;
+    r.innerHTML = `
+        <strong>Projeté H créé !</strong><br>
+        Coord : ${coordsStr}<br>
+        Distance PH = <strong>${formatNumber(distExact)}</strong>
+    `;
+
+    updateAllUI();
+    saveState();
+}
+
     </script>
   </body>
 </html>
