@@ -2316,43 +2316,30 @@
       }
 
       function createGenericTextLabel(text) {
-        // 1. Création et mesure (identique à l'étape précédente)
-        const tempCanvas = document.createElement("canvas");
-        const tempCtx = tempCanvas.getContext("2d");
-        const fontSize = 96;
-        const font = "Bold " + fontSize + "px Arial";
-        tempCtx.font = font;
-
-        const metrics = tempCtx.measureText(text);
-        const textWidth = metrics.width;
-
         const canvas = document.createElement("canvas");
         const context = canvas.getContext("2d");
-
-        // Largeur dynamique
-        canvas.width = Math.ceil(Math.max(512, textWidth + 40));
+        canvas.width = 512;
         canvas.height = 256;
 
-        // 2. Dessin
         context.clearRect(0, 0, canvas.width, canvas.height);
-        context.font = font;
+
+        context.font = "Bold 96px Arial";
         context.textAlign = "center";
         context.textBaseline = "middle";
         context.lineWidth = 12;
 
-        const centerX = canvas.width / 2;
-        const centerY = canvas.height / 2;
-
         if (isDarkMode) {
+          // Mode Sombre : Texte Blanc avec contour Noir (pour contraste sur fond sombre)
           context.strokeStyle = "black";
-          context.strokeText(text, centerX, centerY);
+          context.strokeText(text, canvas.width / 2, canvas.height / 2);
           context.fillStyle = "white";
-          context.fillText(text, centerX, centerY);
+          context.fillText(text, canvas.width / 2, canvas.height / 2);
         } else {
+          // Mode Clair : Texte Noir avec contour Blanc (standard)
           context.strokeStyle = "white";
-          context.strokeText(text, centerX, centerY);
+          context.strokeText(text, canvas.width / 2, canvas.height / 2);
           context.fillStyle = "black";
-          context.fillText(text, centerX, centerY);
+          context.fillText(text, canvas.width / 2, canvas.height / 2);
         }
 
         const texture = new THREE.CanvasTexture(canvas);
@@ -2365,23 +2352,11 @@
         });
 
         const sprite = new THREE.Sprite(spriteMaterial);
-
-        const aspectRatio = canvas.width / canvas.height;
-        sprite.userData.aspectRatio = aspectRatio;
-
-        // --- CORRECTION ICI ---
-
-        // 1. Taille initiale plus petite (0.2 au lieu de 2) pour éviter le "flash" géant
-        sprite.scale.set(0.2 * aspectRatio, 0.2, 1);
+        sprite.scale.set(2, 1, 1);
         sprite.center.set(0.5, 0);
-
-        // 2. CRUCIAL : On invalide le hash de la caméra.
-        // Cela force la boucle animate() à recalculer la taille correcte dès la prochaine image,
-        // même si la caméra n'a pas bougé.
-        lastCameraHash = "";
-
         return sprite;
       }
+
       function setupEventListeners() {
         const canvas = renderer.domElement;
         const panel = document.getElementById("panel");
@@ -2973,41 +2948,38 @@
       }
 
       let lastCameraHash = ""; // Pour suivre les changements de caméra
+
       function animate() {
         requestAnimationFrame(animate);
 
+        // Générer une signature simple de la position/rotation caméra
         const currentCameraHash = `${camera.position.x.toFixed(3)},${camera.position.y.toFixed(
           3
         )},${camera.position.z.toFixed(3)},${camera.rotation.x.toFixed(3)},${camera.rotation.y.toFixed(3)}`;
 
-        // Mise à jour des labels (taille constante à l'écran)
+        // Optimisation : On ne met à jour les labels que si la caméra a bougé
+        // OU si un gizmo est en cours d'utilisation (car les objets bougent)
         if (currentCameraHash !== lastCameraHash || isGizmoDragging) {
-          // Facteur de taille de base (hauteur du texte)
-          const baseScaleFactor = 0.06; // Ajustez cette valeur si le texte est trop gros/petit globalement
+          const scaleFactor = 0.12;
 
-          // Helper pour mettre à jour un sprite
-          const updateLabelScale = (sprite) => {
-            if (sprite) {
-              const dist = camera.position.distanceTo(sprite.position);
-              // La hauteur dépend de la distance
-              const scaleY = dist * baseScaleFactor;
-              // La largeur dépend de la hauteur ET du ratio d'aspect du texte
-              // Si pas de ratio stocké, on utilise 2 par défaut
-              const ratio = sprite.userData.aspectRatio || 2;
-              sprite.scale.set(scaleY * ratio, scaleY, 1);
-            }
-          };
-
-          // 1. Labels des Points
+          // Mise à jour labels Points
           for (let i = 0, l = geometryManager.points.length; i < l; i++) {
-            updateLabelScale(geometryManager.points[i].label);
+            const p = geometryManager.points[i];
+            if (p.label) {
+              const dist = camera.position.distanceTo(p.label.position);
+              const desiredScale = dist * scaleFactor;
+              p.label.scale.set(desiredScale, desiredScale * 0.5, 1);
+            }
           }
 
-          // 2. Labels des Vecteurs
+          // Mise à jour labels Vecteurs
           for (let i = 0, l = geometryManager.vectors.length; i < l; i++) {
             const v = geometryManager.vectors[i];
             if (v.label && v.label.visible) {
-              updateLabelScale(v.label);
+              // Vérif visibilité pour économiser calculs
+              const dist = camera.position.distanceTo(v.label.position);
+              const desiredScale = dist * scaleFactor;
+              v.label.scale.set(desiredScale, desiredScale * 0.5, 1);
             }
           }
 
@@ -3016,7 +2988,6 @@
 
         renderer.render(scene, camera);
       }
-
       // =====================================================================================
       // SECTION 4 : MISE À JOUR DE L'INTERFACE UTILISATEUR (UI)
       // =====================================================================================
