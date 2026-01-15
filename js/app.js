@@ -1110,6 +1110,10 @@
         // --- AJOUT ---
         htmlContent += createAction(`openTransformationPanel('point', ${index})`, "🔄 Transformations");
         // -------------
+        htmlContent += createAction(
+          `togglePointVisibility(${index})`,
+          instance.isVisible ? "🙈 Cacher" : "👁️  Afficher"
+        );
         htmlContent += createAction(`removePoint(${index})`, "🗑️  Supprimer");
       } else if (instance instanceof Vector) {
         htmlContent += createAction(`editVector(${instance.id})`, "✏️ Modifier le vecteur");
@@ -1364,6 +1368,7 @@
           </div>
           <div class="geometry-actions">
               <button class="btn-secondary" onclick="editPoint(${i})" title="Modifier">✏️</button>
+              <button class="btn-secondary" onclick="togglePointVisibility(${i})" title="${p.isVisible ? "Masquer" : "Afficher"}">${p.isVisible ? "👁️ " : "🙈"}</button>
               <button class="btn-danger" onclick="removePoint(${i})" title="Supprimer">🗑️</button>
           </div>
       </div>`;
@@ -1564,6 +1569,15 @@
         vector.setLabelVisibility(!vector.isLabelVisible);
         // Met à jour la liste pour que le texte du bouton change
         updateVectorList();
+      }
+    }
+
+    function togglePointVisibility(index) {
+      const point = geometryManager.points[index];
+      if (point) {
+        point.setVisibility(!point.isVisible);
+        updatePointList();
+        saveState();
       }
     }
 
