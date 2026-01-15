@@ -1,0 +1,189 @@
+{
+  "meta": {
+    "appName": "Éditeur Points 3D",
+    "date": "15/01/2026 14:47:29",
+    "timestamp": 1768484849239,
+    "totalObjects": 13
+  },
+  "points": [
+    {
+      "name": "A",
+      "position": {
+        "x": 2,
+        "y": 0,
+        "z": -1
+      }
+    },
+    {
+      "name": "B",
+      "position": {
+        "x": 3,
+        "y": 2,
+        "z": -1
+      }
+    },
+    {
+      "name": "C",
+      "position": {
+        "x": 0,
+        "y": 1,
+        "z": 4
+      }
+    },
+    {
+      "name": "Intersect(d1, d2)",
+      "position": {
+        "x": 3,
+        "y": 5,
+        "z": 3.9999999999999996
+      }
+    }
+  ],
+  "vectors": [
+    {
+      "id": 0,
+      "name": "v",
+      "origin": {
+        "x": 1,
+        "y": 0,
+        "z": 0
+      },
+      "components": {
+        "x": 2,
+        "y": 2,
+        "z": 3
+      },
+      "isVisible": true,
+      "isLabelVisible": true,
+      "isNormalVector": false,
+      "parentPlaneId": null
+    },
+    {
+      "id": 1,
+      "name": "Vecteur(AC)",
+      "origin": {
+        "x": 2,
+        "y": 0,
+        "z": -1
+      },
+      "components": {
+        "x": -2,
+        "y": 1,
+        "z": 5
+      },
+      "isVisible": true,
+      "isLabelVisible": true,
+      "isNormalVector": false,
+      "parentPlaneId": null
+    }
+  ],
+  "lines": [
+    {
+      "id": 0,
+      "name": "d1",
+      "startPoint": {
+        "x": 4,
+        "y": 4,
+        "z": 6
+      },
+      "directorVector": {
+        "x": 1,
+        "y": -1,
+        "z": 2
+      },
+      "isVisible": true
+    },
+    {
+      "id": 1,
+      "name": "d2",
+      "startPoint": {
+        "x": 8,
+        "y": 6,
+        "z": 2
+      },
+      "directorVector": {
+        "x": 5,
+        "y": 1,
+        "z": -2
+      },
+      "isVisible": false
+    },
+    {
+      "id": 2,
+      "name": "Droite(A,B)",
+      "startPoint": {
+        "x": 2,
+        "y": 0,
+        "z": -1
+      },
+      "directorVector": {
+        "x": 1,
+        "y": 2,
+        "z": 0
+      },
+      "isVisible": true
+    },
+    {
+      "id": 4,
+      "name": "d",
+      "startPoint": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "directorVector": {
+        "x": 2,
+        "y": -1,
+        "z": 1
+      },
+      "isVisible": true
+    }
+  ],
+  "planes": [
+    {
+      "id": 0,
+      "name": "Plan(2x+3y+-1z...)",
+      "pointOnPlane": {
+        "x": -0.5,
+        "y": 0,
+        "z": 0
+      },
+      "displayNormal": {
+        "x": 2,
+        "y": -1,
+        "z": 3
+      },
+      "isVisible": false
+    },
+    {
+      "id": 1,
+      "name": "Plan(-1x+2y+0z...)",
+      "pointOnPlane": {
+        "x": -2,
+        "y": 0,
+        "z": 0
+      },
+      "displayNormal": {
+        "x": -1,
+        "y": 0,
+        "z": 2
+      },
+      "isVisible": false
+    },
+    {
+      "id": 2,
+      "name": "ABC",
+      "pointOnPlane": {
+        "x": 2,
+        "y": 0,
+        "z": -1
+      },
+      "displayNormal": {
+        "x": 2,
+        "y": -1,
+        "z": 1
+      },
+      "isVisible": false
+    }
+  ]
+}

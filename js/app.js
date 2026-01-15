@@ -11,6 +11,7 @@
         this.position = new THREE.Vector3(x, y, z);
         this.color = new THREE.Color(color);
         this.derivedFrom = derivedFrom;
+        this.isVisible = true; // Propriété de visibilité pour cohérence avec les autres objets
         const sphereGeometry = new THREE.SphereGeometry(0.2, 16, 16);
         const sphereMaterial = new THREE.MeshPhongMaterial({
           color: this.color,
@@ -58,6 +59,11 @@
 
       updateLabelPosition() {
         this.label.position.set(this.position.x, this.position.y + 0.35, this.position.z);
+      }
+      setVisibility(visible) {
+        this.isVisible = visible;
+        this.mesh.visible = visible;
+        this.label.visible = visible;
       }
       update(name, x, y, z) {
         this.name = name;
@@ -1027,7 +1033,7 @@
       // A. Points
       const points = geometryManager.points;
       for (let i = 0; i < points.length; i++) {
-        if (points[i].mesh.visible) raycastCandidates.push(points[i].mesh);
+        if (points[i].isVisible) raycastCandidates.push(points[i].mesh);
       }
 
       // B. Droites
@@ -2697,11 +2703,13 @@
       mouse.y = -(screenY / window.innerHeight) * 2 + 1;
       raycaster.setFromCamera(mouse, camera);
 
+      // Only include visible objects in raycasting
       const meshes = [
-        ...geometryManager.points.map((p) => p.mesh),
-        ...geometryManager.lines.map((l) => l.mesh),
-        ...geometryManager.planes.map((p) => p.mesh),
+        ...geometryManager.points.filter((p) => p.isVisible).map((p) => p.mesh),
+        ...geometryManager.lines.filter((l) => l.isVisible).map((l) => l.mesh),
+        ...geometryManager.planes.filter((p) => p.isVisible).map((p) => p.mesh),
         ...geometryManager.vectors
+          .filter((v) => v.isVisible)
           .map((v) => v.arrowHelper)
           .filter(Boolean)
           .flatMap((a) => [a.line, a.cone]),
@@ -3504,9 +3512,9 @@
 
       // 2. Application aux POINTS
       geometryManager.points.forEach((p) => {
-        // Les points n'ont pas de méthode setVisibility dans votre classe actuelle, on le fait manuellement
-        p.mesh.visible = areAllObjectsVisible;
-        if (p.label) p.label.visible = areAllObjectsVisible;
+        if (typeof p.setVisibility === "function") {
+          p.setVisibility(areAllObjectsVisible);
+        }
       });
 
       // 3. Application aux VECTEURS
@@ -4098,13 +4106,13 @@
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      showSplashScreen(`âœ… Scène exportée : ${filename}`);
+      showSplashScreen(`✅ Scène exportée : ${filename}`);
     }
 
     function importSceneFromJSON(inputElement) {
       const file = inputElement.files[0];
       if (!file) {
-        showSplashScreen("âŒ Aucun fichier sélectionné.");
+        showSplashScreen("❌ Aucun fichier sélectionné.");
         return;
       }
 
@@ -4115,7 +4123,7 @@
 
           // Vérifier la structure du fichier
           if (!sceneData.geometry) {
-            showSplashScreen("âŒ Fichier JSON invalide : structure incorrecte.");
+            showSplashScreen("❌ Fichier JSON invalide : structure incorrecte.");
             return;
           }
 
@@ -4165,17 +4173,17 @@
             });
           }
 
-          showSplashScreen(`âœ… Scène importée : ${file.name}`);
+          showSplashScreen(`✅ Scène importée : ${file.name}`);
           updateAllUI();
 
         } catch (error) {
           console.error("Erreur lors de l'import:", error);
-          showSplashScreen("âŒ Erreur lors de l'import du fichier JSON.");
+          showSplashScreen("❌ Erreur lors de l'import du fichier JSON.");
         }
       };
 
       reader.onerror = function () {
-        showSplashScreen("âŒ Erreur lors de la lecture du fichier.");
+        showSplashScreen("❌ Erreur lors de la lecture du fichier.");
       };
 
       reader.readAsText(file);
@@ -4257,7 +4265,7 @@
         historyIndex--;
         const previousState = historyStack[historyIndex];
         restoreSceneData(previousState);
-        showSplashScreen("Action annulée â†©ï¸");
+        showSplashScreen("Action annulée ↩️");
       } else {
         showSplashScreen("Rien à annuler.");
       }
@@ -4270,7 +4278,7 @@
         historyIndex++;
         const nextState = historyStack[historyIndex];
         restoreSceneData(nextState);
-        showSplashScreen("Action rétablie â†ªï¸");
+        showSplashScreen("Action rétablie ↪️");
       }
       updateHistoryButtons();
     }
@@ -4705,7 +4713,7 @@
           const oz_ui = formatNumber(o.y);
           const norm = formatNumber(v.length());
 
-          content = `â†—ï¸ <strong>${inst.name}</strong>
+          content = `↗️ <strong>${inst.name}</strong>
            <span ${detailStyle}>Origine : (${ox}, ${oy_ui}, ${oz_ui})</span>
            <span ${detailStyle}>Norme : ${norm}</span>`;
         }
@@ -4723,7 +4731,7 @@
           const uz_ui = formatNumber(u.z, 1);
           const uy_ui = formatNumber(u.y, 1);
 
-          content = `ðŸ“ <strong>${inst.name}</strong>
+          content = `📏 <strong>${inst.name}</strong>
                  <span ${detailStyle}>Passe par : (${px}, ${py_ui}, ${pz_ui})</span>
                  <span ${detailStyle}>Vect. dir. : (${ux}, ${uz_ui}, ${uy_ui})</span>`;
         }
@@ -5241,7 +5249,7 @@
       pSelect.value = "";
       vSelect.value = "";
 
-      showSplashScreen(`âœ… Droite "${uniqueName}" créée !`);
+      showSplashScreen(`✅ Droite "${uniqueName}" créée !`);
     }
 
     function updateLine() {
@@ -5357,7 +5365,7 @@
 
       // 7. Sortir du mode édition
       cancelLineEdit();
-      showSplashScreen(`âœ… Droite mise à jour !`);
+      showSplashScreen(`✅ Droite mise à jour !`);
     }
 
     function cancelLineEdit() {
@@ -5530,7 +5538,7 @@
       updateAllUI();
       saveState();
       cancelPlaneEdit();
-      showSplashScreen(`âœ… Plan mis à jour !`);
+      showSplashScreen(`✅ Plan mis à jour !`);
     }
 
     function cancelPlaneEdit() {
@@ -6209,7 +6217,7 @@
                     "</strong>.</li>"
                   );
                   html.push(
-                    '<li class="relation-item" style="padding-left:40px;">â†³ Distance exacte = <span class="math">' +
+                    '<li class="relation-item" style="padding-left:40px;">↳ Distance exacte = <span class="math">' +
                     formatNumber(distPH) +
                     "</span></li>"
                   );
@@ -6242,7 +6250,7 @@
                     "</strong>.</li>"
                   );
                   html.push(
-                    '<li class="relation-item" style="padding-left:40px;">â†³ Distance exacte = <span class="math">' +
+                    '<li class="relation-item" style="padding-left:40px;">↳ Distance exacte = <span class="math">' +
                     formatNumber(distPH) +
                     "</span></li>"
                   );
@@ -6271,7 +6279,7 @@
 
             if (dotDir > 0.9999) {
               html.push(
-                '<li class="relation-item"><span class="tag tag-para">PARALLÃˆLES</span> Droites <strong>' +
+                '<li class="relation-item"><span class="tag tag-para">PARALLÈLES</span> Droites <strong>' +
                 l1.name +
                 "</strong> // <strong>" +
                 l2.name +
@@ -6280,7 +6288,7 @@
               var p1p2 = new THREE.Vector3().subVectors(p2, p1);
               var dist = p1p2.cross(u1).length();
               html.push(
-                '<li class="relation-item" style="padding-left:40px;">â†³ Distance = <span class="math">' +
+                '<li class="relation-item" style="padding-left:40px;">↳ Distance = <span class="math">' +
                 formatNumber(dist) +
                 "</span></li>"
               );
@@ -6333,7 +6341,7 @@
                   "</strong></li>"
                 );
                 html.push(
-                  '<li class="relation-item" style="padding-left:40px;">â†³ Intersection : <span class="math">' +
+                  '<li class="relation-item" style="padding-left:40px;">↳ Intersection : <span class="math">' +
                   ptStr +
                   "</span></li>"
                 );
@@ -6378,13 +6386,13 @@
                 html.push(
                   '<li class="relation-item"><span class="tag tag-inter">INCLUSE</span> <strong>' +
                   l.name +
-                  "</strong> âŠ‚ <strong>" +
+                  "</strong> ⊂ <strong>" +
                   p.name +
                   "</strong></li>"
                 );
               } else {
                 html.push(
-                  '<li class="relation-item"><span class="tag tag-para">PARALLÃˆLE</span> <strong>' +
+                  '<li class="relation-item"><span class="tag tag-para">PARALLÈLE</span> <strong>' +
                   l.name +
                   "</strong> // <strong>" +
                   p.name +
@@ -6419,7 +6427,7 @@
                 "</strong></li>"
               );
               html.push(
-                '<li class="relation-item" style="padding-left:40px;">â†³ Point I <span class="math">' +
+                '<li class="relation-item" style="padding-left:40px;">↳ Point I <span class="math">' +
                 ptStr +
                 "</span></li>"
               );
