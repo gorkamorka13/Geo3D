@@ -469,7 +469,7 @@
     let panelOpen = false;
     /* global THREE */
 
-const nextStraightLineId = 0;
+    let nextStraightLineId = 0;
     let nextPlaneId = 0;
     let nextVectorId = 0;
     let raycaster,
@@ -577,6 +577,31 @@ const nextStraightLineId = 0;
 
       // 5. Reste de l'initialisation
       setupEventListeners();
+
+      // Keyboard shortcuts
+      window.addEventListener('keydown', function(e) {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+
+        if (e.key.toLowerCase() === 'p') {
+          const ptInput = document.getElementById('pointName');
+          if (ptInput) ptInput.focus();
+          e.preventDefault();
+        } else if (e.key === 'Delete' || e.key === 'Backspace') {
+          if (selectedObjectInstance) {
+            if (selectedObjectInstance instanceof Point) {
+              const idx = geometryManager.points.indexOf(selectedObjectInstance);
+              if (idx !== -1) removePoint(idx);
+            } else if (selectedObjectInstance instanceof Vector) {
+              removeVectorById(selectedObjectInstance.id);
+            } else if (selectedObjectInstance instanceof Line3D) {
+              removeStraightLineById(selectedObjectInstance.id);
+            } else if (selectedObjectInstance instanceof Plane) {
+              removePlaneById(selectedObjectInstance.id);
+            }
+          }
+        }
+      });
+
       raycaster = new THREE.Raycaster();
       mouse = new THREE.Vector2();
 
@@ -6061,6 +6086,16 @@ const nextStraightLineId = 0;
       html.push("<body>");
 
       html.push("<h1>Rapport Géométrique 3D</h1>");
+
+      // Generation of 2D snapshot
+      renderer.render(scene, camera);
+      try {
+        const snapshotData = renderer.domElement.toDataURL("image/png");
+        html.push(`<div style="text-align:center; margin-bottom: 20px;"><img src="${snapshotData}" alt="Capture 3D" style="max-width: 100%; max-height: 400px; border-radius: 8px; border: 1px solid #ddd; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"></div>`);
+      } catch(e) {
+        console.warn("Could not capture 2D snapshot", e);
+      }
+
       html.push('<div class="intro">');
       html.push("<strong>Scène :</strong> " + escapeHtml(sceneName) + "<br>");
       html.push("<strong>Date :</strong> " + reportDate + "<br>");
