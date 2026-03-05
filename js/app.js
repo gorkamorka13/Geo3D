@@ -467,7 +467,9 @@
     let cameraTarget = new THREE.Vector3(0, 0, 0);
     let initialPinchDistance = 0;
     let panelOpen = false;
-    let nextStraightLineId = 0;
+    /* global THREE */
+
+const nextStraightLineId = 0;
     let nextPlaneId = 0;
     let nextVectorId = 0;
     let raycaster,
@@ -478,9 +480,7 @@
     let splashTimer = null;
     let blockNextClick = false; // Variable pour bloquer le "clic fantôme" sur mobile
     const HIGHLIGHT_COLOR = 0xffcc00; // Jaune vif pour la surbrillance
-    const LONG_PRESS_DURATION = 500;
     let touchStartPosition = { x: 0, y: 0 };
-    let lastTap = 0;
     let transformControl;
     let isGizmoDragging = false;
     let lastTooltipX = 0;
@@ -495,8 +495,6 @@
       startTime: 0, // NOUVEAU : pour calculer la vitesse
       panelWidth: 0, // NOUVEAU : pour éviter de recalculer
     };
-    const SWIPE_EDGE_ZONE = 50; // Augmenté à 50px pour faciliter la prise en main
-    const SWIPE_THRESHOLD_VELOCITY = 0.3; // Vitesse minimale pour un "flick"
 
     function gcd(a, b) {
       a = Math.abs(a);
@@ -2553,7 +2551,6 @@
       const pS = geometryManager.points[sIdx],
         pE = geometryManager.points[eIdx];
       const c = new THREE.Vector3().subVectors(pE.position, pS.position);
-      const n = `Vecteur(${pS.name}${pE.name})`;
 
       const baseName = `Vecteur(${pS.name}${pE.name})`;
       const uniqueName = geometryManager.generateUniqueName(baseName, "vector");
@@ -4479,6 +4476,7 @@
           elementUnderMouse.closest("#cameraControls"))
       ) {
         // ... On cache l'info-bulle et on arrÃªte tout.
+        tooltip.style.opacity = "0";
         tooltip.style.display = "none";
         document.body.style.cursor = "default";
         return;
@@ -4751,7 +4749,6 @@
         }
         // -----------------------------------
         else if (inst instanceof Plane) {
-          const currentP = inst.pointOnPlane.clone().add(inst.mesh.position);
 
           // Calcul de la normale (avec rotation si nécessaire)
           let n = inst.normal;
@@ -4859,6 +4856,7 @@
 
       // 1. On l'affiche d'abord pour pouvoir mesurer sa taille réelle
       tooltip.style.display = "block";
+      setTimeout(() => tooltip.style.opacity = "1", 10);
       const rect = tooltip.getBoundingClientRect();
 
       const winWidth = window.innerWidth;
@@ -5908,6 +5906,7 @@
       });
     }
 
+    let snapEnabled = false;
     let currentSnapSize = 1.0; // Variable modifiable au lieu de const
     const SNAP_ROTATE = THREE.MathUtils.degToRad(15); // Rotation toujours fixée à 15Â°
 
@@ -6314,12 +6313,6 @@
 
               if (isOrtho) {
                 typeAngle = '<span class="tag tag-perp">ORTHOGONALES</span> ';
-                var x1 = formatNumber(u1.x),
-                  y1 = formatNumber(u1.z),
-                  z1 = formatNumber(u1.y);
-                var x2 = formatNumber(u2.x),
-                  y2 = formatNumber(u2.z),
-                  z2 = formatNumber(u2.y);
                 proofOrtho =
                   '<div class="proof">Preuve produit scalaire : <span class="math">u1 . u2 = 0</span></div>';
               }
@@ -6514,13 +6507,6 @@
 
       if (dir < 0) return sStart ? sStart + " - " + sDir : "-" + sDir;
       return sStart ? sStart + " + " + sDir : sDir;
-    }
-
-    function formatSigned(val) {
-      if (Math.abs(val) < 0.001) return "";
-      var sign = val > 0 ? "+" : "-";
-      var abs = Math.abs(Math.abs(val) - 1) < 0.001 ? "" : formatNumber(Math.abs(val));
-      return sign + " " + abs;
     }
 
     // =========================================================

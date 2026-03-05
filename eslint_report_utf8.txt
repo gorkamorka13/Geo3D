@@ -1,0 +1,286 @@
+﻿
+C:\wamp64\www\Geo3D\js\app.js
+    11:29  warning  'THREE' is not defined                                         no-undef
+    12:26  warning  'THREE' is not defined                                         no-undef
+    15:36  warning  'THREE' is not defined                                         no-undef
+    16:36  warning  'THREE' is not defined                                         no-undef
+    19:25  warning  'THREE' is not defined                                         no-undef
+    44:29  warning  'THREE' is not defined                                         no-undef
+    45:29  warning  'THREE' is not defined                                         no-undef
+    48:36  warning  'THREE' is not defined                                         no-undef
+    54:28  warning  'THREE' is not defined                                         no-undef
+   106:26  warning  'THREE' is not defined                                         no-undef
+   111:33  warning  'THREE' is not defined                                         no-undef
+   112:31  warning  'THREE' is not defined                                         no-undef
+   113:30  warning  'THREE' is not defined                                         no-undef
+   114:30  warning  'THREE' is not defined                                         no-undef
+   115:25  warning  'THREE' is not defined                                         no-undef
+   157:26  warning  'THREE' is not defined                                         no-undef
+   160:35  warning  'THREE' is not defined                                         no-undef
+   161:35  warning  'THREE' is not defined                                         no-undef
+   165:17  warning  'THREE' is not defined                                         no-undef
+   171:25  warning  'THREE' is not defined                                         no-undef
+   174:53  warning  'THREE' is not defined                                         no-undef
+   201:26  warning  'THREE' is not defined                                         no-undef
+   233:29  warning  'THREE' is not defined                                         no-undef
+   234:29  warning  'THREE' is not defined                                         no-undef
+   236:36  warning  'THREE' is not defined                                         no-undef
+   242:28  warning  'THREE' is not defined                                         no-undef
+   252:30  warning  'THREE' is not defined                                         no-undef
+   270:34  warning  'THREE' is not defined                                         no-undef
+   467:28  warning  'THREE' is not defined                                         no-undef
+   481:11  warning  'LONG_PRESS_DURATION' is assigned a value but never used       no-unused-vars
+   483:9   warning  'lastTap' is assigned a value but never used                   no-unused-vars
+   498:11  warning  'SWIPE_EDGE_ZONE' is assigned a value but never used           no-unused-vars
+   499:11  warning  'SWIPE_THRESHOLD_VELOCITY' is assigned a value but never used  no-unused-vars
+   513:19  warning  'THREE' is not defined                                         no-undef
+   515:30  warning  'THREE' is not defined                                         no-undef
+   516:20  warning  'THREE' is not defined                                         no-undef
+   517:22  warning  'THREE' is not defined                                         no-undef
+   522:32  warning  'THREE' is not defined                                         no-undef
+   524:36  warning  'THREE' is not defined                                         no-undef
+   539:30  warning  'THREE' is not defined                                         no-undef
+   582:23  warning  'THREE' is not defined                                         no-undef
+   583:19  warning  'THREE' is not defined                                         no-undef
+   673:27  warning  'THREE' is not defined                                         no-undef
+   674:27  warning  'THREE' is not defined                                         no-undef
+   676:34  warning  'THREE' is not defined                                         no-undef
+   682:26  warning  'THREE' is not defined                                         no-undef
+  1197:23  warning  'THREE' is not defined                                         no-undef
+  1224:39  warning  'THREE' is not defined                                         no-undef
+  1227:29  warning  'THREE' is not defined                                         no-undef
+  1228:30  warning  'THREE' is not defined                                         no-undef
+  1234:28  warning  'THREE' is not defined                                         no-undef
+  1246:30  warning  'THREE' is not defined                                         no-undef
+  1250:32  warning  'THREE' is not defined                                         no-undef
+  1252:35  warning  'THREE' is not defined                                         no-undef
+  1253:27  warning  'THREE' is not defined                                         no-undef
+  1255:49  warning  'THREE' is not defined                                         no-undef
+  1258:34  warning  'THREE' is not defined                                         no-undef
+  1259:26  warning  'THREE' is not defined                                         no-undef
+  1261:48  warning  'THREE' is not defined                                         no-undef
+  1273:51  warning  'THREE' is not defined                                         no-undef
+  1274:51  warning  'THREE' is not defined                                         no-undef
+  1275:51  warning  'THREE' is not defined                                         no-undef
+  1565:14  warning  'toggleVectorLabelVisibility' is defined but never used        no-unused-vars
+  1575:14  warning  'togglePointVisibility' is defined but never used              no-unused-vars
+  1584:14  warning  'toggleNormalVector' is defined but never used                 no-unused-vars
+  1934:14  warning  'openTransformationPanel' is defined but never used            no-unused-vars
+  1984:14  warning  'addPoint' is defined but never used                           no-unused-vars
+  2002:14  warning  'updatePoint' is defined but never used                        no-unused-vars
+  2053:14  warning  'deleteEditingPoint' is defined but never used                 no-unused-vars
+  2077:14  warning  'clearAllPoints' is defined but never used                     no-unused-vars
+  2102:14  warning  'addStraightLine' is defined but never used                    no-unused-vars
+  2110:21  warning  'THREE' is not defined                                         no-undef
+  2132:14  warning  'onLineEquationPointChange' is defined but never used          no-unused-vars
+  2162:14  warning  'addLineFromEquation' is defined but never used                no-unused-vars
+  2228:31  warning  'THREE' is not defined                                         no-undef
+  2237:33  warning  'THREE' is not defined                                         no-undef
+  2241:38  warning  'THREE' is not defined                                         no-undef
+  2247:31  warning  'THREE' is not defined                                         no-undef
+  2251:34  warning  'THREE' is not defined                                         no-undef
+  2278:14  warning  'toggleStraightLineVisibility' is defined but never used       no-unused-vars
+  2287:14  warning  'clearStraightLines' is defined but never used                 no-unused-vars
+  2298:14  warning  'addPlane' is defined but never used                           no-unused-vars
+  2316:24  warning  'THREE' is not defined                                         no-undef
+  2317:13  warning  'THREE' is not defined                                         no-undef
+  2318:13  warning  'THREE' is not defined                                         no-undef
+  2341:14  warning  'onPlaneEquationPointChange' is defined but never used         no-unused-vars
+  2367:14  warning  'addPlaneFromEquation' is defined but never used               no-unused-vars
+  2410:26  warning  'THREE' is not defined                                         no-undef
+  2435:28  warning  'THREE' is not defined                                         no-undef
+  2458:30  warning  'THREE' is not defined                                         no-undef
+  2460:30  warning  'THREE' is not defined                                         no-undef
+  2462:30  warning  'THREE' is not defined                                         no-undef
+  2464:30  warning  'THREE' is not defined                                         no-undef
+  2523:14  warning  'clearAllPlanes' is defined but never used                     no-unused-vars
+  2538:14  warning  'togglePlaneVisibility' is defined but never used              no-unused-vars
+  2547:14  warning  'addVectorFromPoints' is defined but never used                no-unused-vars
+  2555:21  warning  'THREE' is not defined                                         no-undef
+  2556:13  warning  'n' is assigned a value but never used                         no-unused-vars
+  2565:14  warning  'addVectorFromCoords' is defined but never used                no-unused-vars
+  2595:25  warning  'THREE' is not defined                                         no-undef
+  2596:26  warning  'THREE' is not defined                                         no-undef
+  2606:14  warning  'updateVector' is defined but never used                       no-unused-vars
+  2637:30  warning  'THREE' is not defined                                         no-undef
+  2638:26  warning  'THREE' is not defined                                         no-undef
+  2651:14  warning  'deleteEditingVector' is defined but never used                no-unused-vars
+  2699:14  warning  'clearAllVectors' is defined but never used                    no-unused-vars
+  2707:14  warning  'toggleVectorVisibility' is defined but never used             no-unused-vars
+  2858:14  warning  'constructChaslesSum' is defined but never used                no-unused-vars
+  2876:17  warning  'THREE' is not defined                                         no-undef
+  2880:26  warning  'THREE' is not defined                                         no-undef
+  2904:33  warning  'THREE' is not defined                                         no-undef
+  3060:14  warning  'calculateVectorSumFree' is defined but never used             no-unused-vars
+  3074:33  warning  'THREE' is not defined                                         no-undef
+  3085:25  warning  'THREE' is not defined                                         no-undef
+  3107:14  warning  'calculateScalarProduct' is defined but never used             no-unused-vars
+  3154:14  warning  'calculateVectorProduct' is defined but never used             no-unused-vars
+  3167:19  warning  'THREE' is not defined                                         no-undef
+  3172:22  warning  'THREE' is not defined                                         no-undef
+  3193:14  warning  'calculatePointPointDistance' is defined but never used        no-unused-vars
+  3207:14  warning  'calculatePointLineDistance' is defined but never used         no-unused-vars
+  3215:28  warning  'THREE' is not defined                                         no-undef
+  3219:32  warning  'THREE' is not defined                                         no-undef
+  3229:14  warning  'calculatePointPlaneDistance' is defined but never used        no-unused-vars
+  3239:24  warning  'THREE' is not defined                                         no-undef
+  3244:14  warning  'calculateLineLineAngle' is defined but never used             no-unused-vars
+  3259:14  warning  'calculatePlanePlaneAngle' is defined but never used           no-unused-vars
+  3274:14  warning  'calculateLinePlaneAngle' is defined but never used            no-unused-vars
+  3288:14  warning  'calculateLinePlaneIntersection' is defined but never used     no-unused-vars
+  3317:51  warning  'THREE' is not defined                                         no-undef
+  3326:27  warning  'THREE' is not defined                                         no-undef
+  3327:37  warning  'THREE' is not defined                                         no-undef
+  3361:14  warning  'calculatePlanePlaneIntersection' is defined but never used    no-unused-vars
+  3377:33  warning  'THREE' is not defined                                         no-undef
+  3380:31  warning  'THREE' is not defined                                         no-undef
+  3392:26  warning  'THREE' is not defined                                         no-undef
+  3403:27  warning  'THREE' is not defined                                         no-undef
+  3408:27  warning  'THREE' is not defined                                         no-undef
+  3413:27  warning  'THREE' is not defined                                         no-undef
+  3434:14  warning  'calculateLineLineIntersection' is defined but never used      no-unused-vars
+  3452:31  warning  'THREE' is not defined                                         no-undef
+  3453:31  warning  'THREE' is not defined                                         no-undef
+  3470:33  warning  'THREE' is not defined                                         no-undef
+  3474:34  warning  'THREE' is not defined                                         no-undef
+  3517:14  warning  'toggleGlobalVisibility' is defined but never used             no-unused-vars
+  3561:14  warning  'expandSectionAndScrollToItem' is defined but never used       no-unused-vars
+  3654:21  warning  'THREE' is not defined                                         no-undef
+  3723:14  warning  'applyTranslation' is defined but never used                   no-unused-vars
+  3738:37  warning  'THREE' is not defined                                         no-undef
+  3765:27  warning  'THREE' is not defined                                         no-undef
+  3766:25  warning  'THREE' is not defined                                         no-undef
+  3770:34  warning  'THREE' is not defined                                         no-undef
+  3783:14  warning  'applyRotation' is defined but never used                      no-unused-vars
+  3802:28  warning  'THREE' is not defined                                         no-undef
+  3806:28  warning  'THREE' is not defined                                         no-undef
+  3810:28  warning  'THREE' is not defined                                         no-undef
+  3817:17  warning  'THREE' is not defined                                         no-undef
+  3854:53  warning  'THREE' is not defined                                         no-undef
+  3862:27  warning  'THREE' is not defined                                         no-undef
+  3863:25  warning  'THREE' is not defined                                         no-undef
+  3866:34  warning  'THREE' is not defined                                         no-undef
+  3938:14  warning  'applySymmetry' is defined but never used                      no-unused-vars
+  3967:24  warning  'THREE' is not defined                                         no-undef
+  3970:24  warning  'THREE' is not defined                                         no-undef
+  3973:24  warning  'THREE' is not defined                                         no-undef
+  3976:24  warning  'THREE' is not defined                                         no-undef
+  3979:24  warning  'THREE' is not defined                                         no-undef
+  3982:24  warning  'THREE' is not defined                                         no-undef
+  3992:35  warning  'THREE' is not defined                                         no-undef
+  3994:40  warning  'THREE' is not defined                                         no-undef
+  3999:30  warning  'THREE' is not defined                                         no-undef
+  4025:30  warning  'THREE' is not defined                                         no-undef
+  4027:35  warning  'THREE' is not defined                                         no-undef
+  4033:30  warning  'THREE' is not defined                                         no-undef
+  4035:28  warning  'THREE' is not defined                                         no-undef
+  4043:27  warning  'THREE' is not defined                                         no-undef
+  4044:25  warning  'THREE' is not defined                                         no-undef
+  4047:34  warning  'THREE' is not defined                                         no-undef
+  4054:37  warning  'THREE' is not defined                                         no-undef
+  4056:31  warning  'THREE' is not defined                                         no-undef
+  4063:53  warning  'THREE' is not defined                                         no-undef
+  4073:14  warning  'exportSceneToJSON' is defined but never used                  no-unused-vars
+  4126:14  warning  'importSceneFromJSON' is defined but never used                no-unused-vars
+  4156:34  warning  'THREE' is not defined                                         no-undef
+  4157:38  warning  'THREE' is not defined                                         no-undef
+  4170:38  warning  'THREE' is not defined                                         no-undef
+  4171:42  warning  'THREE' is not defined                                         no-undef
+  4181:40  warning  'THREE' is not defined                                         no-undef
+  4182:34  warning  'THREE' is not defined                                         no-undef
+  4366:17  warning  'THREE' is not defined                                         no-undef
+  4367:17  warning  'THREE' is not defined                                         no-undef
+  4394:17  warning  'THREE' is not defined                                         no-undef
+  4395:17  warning  'THREE' is not defined                                         no-undef
+  4415:17  warning  'THREE' is not defined                                         no-undef
+  4416:17  warning  'THREE' is not defined                                         no-undef
+  4667:38  warning  'THREE' is not defined                                         no-undef
+  4668:37  warning  'THREE' is not defined                                         no-undef
+  4754:17  warning  'currentP' is assigned a value but never used                  no-unused-vars
+  4759:40  warning  'THREE' is not defined                                         no-undef
+  4826:33  warning  'THREE' is not defined                                         no-undef
+  4827:31  warning  'THREE' is not defined                                         no-undef
+  4830:34  warning  'THREE' is not defined                                         no-undef
+  4892:14  warning  'downloadDebugJSON' is defined but never used                  no-unused-vars
+  4976:14  warning  'toggleTheme' is defined but never used                        no-unused-vars
+  4995:32  warning  'THREE' is not defined                                         no-undef
+  5004:26  warning  'THREE' is not defined                                         no-undef
+  5053:22  warning  'THREE' is not defined                                         no-undef
+  5072:28  warning  'THREE' is not defined                                         no-undef
+  5085:28  warning  'THREE' is not defined                                         no-undef
+  5086:28  warning  'THREE' is not defined                                         no-undef
+  5103:14  warning  'getVectorPlaneAngle' is defined but never used                no-unused-vars
+  5116:24  warning  'THREE' is not defined                                         no-undef
+  5127:14  warning  'projectPointOnLine' is defined but never used                 no-unused-vars
+  5133:22  warning  'THREE' is not defined                                         no-undef
+  5139:21  warning  'THREE' is not defined                                         no-undef
+  5153:14  warning  'computeBarycenter' is defined but never used                  no-unused-vars
+  5154:64  warning  'THREE' is not defined                                         no-undef
+  5174:20  warning  'THREE' is not defined                                         no-undef
+  5177:18  warning  'THREE' is not defined                                         no-undef
+  5180:14  warning  'calculateCommonPerpendicular' is defined but never used       no-unused-vars
+  5204:35  warning  'THREE' is not defined                                         no-undef
+  5219:14  warning  'addLineFromPointVector' is defined but never used             no-unused-vars
+  5269:14  warning  'updateLine' is defined but never used                         no-unused-vars
+  5323:26  warning  'THREE' is not defined                                         no-undef
+  5338:26  warning  'THREE' is not defined                                         no-undef
+  5368:32  warning  'THREE' is not defined                                         no-undef
+  5403:14  warning  'deleteEditingLine' is defined but never used                  no-unused-vars
+  5437:14  warning  'updatePlane' is defined but never used                        no-unused-vars
+  5475:41  warning  'THREE' is not defined                                         no-undef
+  5490:26  warning  'THREE' is not defined                                         no-undef
+  5532:52  warning  'THREE' is not defined                                         no-undef
+  5574:14  warning  'deleteEditingPlane' is defined but never used                 no-unused-vars
+  5681:14  warning  'toggleSpreadsheet' is defined but never used                  no-unused-vars
+  5699:14  warning  'switchSpreadsheetTab' is defined but never used               no-unused-vars
+  5780:14  warning  'sheetUpdatePointName' is defined but never used               no-unused-vars
+  5788:14  warning  'sheetUpdatePointCoords' is defined but never used             no-unused-vars
+  5848:14  warning  'sheetUpdateVector' is defined but never used                  no-unused-vars
+  5863:29  warning  'THREE' is not defined                                         no-undef
+  5864:28  warning  'THREE' is not defined                                         no-undef
+  5912:25  warning  'THREE' is not defined                                         no-undef
+  5914:14  warning  'updateSnapSize' is defined but never used                     no-unused-vars
+  5922:11  warning  'snapEnabled' is not defined                                   no-undef
+  5928:14  warning  'toggleSnapping' is defined but never used                     no-unused-vars
+  5933:7   warning  'snapEnabled' is not defined                                   no-undef
+  5937:45  warning  'snapEnabled' is not defined                                   no-undef
+  5938:42  warning  'snapEnabled' is not defined                                   no-undef
+  5941:13  warning  'snapEnabled' is not defined                                   no-undef
+  5954:14  warning  'projectPointOnPlane' is defined but never used                no-unused-vars
+  5965:24  warning  'THREE' is not defined                                         no-undef
+  5984:32  warning  'THREE' is not defined                                         no-undef
+  5985:24  warning  'THREE' is not defined                                         no-undef
+  5986:28  warning  'THREE' is not defined                                         no-undef
+  6011:14  warning  'generateMathReport' is defined but never used                 no-unused-vars
+  6211:29  warning  'THREE' is not defined                                         no-undef
+  6218:45  warning  'THREE' is not defined                                         no-undef
+  6222:33  warning  'THREE' is not defined                                         no-undef
+  6246:34  warning  'THREE' is not defined                                         no-undef
+  6250:38  warning  'THREE' is not defined                                         no-undef
+  6292:32  warning  'THREE' is not defined                                         no-undef
+  6302:30  warning  'THREE' is not defined                                         no-undef
+  6317:21  warning  'x1' is assigned a value but never used                        no-unused-vars
+  6318:19  warning  'y1' is assigned a value but never used                        no-unused-vars
+  6319:19  warning  'z1' is assigned a value but never used                        no-unused-vars
+  6320:21  warning  'x2' is assigned a value but never used                        no-unused-vars
+  6321:19  warning  'y2' is assigned a value but never used                        no-unused-vars
+  6322:19  warning  'z2' is assigned a value but never used                        no-unused-vars
+  6328:30  warning  'THREE' is not defined                                         no-undef
+  6333:37  warning  'THREE' is not defined                                         no-undef
+  6334:30  warning  'THREE' is not defined                                         no-undef
+  6397:31  warning  'THREE' is not defined                                         no-undef
+  6419:29  warning  'THREE' is not defined                                         no-undef
+  6519:14  warning  'formatSigned' is defined but never used                       no-unused-vars
+  6530:14  warning  'calculateProjectionPointPlane' is defined but never used      no-unused-vars
+  6548:23  warning  'THREE' is not defined                                         no-undef
+  6570:30  warning  'THREE' is not defined                                         no-undef
+  6572:30  warning  'THREE' is not defined                                         no-undef
+  6573:26  warning  'THREE' is not defined                                         no-undef
+  6593:14  warning  'calculateProjectionPointLine' is defined but never used       no-unused-vars
+  6611:23  warning  'THREE' is not defined                                         no-undef
+  6628:30  warning  'THREE' is not defined                                         no-undef
+  6629:30  warning  'THREE' is not defined                                         no-undef
+  6630:26  warning  'THREE' is not defined                                         no-undef
+
+Ô£û 281 problems (0 errors, 281 warnings)
+
