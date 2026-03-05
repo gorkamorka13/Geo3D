@@ -540,10 +540,10 @@ button:not([class]):hover {
    ========================================= */
 #cameraControls {
   position: absolute;
-  top: 20px;
+  bottom: 20px;
   right: 20px;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 8px;
   z-index: 990;
   pointer-events: auto;
@@ -557,16 +557,19 @@ button:not([class]):hover {
   align-items: center;
   background-color: var(--camera-btn-bg);
   border: 1px solid var(--input-border);
-  border-radius: 5px;
+  border-radius: 8px;
   cursor: pointer;
-  transition: background-color 0.2s, border-color 0.2s;
+  transition: all 0.2s ease-in-out;
   color: var(--text-color);
   font-size: 18px;
-  box-shadow: 0 2px 4px var(--shadow-color);
+  box-shadow: 0 4px 10px var(--shadow-color);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
 }
 
 .camera-btn:hover {
   background-color: var(--camera-btn-hover);
+  transform: translateY(-2px);
 }
 
 .camera-btn.active {
@@ -746,14 +749,15 @@ STYLE DU TABLEUR (SPREADSHEET)
   background: transparent;
   border: none;
   color: var(--text-secondary);
-  padding: 6px 12px;
+  padding: 8px 16px;
   cursor: pointer;
-  border-radius: 4px 4px 0 0;
+  border-radius: 8px 8px 0 0;
   font-weight: bold;
   font-size: 13px;
   width: auto;
   /* Override du style global button */
   margin: 0;
+  transition: all 0.2s ease;
 }
 
 .tab-btn:hover {
@@ -764,7 +768,7 @@ STYLE DU TABLEUR (SPREADSHEET)
 .tab-btn.active {
   background-color: var(--panel-bg);
   color: var(--input-focus);
-  border-bottom: 2px solid var(--input-focus);
+  border-bottom: 3px solid var(--input-focus);
 }
 
 .close-spreadsheet-btn {

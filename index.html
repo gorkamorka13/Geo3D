@@ -29,59 +29,62 @@
     <span class="burger-line"></span>
   </button>
   <div id="container">
-    <div id="cameraControls">
-      <div id="snapControl" style="
-            position: absolute;
-            top: 20px;
-            right: 70px;
-            z-index: 990;
-            background: var(--panel-bg);
-            padding: 5px 5px 5px 10px;
-            border-radius: 4px;
-            border: 1px solid var(--input-border);
+    <div id="snapControl" style="
+          position: absolute;
+          top: 20px;
+          right: 20px;
+          z-index: 990;
+          background: var(--panel-bg);
+          backdrop-filter: blur(5px);
+          -webkit-backdrop-filter: blur(5px);
+          padding: 5px 5px 5px 10px;
+          border-radius: 8px;
+          border: 1px solid var(--input-border);
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          box-shadow: 0 4px 10px var(--shadow-color);
+        ">
+      <!-- Checkbox cachée pour le toggle ON/OFF -->
+      <input type="checkbox" id="snapToggle" onchange="toggleSnapping()" style="display: none" />
+
+      <!-- Label cliquable pour activer/désactiver -->
+      <label for="snapToggle" style="
+            font-size: 13px;
+            margin: 0;
+            cursor: pointer;
+            color: var(--text-color);
             display: flex;
             align-items: center;
-            gap: 8px;
-            box-shadow: 0 2px 5px var(--shadow-color);
+          " title="Activer/Désactiver l'aimant">
+        <span id="snapIcon" class="icon-disabled">🧲</span>
+        <span style="margin-left: 5px; font-weight: bold">Aimant</span>
+      </label>
+
+      <!-- Séparateur visuel -->
+      <div style="width: 1px; height: 20px; background-color: var(--input-border)"></div>
+
+      <!-- Liste déroulante pour la taille -->
+      <select id="snapSizeSelect" onchange="updateSnapSize()" style="
+            width: auto;
+            padding: 2px 5px;
+            margin: 0;
+            height: 26px;
+            border: none;
+            background: transparent;
+            color: var(--text-color);
+            font-size: 13px;
+            cursor: pointer;
+            outline: none;
+            font-weight: bold;
           ">
-        <!-- Checkbox cachée pour le toggle ON/OFF -->
-        <input type="checkbox" id="snapToggle" onchange="toggleSnapping()" style="display: none" />
+        <option value="1">1.0</option>
+        <option value="0.5">0.5</option>
+        <option value="0.1">0.1</option>
+      </select>
+    </div>
 
-        <!-- Label cliquable pour activer/désactiver -->
-        <label for="snapToggle" style="
-              font-size: 13px;
-              margin: 0;
-              cursor: pointer;
-              color: var(--text-color);
-              display: flex;
-              align-items: center;
-            " title="Activer/Désactiver l'aimant">
-          <span id="snapIcon" class="icon-disabled">🧲</span>
-          <span style="margin-left: 5px; font-weight: bold">Aimant</span>
-        </label>
-
-        <!-- Séparateur visuel -->
-        <div style="width: 1px; height: 20px; background-color: var(--input-border)"></div>
-
-        <!-- Liste déroulante pour la taille -->
-        <select id="snapSizeSelect" onchange="updateSnapSize()" style="
-              width: auto;
-              padding: 2px 5px;
-              margin: 0;
-              height: 26px;
-              border: none;
-              background: transparent;
-              color: var(--text-color);
-              font-size: 13px;
-              cursor: pointer;
-              outline: none;
-              font-weight: bold;
-            ">
-          <option value="1">1.0</option>
-          <option value="0.5">0.5</option>
-          <option value="0.1">0.1</option>
-        </select>
-      </div>
+    <div id="cameraControls">
 
       <!-- Vue de dessus (XY) : La face supérieure du cube est noire -->
       <div class="camera-btn" id="btnTop" onclick="setCameraView('top', this)" title="Vue de dessus (XY)">
